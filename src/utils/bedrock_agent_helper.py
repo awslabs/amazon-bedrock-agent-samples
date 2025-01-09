@@ -1116,7 +1116,7 @@ class AgentsForAmazonBedrock:
             actionGroupExecutor={"lambda": _lambda_arn},
             actionGroupName=agent_action_group_name,
             functionSchema={"functions": agent_functions},
-            description=agent_action_group_description,
+            description=agent_action_group_description[0:199],
         )
         return
 
