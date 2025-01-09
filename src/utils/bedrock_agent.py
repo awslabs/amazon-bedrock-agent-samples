@@ -29,6 +29,10 @@ import uuid
 from textwrap import dedent
 from typing import List, Dict
 import time
+from dataclasses import dataclass
+from typing import Self
+from enum import Enum
+from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
 from types import SimpleNamespace
 
 print(f"boto3 version: {boto3.__version__}")
@@ -40,9 +44,6 @@ bedrock_agent_client = boto3.client("bedrock-agent")
 bedrock_agent_runtime_client = boto3.client("bedrock-agent-runtime")
 bedrockruntime_client = boto3.client("bedrock-runtime")
 bedrock_client = boto3.client("bedrock")
-
-from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
-
 agents_helper = AgentsForAmazonBedrock()
 
 region = agents_helper.get_region()
@@ -68,6 +69,60 @@ DEFAULT_SUPERVISOR_MODEL = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 # "anthropic.claude-3-5-sonnet-20240620-v1:0"
 
 MAX_DESCR_SIZE = 200  # Due to max size enforced by Agents for description
+
+
+class ParamType(str, Enum):
+    STRING = "string"
+    INTEGER = "integer"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    OBJECT = "object"
+    ARRAY = "array"
+
+
+class ParameterSchema:
+    """Defines a parameter for a lambda function"""
+
+    @dataclass
+    class _Param:
+        name: str
+        type: ParamType
+        description: str
+        required: bool = False
+
+        @classmethod
+        def create(cls, name: str, parameter_type: ParamType, description: str, required: bool = False) -> Self:
+            return cls(name, parameter_type, description, required)
+
+    def __init__(self, param: _Param = None):
+        self._parameters = []
+        if param:
+            self._parameters.append(param)
+
+    @classmethod
+    def create(cls):
+        return cls(None)
+
+    @classmethod
+    def create_with_values(cls, name: str, parameter_type: ParamType, description: str, required: bool = False) \
+            -> "ParameterSchema":
+        """Create with an initial parameter (you can add more)"""
+        param = cls._Param.create(name, parameter_type, dedent(description), required)
+        return cls(param)
+
+    def add_param(self, name: str, parameter_type: ParamType, description: str, required: bool = False):
+        param = self._Param.create(name, parameter_type, description, required)
+        self._parameters.append(param)
+
+    def to_dict(self):
+        return {
+            param.name:
+            {
+                "description": param.description,
+                "type": param.type.value,
+                "required": param.required
+            } for param in self._parameters
+        }
 
 
 class Guardrail:
@@ -114,6 +169,35 @@ class Guardrail:
         if verbose:
             print(f"Guardrail created: {resp}")
         self.guardrail_id = resp["guardrailId"]
+
+
+class Tool2:
+    """A tool that can be attached to an agent."""
+    def __init__(self, name: str, description: str, code_file_or_arn: str, schema: ParameterSchema):
+        self.name = name
+        self.code_file = code_file_or_arn
+        self.schema = schema
+        self.description = description
+
+    @classmethod
+    def create(cls, name: str, code_file: str, schema: ParameterSchema, description: str = None) -> "Tool2":
+        return cls(name, description, code_file, schema)
+
+    def delete(self):
+        """Delete this tool."""
+        # TODO: Implement tool deletion via Bedrock API
+        pass
+
+    def to_action_group_definition(self) -> dict:
+        """
+        Converts the Tool instance into the format required for action group creation.
+        Returns a dictionary compatible with add_action_group_with_lambda's tool_defs parameter.
+        """
+        return {
+            "name":  self.name,
+            "description": self.description,
+            "parameters": self.schema.to_dict()
+        }
 
 
 class Tool:
@@ -378,6 +462,34 @@ class Agent:
             f"DONE: Agent: {self.name}, id: {self.agent_id}, alias id: {self.agent_alias_id}\n"
         )
 
+    def needs_preparation(self) -> bool:
+        """Return True if the agent needs to be prepared"""
+        bedrock_agent = boto3.client('bedrock-agent')
+        response = bedrock_agent.get_agent(agentId=self.agent_id)
+        agent_info = response['agent']
+
+        # Check if never prepared
+        prepared_at = agent_info.get('preparedAt')
+        if not prepared_at:
+            return True
+
+        last_updated = agent_info.get('updatedAt')
+        return last_updated > prepared_at
+
+    def prepare(self, alias="prod"):
+        """Prepare the agent for use (some operations will do this implicitly if needed)"""
+        print("Preparing agent")
+        if self.needs_preparation():
+            agents_helper.prepare(self.name)
+            agents_helper.wait_agent_status_update(self.agent_id)
+            _agent_alias = agents_helper._bedrock_agent_client.create_agent_alias(
+                agentAliasName=alias, agentId=self.agent_id
+            )
+            self.agent_alias_id = _agent_alias["agentAlias"]["agentAliasId"]
+            self.agent_alias_arn = _agent_alias["agentAlias"]["agentAliasArn"]
+        else:
+            print("Agent already prepared")
+
     @classmethod
     # Return a session state populated with the files from the supplied list of filenames
     def add_file_to_session_state(
@@ -434,7 +546,7 @@ class Agent:
             name: {
                 "role": role,
                 "goal": goal,
-                "instructions": instructions,
+                "instructions": dedent(instructions),
                 "tool_code": tool_code,
                 "tool_defs": tool_defs,
             }
@@ -516,6 +628,46 @@ class Agent:
                 enable_trace=enable_trace,
             )
             return final_answer
+
+    def get_prepared_version(self) -> str:
+        response = bedrock_agent_client.get_agent(
+            agentId=self.agent_id
+        )
+        return response.get('agentVersion')
+
+    def has_action_group(self, action_group_name: str) -> bool:
+        """Check if an agent already has a specified action group attached"""
+        try:
+            response = bedrock_agent_client.list_agent_action_groups(
+                agentId=self.agent_id,
+                agentVersion='DRAFT'
+            )
+
+            return any(
+                group['actionGroupName'] == action_group_name
+                for group in response['actionGroupSummaries']
+            )
+
+        except bedrock_agent_client.exceptions.ResourceNotFoundException:
+            return False
+
+    def attach_tool(self, tool: Tool2) -> None:
+        """Attach a tool to this agent."""
+        # add_action_group_with_lambda() doesn't check if the lambda already exists, we need to
+        if self.has_action_group(tool.name):
+            print(f"Action group {tool.name} already exists, skipping...")
+            return
+
+        tool_defs = [tool.to_action_group_definition()]
+        agents_helper.add_action_group_with_lambda(
+            self.name,
+            tool.name,
+            tool.code_file,
+            tool_defs,  # One function for now, generalize to handle groups later
+            tool.name,  # Using tool name as the action group name
+            f"actions for {tool.description}"
+        )
+        # self._status = Agent.Status.NOT_PREPARED  # Force preparation on next invoke
 
 
 # define a SupervisorAgent class that has a list of Agents, and some instructions
