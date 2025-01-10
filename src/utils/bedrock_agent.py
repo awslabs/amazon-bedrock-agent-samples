@@ -171,7 +171,7 @@ class Guardrail:
         self.guardrail_id = resp["guardrailId"]
 
 
-class Tool2:
+class Tool:
     """A tool that can be attached to an agent."""
     def __init__(self, name: str, description: str, code_file_or_arn: str, schema: ParameterSchema):
         self.name = name
@@ -180,7 +180,7 @@ class Tool2:
         self.description = description
 
     @classmethod
-    def create(cls, name: str, code_file: str, schema: ParameterSchema, description: str = None) -> "Tool2":
+    def create(cls, name: str, code_file: str, schema: ParameterSchema, description: str = None) -> "Tool":
         return cls(name, description, code_file, schema)
 
     def delete(self):
@@ -198,46 +198,6 @@ class Tool2:
             "description": self.description,
             "parameters": self.schema.to_dict()
         }
-
-
-class Tool:
-    def __init__(self, yaml_content: Dict):
-        self.code = yaml_content["code"]
-        self.definition = yaml_content["definition"]
-
-        # Provide a default value for requireConfirmation
-        if "requireConfirmation" not in self.definition:
-            self.definition["requireConfirmation"] = "DISABLED"
-
-    @classmethod
-    def to_action_groups(cls, base_name: str, tools: List["Tool"]):
-        _action_groups = []
-        _ag_num = 1
-        for _tool in tools:
-            _tmp_ag = {
-                "actionGroupName": f"{base_name}_{_ag_num}",
-                "actionGroupExecutor": {"lambda": _tool["code"]},
-                "description": _tool["definition"]["description"],
-                "functionSchema": {"functions": [_tool["definition"]]},
-            }
-            _action_groups.append(_tmp_ag)
-            _ag_num += 1
-        return _action_groups
-
-    def __str__(self):
-        return f"Code: {self.code}\nDefinition: {self.definition}"
-
-
-# define a ToolCatalog class that takes a set of tools and gives
-# an easy way to get one of them by name
-class ToolCatalog:
-    def __init__(self, yaml_content: Dict):
-        self.tools = {}
-        for tool_name, tool_data in yaml_content.items():
-            self.tools[tool_name] = Tool(tool_data)
-
-    def get_tool(self, tool_name: str) -> Tool:
-        return self.tools[tool_name]
 
 
 class Task:
@@ -393,12 +353,9 @@ class Agent:
             # NOTE: this can't happen before the sub-agent association, because we can't prepare a supervisor
             # w/o sub-agents
             if kb_id is not None:
-                agents_helper.wait_agent_status_update(
-                    self.agent_id
-                )  # wait to be out of "Versioning" state
-                agents_helper.associate_kb_with_agent(self.agent_id, kb_descr, kb_id)
+                self.attach_knowledge_base(kb_id, kb_descr)
 
-            # Add tools as Lamda or ROC action groups to support the specified capabilities
+            # Add tools as Lambda or ROC action groups to support the specified capabilities
             if tools is None and self.tool_code is not None and self.tool_code != "ROC":
                 print(f"Adding action group with Lambda: {self.tool_code}...")
                 # Also updated to capture the new alias ID and ARN.
@@ -461,6 +418,11 @@ class Agent:
         print(
             f"DONE: Agent: {self.name}, id: {self.agent_id}, alias id: {self.agent_alias_id}\n"
         )
+
+    def attach_knowledge_base(self, knowledge_base_id: str, description:str):
+        """Attach a knowledge base to the agent"""
+        agents_helper.wait_agent_status_update(self.agent_id)  # wait to be out of "Versioning" state
+        agents_helper.associate_kb_with_agent(self.agent_id, description, knowledge_base_id)
 
     def needs_preparation(self) -> bool:
         """Return True if the agent needs to be prepared"""
@@ -651,7 +613,7 @@ class Agent:
         except bedrock_agent_client.exceptions.ResourceNotFoundException:
             return False
 
-    def attach_tool(self, tool: Tool2) -> None:
+    def attach_tool(self, tool: Tool) -> None:
         """Attach a tool to this agent."""
         # add_action_group_with_lambda() doesn't check if the lambda already exists, we need to
         if self.has_action_group(tool.name):
