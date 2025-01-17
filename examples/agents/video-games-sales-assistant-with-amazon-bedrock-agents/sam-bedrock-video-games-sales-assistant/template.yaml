@@ -1,0 +1,520 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-bedrock-video-games-sales-assistant
+  Sample SAM Template for sam-bedrock-video-games-sales-assistant
+  Author: Uriel Ramirez (beralfon@amazon.com)
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  PostgreSQLDatabaseName:
+    Type: String
+    Description: PostgreSQL Database Name
+    Default: "video_games_sales"
+  AuroraMaxCapacity:
+    Type: Number
+    Description: Aurora Serverless DB Max Capacity
+    Default: 2
+  AuroraMinCapacity:
+    Type: Number
+    Description: Aurora Serverless DB Min Capacity
+    Default: 1
+
+Resources:
+
+  QuestionAnswersHaiku35Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: "id"
+        AttributeType: "S"
+      - AttributeName: "my_timestamp"
+        AttributeType: "N"
+      KeySchema:
+      - AttributeName: "id"
+        KeyType: "HASH"
+      - AttributeName: "my_timestamp"
+        KeyType: "RANGE"
+      BillingMode: "PAY_PER_REQUEST"
+      SSESpecification:
+        SSEEnabled: True
+
+  AssistantAPIPostgreSQLHaiku35Function:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: functions/assistant-api-postgresql-haiku-35/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          SECRET_NAME: !Sub '${AWS::StackName}-secret-name'
+          POSTGRESQL_HOST: !GetAtt DatabaseAssistantdatabaseproxy.Endpoint
+          DATABASE_NAME: !Ref PostgreSQLDatabaseName
+          QUESTION_ANSWERS_TABLE: !Ref QuestionAnswersHaiku35Table
+      VpcConfig:
+        SecurityGroupIds: 
+          - !GetAtt SecurityGroupAssistant.GroupId
+        SubnetIds: 
+          - !Ref VPCAssistantPrivateSubnet1Subnet
+          - !Ref VPCAssistantPrivateSubnet2Subnet
+      Policies:
+        - AWSLambdaVPCAccessExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+                - dynamodb:PutItem
+              Resource: '*'
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+
+  VPCAssistant:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/21
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-vpc'
+  VPCAssistantIngressSubnet1Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: subnet-name
+          Value: Ingress
+        - Key: subnet-type
+          Value: Public
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet1
+      VpcId: !Ref VPCAssistant
+  VPCAssistantIngressSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet1
+      VpcId: !Ref VPCAssistant
+  VPCAssistantIngressSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCAssistantIngressSubnet1RouteTable
+      SubnetId: !Ref VPCAssistantIngressSubnet1Subnet
+  VPCAssistantIngressSubnet1DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCAssistantIGW
+      RouteTableId: !Ref VPCAssistantIngressSubnet1RouteTable
+    DependsOn:
+      - VPCAssistantVPCGW
+  VPCAssistantIngressSubnet:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet1
+  VPCAssistantIngressSubnet1NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt VPCAssistantIngressSubnet.AllocationId
+      SubnetId: !Ref VPCAssistantIngressSubnet1Subnet
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet1
+    DependsOn:
+      - VPCAssistantIngressSubnet1DefaultRoute
+      - VPCAssistantIngressSubnet1RouteTableAssociation
+  VPCAssistantIngressSubnet2Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: subnet-name
+          Value: Ingress
+        - Key: subnet-type
+          Value: Public
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet2
+      VpcId: !Ref VPCAssistant
+  VPCAssistantIngressSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/IngressSubnet2
+      VpcId: !Ref VPCAssistant
+  VPCAssistantIngressSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCAssistantIngressSubnet2RouteTable
+      SubnetId: !Ref VPCAssistantIngressSubnet2Subnet
+  VPCAssistantIngressSubnet2DefaultRouteEF07E00F:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCAssistantIGW
+      RouteTableId: !Ref VPCAssistantIngressSubnet2RouteTable
+    DependsOn:
+      - VPCAssistantVPCGW
+  VPCAssistantPrivateSubnet1Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: subnet-name
+          Value: Private
+        - Key: subnet-type
+          Value: Private
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/PrivateSubnet1
+      VpcId: !Ref VPCAssistant
+  VPCAssistantPrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/PrivateSubnet1
+      VpcId: !Ref VPCAssistant
+  VPCAssistantPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCAssistantPrivateSubnet1RouteTable
+      SubnetId: !Ref VPCAssistantPrivateSubnet1Subnet
+  VPCAssistantPrivateSubnet1DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPCAssistantIngressSubnet1NATGateway
+      RouteTableId: !Ref VPCAssistantPrivateSubnet1RouteTable
+  VPCAssistantPrivateSubnet2Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: subnet-name
+          Value: Private
+        - Key: subnet-type
+          Value: Private
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/PrivateSubnet2
+      VpcId: !Ref VPCAssistant
+  VPCAssistantPrivateSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant/PrivateSubnet2
+      VpcId: !Ref VPCAssistant
+  VPCAssistantPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCAssistantPrivateSubnet2RouteTable
+      SubnetId: !Ref VPCAssistantPrivateSubnet2Subnet
+  VPCAssistantPrivateSubnet2DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPCAssistantIngressSubnet1NATGateway
+      RouteTableId: !Ref VPCAssistantPrivateSubnet2RouteTable
+  VPCAssistantIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant
+  VPCAssistantVPCGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref VPCAssistantIGW
+      VpcId: !Ref VPCAssistant
+  VPCAssistantSecretManagerEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DataSourceAssistantStack/VPCAssistant/SecretManagerEndpoint/SecurityGroup
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: '-1'
+      SecurityGroupIngress:
+        - CidrIp: !GetAtt VPCAssistant.CidrBlock
+          Description: !Join
+            - ''
+            - - 'from '
+              - !GetAtt VPCAssistant.CidrBlock
+              - ':443'
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: Name
+          Value: DataSourceAssistantStack/VPCAssistant
+      VpcId: !Ref VPCAssistant
+  VPCAssistantSecretManagerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !GetAtt VPCAssistantSecretManagerEndpointSecurityGroup.GroupId
+      ServiceName: !Join
+        - ''
+        - - com.amazonaws.
+          - !Ref AWS::Region
+          - .secretsmanager
+      SubnetIds:
+        - !Ref VPCAssistantPrivateSubnet1Subnet
+        - !Ref VPCAssistantPrivateSubnet2Subnet
+      VpcEndpointType: Interface
+      VpcId: !Ref VPCAssistant
+
+  SecurityGroupAssistant:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DataSourceAssistantStack/SecurityGroupAssistant
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: '-1'
+      VpcId: !Ref VPCAssistant
+
+  SecurityGroupAssistantfromDataSourceAssistantStackSecurityGroupAssistant:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow PostgreSQL connections
+      FromPort: 5432
+      GroupId: !GetAtt SecurityGroupAssistant.GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt SecurityGroupAssistant.GroupId
+      ToPort: 5432
+
+  SecurityGroupAssistantfromDataSourceAssistantStackSecurityGroupAssistant:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow connections to the database Cluster from the Proxy
+      FromPort: !GetAtt DatabaseAssistant.Endpoint.Port
+      GroupId: !GetAtt SecurityGroupAssistant.GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !GetAtt SecurityGroupAssistant.GroupId
+      ToPort: !GetAtt DatabaseAssistant.Endpoint.Port
+  
+  AuroraSecretAssistant:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-secret-name'
+      Description: !Join
+        - ''
+        - - 'Generated for stack: '
+          - !Ref AWS::StackName
+      GenerateSecretString:
+        ExcludeCharacters: ' %+~`#$&*()|[]{}:;<>?!''/@"\'
+        GenerateStringKey: password
+        PasswordLength: 30
+        SecretStringTemplate: '{"username":"postgres"}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  
+  AuroraSecretAssistantAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref AuroraSecretAssistant
+      TargetId: !Ref DatabaseAssistant
+      TargetType: AWS::RDS::DBCluster
+  
+  DatabaseAssistantSubnets:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for DatabaseAssistant database
+      SubnetIds:
+        - !Ref VPCAssistantIngressSubnet1Subnet
+        - !Ref VPCAssistantIngressSubnet2Subnet
+    
+  DatabaseAssistant:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      CopyTagsToSnapshot: true
+      DBClusterParameterGroupName: default.aurora-postgresql15
+      DBSubnetGroupName: !Ref DatabaseAssistantSubnets
+      DatabaseName: !Ref PostgreSQLDatabaseName
+      EnableCloudwatchLogsExports:
+        - postgresql
+      EnableHttpEndpoint: true
+      EngineMode: provisioned
+      Engine: aurora-postgresql
+      EngineVersion: '15.4'
+      MasterUserPassword: !Join
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref AuroraSecretAssistant
+          - ':SecretString:password::}}'
+      MasterUsername: !Join
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref AuroraSecretAssistant
+          - ':SecretString:username::}}'
+      Port: 5432
+      ServerlessV2ScalingConfiguration:
+        MaxCapacity: !Ref AuroraMaxCapacity
+        MinCapacity: !Ref AuroraMinCapacity
+      VpcSecurityGroupIds:
+        - !GetAtt SecurityGroupAssistant.GroupId
+      AssociatedRoles:
+          - FeatureName: s3Import
+            RoleArn: !GetAtt DatabaseAssistantIAMRole.Arn
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  
+  DatabaseAssistantIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: DatabaseAssistantIAMRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:CreateDBSnapshot
+                  - rds:CreateDBClusterSnapshot
+                  - rds:RestoreDBClusterFromSnapshot
+                  - rds:RestoreDBClusterToPointInTime
+                  - rds:RestoreDBInstanceFromDBSnapshot
+                  - rds:RestoreDBInstanceToPointInTime
+                  - s3:*
+                Resource:
+                  - '*'
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: rds.amazonaws.com
+        Version: '2012-10-17'
+
+  DatabaseAssistantwriter:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DatabaseAssistant
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      PromotionTier: 0
+      PubliclyAccessible: true
+    DependsOn:
+      - VPCAssistantIngressSubnet1DefaultRoute
+      - VPCAssistantIngressSubnet1RouteTableAssociation
+      - VPCAssistantIngressSubnet2DefaultRouteEF07E00F
+      - VPCAssistantIngressSubnet2RouteTableAssociation
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+    
+  DatabaseAssistantdatabaseproxyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: rds.amazonaws.com
+        Version: '2012-10-17'
+    
+  DatabaseAssistantdatabaseproxyIAMRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - secretsmanager:DescribeSecret
+              - secretsmanager:GetSecretValue
+            Effect: Allow
+            Resource: !Ref AuroraSecretAssistant
+        Version: '2012-10-17'
+      PolicyName: !Sub '${AWS::StackName}-db-proxy-policy'
+      Roles:
+        - !Ref DatabaseAssistantdatabaseproxyIAMRole
+    
+  DatabaseAssistantdatabaseproxy:
+    Type: AWS::RDS::DBProxy
+    Properties:
+      Auth:
+        - AuthScheme: SECRETS
+          IAMAuth: DISABLED
+          SecretArn: !Ref AuroraSecretAssistant
+      DBProxyName: !Sub '${AWS::StackName}-db-proxy'
+      DebugLogging: true
+      EngineFamily: POSTGRESQL
+      RequireTLS: false
+      RoleArn: !GetAtt DatabaseAssistantdatabaseproxyIAMRole.Arn
+      VpcSecurityGroupIds:
+        - !GetAtt SecurityGroupAssistant.GroupId
+      VpcSubnetIds:
+        - !Ref VPCAssistantPrivateSubnet1Subnet
+        - !Ref VPCAssistantPrivateSubnet2Subnet
+    
+  DatabaseAssistantdatabaseproxyProxyTargetGroup:
+    Type: AWS::RDS::DBProxyTargetGroup
+    Properties:
+      ConnectionPoolConfigurationInfo: {}
+      DBClusterIdentifiers:
+        - !Ref DatabaseAssistant
+      DBProxyName: !Ref DatabaseAssistantdatabaseproxy
+      TargetGroupName: default
+    DependsOn:
+      - DatabaseAssistant
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  DatabaseClusterName:
+    Description: "Database cluster name to connect using the Query Editor"
+    Value: !Ref DatabaseAssistant
+  SecretARN:
+    Description: "Secrets manager ARN for database connection"
+    Value: !GetAtt AuroraSecretAssistant.Id
+  QuestionAnswersTable:
+    Description: "Table of Questions and Answers"
+    Value: !Ref QuestionAnswersHaiku35Table
