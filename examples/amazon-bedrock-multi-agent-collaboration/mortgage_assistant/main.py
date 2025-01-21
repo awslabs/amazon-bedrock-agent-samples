@@ -46,7 +46,7 @@ def main(args):
         agents_helper.delete_agent("mortgages_assistant", verbose=True)
         # kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
 
-    bucket_name = 'omrsamer-bedrock2-us-west-2'
+    bucket_name = 'roymark-bedrock2-us-west-2'
 
     print("creating general KB")
     kb_name = "general-mortgage-kb"
