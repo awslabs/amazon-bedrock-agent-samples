@@ -65,12 +65,12 @@ The following demos have been tested with this UI and can be found in their resp
 
 4. Run the Streamlit application:
    ```bash
-   cd examples/agents-ux/streamlit-demo/; streamlit run demo-ui.py
+   cd examples/agents_ux/streamlit_demo/; streamlit run demo_ui.py
    ```
 
 5. Optionally, specify a specific bot using the BOT_NAME environment variable:
    ```bash
-   BOT_NAME="<bot-name>" streamlit run demo-ui.py
+   BOT_NAME="<bot-name>" streamlit run demo_ui.py
    ```
 
    Supported BOT_NAME values:
@@ -102,4 +102,4 @@ The demo UI integrates with Amazon Bedrock Agent Runtime for agent execution and
 
 Below is an example of the demo UI in action, showing the Mortgages Assistant interface:
 
-![Demo UI Screenshot](demo-ui.png)
+![Demo UI Screenshot](demo_ui.png)
