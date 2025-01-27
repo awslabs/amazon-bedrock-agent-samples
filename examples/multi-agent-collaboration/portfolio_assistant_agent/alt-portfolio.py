@@ -4,12 +4,19 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-import argparse
-import boto3
+
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, Guardrail, region, account_id
-
+import boto3
+from src.utils.bedrock_agent import (
+    Agent,
+    SupervisorAgent,
+    Task,
+    Guardrail,
+    region,
+    account_id,
+    agents_helper, Tool, ParameterSchema, ParamType
+)
+import argparse
 bedrock_client = boto3.client("bedrock")
 
 
@@ -20,12 +27,12 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        Agent.delete_by_name("portfolio_assistant", verbose=True)
+        agents_helper.delete_agent(agent_name="portfolio_assistant", delete_role_flag=True, verbose=True)
     if args.clean_up == "true":
-        Agent.delete_by_name("portfolio_assistant", verbose=True)
-        Agent.delete_by_name("news_agent", verbose=True)
-        Agent.delete_by_name("stock_data_agent", verbose=True)
-        Agent.delete_by_name("analyst_agent", verbose=True)
+        agents_helper.delete_agent(agent_name="portfolio_assistant", delete_role_flag=True, verbose=True)
+        agents_helper.delete_agent(agent_name="news_agent", delete_role_flag=True, verbose=True)
+        agents_helper.delete_agent(agent_name="stock_data_agent", delete_role_flag=True, verbose=True)
+        agents_helper.delete_agent(agent_name="analyst_agent", delete_role_flag=True, verbose=True)
         response = bedrock_client.list_guardrails()
         for _gr in response["guardrails"]:
             if _gr["name"] == "no_bitcoin_guardrail":
@@ -48,37 +55,22 @@ def main(args):
             name="news_agent",
             role="Market News Researcher",
             goal="Fetch latest relevant news for a given stock based on a ticker.",
-            instructions="Top researcher in financial markets and company announcements.",
-            tool_code=f"arn:aws:lambda:{region}:{account_id}:function:web_search",
-            tool_defs=[
-                {
-                    "name": "web_search",
-                    "description": "Searches the web for information",
-                    "parameters": {
-                        "search_query": {
-                            "description": "The query to search the web with",
-                            "type": "string",
-                            "required": True,
-                        },
-                        "target_website": {
-                            "description": "The specific website to search including its domain name. If not provided, the most relevant website will be used",
-                            "type": "string",
-                            "required": False,
-                        },
-                        "topic": {
-                            "description": "The topic being searched. 'news' or 'general'. Helps narrow the search when news is the focus.",
-                            "type": "string",
-                            "required": False,
-                        },
-                        "days": {
-                            "description": "The number of days of history to search. Helps when looking for recent events or news.",
-                            "type": "string",
-                            "required": False,
-                        },
-                    },
-                }
-            ],
+            instructions="Top researcher in financial markets and company announcements."
         )
+        # Imperatively define and attach the web search tool (we could also do this by name if it were shared)
+        tool_code = f"arn:aws:lambda:{region}:{account_id}:function:web_search"
+        schema = ParameterSchema.create()
+        schema.add_param("search_query", ParamType.STRING, "The query to search the web with", True)
+        description = "The specific website to search including its domain name. If not provided, the most relevant " \
+                      "website will be used"
+        schema.add_param("target_website", ParamType.STRING, description, False)
+        description = "The topic being searched. 'news' or 'general'. Helps narrow the search when news is the focus."
+        schema.add_param("topic", ParamType.STRING, description, False)
+        description = "The number of days of history to search. Helps when looking for recent events or news."
+        schema.add_param("days", ParamType.STRING, description, False)
+        web_search = Tool.create("web_search", tool_code, schema, "Searches the web for information")
+        news_agent.attach_tool(web_search)
+        news_agent.prepare()
 
         # Define Stock Data Agent
         stock_data_agent = Agent.create(

@@ -4,9 +4,6 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
 import datetime
 import traceback
 import yaml
@@ -14,8 +11,8 @@ import uuid
 from textwrap import dedent
 import os
 import argparse
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, region, account_id, agents_helper
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, region, account_id
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 task_yaml_path = os.path.join(current_dir, "tasks.yaml")
@@ -27,14 +24,14 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="startup_advisor", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("startup_advisor", verbose=True)
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="startup_advisor", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="lead_market_analyst", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="chief_strategist", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="creative_director", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="content_writer", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="formatted_report_writer", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("startup_advisor", verbose=True)
+        Agent.delete_by_name("lead_market_analyst", verbose=True)
+        Agent.delete_by_name("chief_strategist", verbose=True)
+        Agent.delete_by_name("creative_director", verbose=True)
+        Agent.delete_by_name("content_writer", verbose=True)
+        Agent.delete_by_name("formatted_report_writer", verbose=True)
         
     else:
         inputs = {

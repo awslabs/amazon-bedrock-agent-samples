@@ -4,9 +4,6 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
 import datetime
 import traceback
 import argparse
@@ -14,7 +11,8 @@ import yaml
 import os
 from textwrap import dedent
 import uuid
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, region, account_id, agents_helper
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, region, account_id
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 task_yaml_path = os.path.join(current_dir, "tasks.yaml")
@@ -30,17 +28,17 @@ def create_agent(agent_name, agent_content, tools=None):
 def main(args):
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
-        if agents_helper.get_agent_id_by_name("trip_planner") is None:
+        if not Agent.exists("trip_planner"):
             print("'trip_planner' agent does not exist. Please rerun with --recreate_agents 'true'")
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="trip_planner", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("trip_planner", verbose=True)
 
     if args.clean_up == "true":        
-        agents_helper.delete_agent(agent_name="trip_planner", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="itinerary_compiler", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="activity_finder", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="restaurant_scout", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("trip_planner", verbose=True)
+        Agent.delete_by_name("itinerary_compiler", verbose=True)
+        Agent.delete_by_name("activity_finder", verbose=True)
+        Agent.delete_by_name("restaurant_scout", verbose=True)
     else:
         inputs = {
             "origin": args.origin,

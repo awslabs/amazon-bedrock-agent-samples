@@ -1,0 +1,5 @@
+boto3
+click
+rich
+termcolor
+pydantic

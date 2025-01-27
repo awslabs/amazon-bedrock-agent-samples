@@ -120,6 +120,8 @@ class KnowledgeBasesForAmazonBedrock:
             for ds in ds_available["dataSourceSummaries"]:
                 if kb_id == ds["knowledgeBaseId"]:
                     ds_id = ds["dataSourceId"]
+                    if not data_bucket_name:
+                        self.data_bucket_name = self._get_knowledge_base_s3_bucket(kb_id, ds_id)
             print(f"Knowledge Base {kb_name} already exists.")
             print(f"Retrieved Knowledge Base Id: {kb_id}")
             print(f"Retrieved Data Source Id: {ds_id}")
@@ -252,6 +254,32 @@ class KnowledgeBasesForAmazonBedrock:
 
     def get_data_bucket_name(self):
         return self.data_bucket_name
+
+    def _get_knowledge_base_s3_bucket(self, knowledge_base_id, data_source_id):
+        """Get the s3 bucket associated with a knowledge base, if there is one"""
+        try:
+            # Get the data source details
+            response = self.bedrock_agent_client.get_data_source(
+                knowledgeBaseId=knowledge_base_id,
+                dataSourceId=data_source_id
+            )
+
+            # Extract the S3 bucket information from the data source configuration
+            data_source_config = response['dataSource']['dataSourceConfiguration']
+
+            if data_source_config['type'] == 'S3':
+                s3_config = data_source_config['s3Configuration']
+                bucket_arn = s3_config['bucketArn']
+
+                # Extract bucket name from ARN
+                bucket_name = bucket_arn.split(':')[-1]
+                return bucket_name
+            else:
+                return "Data source is not an S3 bucket"
+
+        except Exception as e:
+            print(f"Error retrieving data source information: {str(e)}")
+            return None
 
     def create_bedrock_kb_execution_role(
         self,

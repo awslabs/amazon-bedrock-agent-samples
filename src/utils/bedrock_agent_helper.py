@@ -22,6 +22,9 @@ import re
 from boto3.session import Session
 from botocore.config import Config
 from boto3.dynamodb.conditions import Key
+import inspect
+from typing import Callable
+from textwrap import dedent
 
 # import matplotlib.pyplot as plt
 # import matplotlib.image as mpimg
@@ -1116,7 +1119,7 @@ class AgentsForAmazonBedrock:
             actionGroupExecutor={"lambda": _lambda_arn},
             actionGroupName=agent_action_group_name,
             functionSchema={"functions": agent_functions},
-            description=agent_action_group_description,
+            description=agent_action_group_description[0:199],
         )
         return
 
@@ -2136,3 +2139,94 @@ class AgentsForAmazonBedrock:
             return query_data["Items"]
         except self._dynamodb_client.exceptions.ResourceInUseException:
             print(f"Error querying table: {table_name}.")
+
+    def create_lambda_file(self, func: Callable, output_dir: str = ".") -> str:
+        """
+        Creates a Lambda function file that wraps the given function with the necessary handler code.
+        
+        Args:
+            func: The function to wrap
+            output_dir: Directory where the Lambda file should be created
+            
+        Returns:
+            str: Path to the created Lambda file
+        """
+        # Get the function's source code
+        func_source = inspect.getsource(func)
+        
+        # Get the function's name
+        func_name = func.__name__
+        
+        lambda_code = [
+            "import json",
+            "import inspect",
+            "from typing import Any, Dict",
+            "",
+            "def get_named_parameter(event: Dict[str, Any], name: str) -> Any:",
+            "    \"\"\"Extract a named parameter from the event object.\"\"\"",
+            "    if 'parameters' in event:",
+            "        return next(item for item in event['parameters'] if item['name'] == name)['value']",
+            "    else:",
+            "        return None",
+            "",
+            "def populate_function_response(event: Dict[str, Any], response_body: Any) -> Dict[str, Any]:",
+            "    \"\"\"Create the response structure expected by the agent.\"\"\"",
+            "    return {",
+            "        'response': {",
+            "            'actionGroup': event['actionGroup'],",
+            "            'function': event['function'],",
+            "            'functionResponse': {",
+            "                'responseBody': {",
+            "                    'TEXT': {'body': str(response_body)}",
+            "                }",
+            "            }",
+            "        }",
+            "    }",
+            "",
+            func_source,
+            "",
+            "def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:",
+            "    \"\"\"",
+            "    AWS Lambda handler that wraps the main function.",
+            "    Extracts parameters from the event and formats the response.",
+            "    \"\"\"",
+            "    print(f\"Received event: {event}\")",
+            "",
+            f"    function = event['function']",
+            f"    if function == '{func_name}':",
+            "        # Get parameters from the event",
+            "        params = {}",
+            f"        for param_name in inspect.signature({func_name}).parameters:",
+            "            param_value = get_named_parameter(event, param_name)",
+            "            if param_value is None:",
+            "                # Check session state if parameter not found",
+            "                session_state = event.get('sessionAttributes', {})",
+            "                if session_state and param_name in session_state:",
+            "                    param_value = session_state[param_name]",
+            "                else:",
+            "                    result = f\"Missing required parameter: {param_name}\"",
+            "                    return populate_function_response(event, result)",
+            "            params[param_name] = param_value",
+            "",
+            "        try:",
+            "            # Call the function with extracted parameters",
+            f"            result = {func_name}(**params)",
+            "            return populate_function_response(event, result)",
+            "        except Exception as e:",
+            f"            error_message = f\"Error executing {func_name}: {{str(e)}}\"",
+            "            print(error_message)",
+            "            return populate_function_response(event, error_message)",
+            "    else:",
+            "        result = f\"Error: Function '{function}' not recognized\"",
+            "        return populate_function_response(event, result)",
+        ]
+
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create the Lambda file
+        file_path = os.path.join(output_dir, f"lambda_{func_name}.py")
+        with open(file_path, "w") as f:
+            f.write("\n".join(lambda_code))
+        
+        return file_path

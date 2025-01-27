@@ -178,20 +178,19 @@ agents.invoke(
   <a href="/examples/multi-agent-collaboration/portfolio_assistant_agent/"><img src="https://img.shields.io/badge/Example-Portfolio_Assistant_Agent-blue" /></a>
 </p>
 
-
 ```python
 from src.utils.bedrock_agent import Agent, SupervisorAgent
 import uuid
 
 # CREATE SUB-AGENT
-hello_world_sub_agent = Agent.direct_create(
+hello_world_sub_agent = Agent.create(
     name="hello_world_sub_agent",
     instructions="Just say hello world as the response to all possible questions",
 )
 
 # CREATE SUPERVISOR AGENT
 
-hello_world_supervisor = SupervisorAgent.direct_create(
+hello_world_supervisor = SupervisorAgent.create(
     name="hello_world_supervisor",
     instructions="""
             Use your collaborator for all requests. Always pass its response back to the user.
@@ -207,7 +206,7 @@ hello_world_supervisor = SupervisorAgent.direct_create(
 
 # INVOKE AGENT
 
-session_id:str = str(uuid.uuid1())
+session_id: str = str(uuid.uuid1())
 
 hello_world_supervisor.invoke(
     input_text="What is Amazon Bedrock?",

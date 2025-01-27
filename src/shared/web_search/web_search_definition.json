@@ -1,0 +1,31 @@
+{
+    "code": "arn:aws:lambda:{region}:{account_id}:function:web_search",
+    "definition": [
+        {
+            "name": "web_search",
+            "description": "Searches the web for information",
+            "parameters": {
+                "search_query": {
+                    "description": "The query to search the web with",
+                    "type": "string",
+                    "required": true
+                },
+                "target_website": {
+                    "description": "The specific website to search including its domain name. If not provided, the most relevant website will be used",
+                    "type": "string",
+                    "required": false
+                },
+                "topic": {
+                    "description": "The topic being searched. 'news' or 'general'. Helps narrow the search when news is the focus.",
+                    "type": "string",
+                    "required": false
+                },
+                "days": {
+                    "description": "The number of days of history to search. Helps when looking for recent events or news.",
+                    "type": "string",
+                    "required": false
+                }
+            }
+        }
+    ]
+}
