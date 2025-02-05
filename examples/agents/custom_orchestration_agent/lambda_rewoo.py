@@ -12,17 +12,17 @@ tool_state = {
         "last_tool_used": None,
         "last_tool_result": None,
         "parent_tool_result": None,
-        "is_summary": False
-    }
+        "is_summary": False,
+    },
 }
 
 
 # Entry point for the orchestration lambda
 def lambda_handler(event, context):
     print(f"The incoming event: {json.dumps(event)}")
-    
+
     # Extract state from the event
-    state = event.get("state", '')
+    state = event.get("state", "")
     print(f"Current state: {state}")
 
     event_response = nextEvent(event)
@@ -31,7 +31,7 @@ def lambda_handler(event, context):
 
 
 # Determines the next state of the Agent
-def nextEvent(event): 
+def nextEvent(event):
     # Possible Current States:
     # START - Start of the conversation turn
     # MODEL_INVOKED - Model has been invoked and next action to be determined
@@ -46,29 +46,29 @@ def nextEvent(event):
     _state = {}
 
     # Invoke the model if this is the start of the conversation turn
-    if incoming_state == 'START': 
-        response_event = 'INVOKE_MODEL'
+    if incoming_state == "START":
+        response_event = "INVOKE_MODEL"
         response_trace = "This is on start debug trace!"
         payload_data = json.dumps(create_prompt(event, create_planning_system_prompt))
 
     # If the model was invoked then either finish the conversation or invoke a tool
-    elif incoming_state == 'MODEL_INVOKED': 
+    elif incoming_state == "MODEL_INVOKED":
         if is_end_state(event):
-            response_event = 'FINISH'
+            response_event = "FINISH"
             response_trace = "This is on finish debug trace!"
             payload_data = json.dumps(get_end_turn_payload(event))
         else:
-            response_event = 'INVOKE_TOOL'
+            response_event = "INVOKE_TOOL"
             response_trace = "This is on tool use debug trace!"
             payload_data, _state = execute_plan_on_generation(event)
             payload_data = json.dumps(payload_data)
 
     # If the invoked tool was incorrect invoke tool again, else invoke model
-    elif incoming_state == 'TOOL_INVOKED':
+    elif incoming_state == "TOOL_INVOKED":
         # process results and determine next tool
-        payload_data, _state = continue_execution(event) 
+        payload_data, _state = continue_execution(event)
         if payload_data:
-            response_event = 'INVOKE_TOOL'
+            response_event = "INVOKE_TOOL"
             response_trace = "This is on tool use debug trace!"
             payload_data = json.dumps(payload_data)
         else:
@@ -79,34 +79,39 @@ def nextEvent(event):
                     "last_tool_used": None,
                     "parent_tool_result": None,
                     "last_tool_result": None,
-                    "is_summary": True
-                }
+                    "is_summary": True,
+                },
             }
-            response_event = 'INVOKE_MODEL'
+            response_event = "INVOKE_MODEL"
             response_trace = "This is on model invocation debug trace!"
-            payload_data = json.dumps(create_prompt(event, create_summary_system_prompt))
+            payload_data = json.dumps(
+                create_prompt(event, create_summary_system_prompt)
+            )
 
     # Incorrect state provided, error returned
     else:
-        raise 'Invalid state provided!'
+        raise "Invalid state provided!"
 
     # temp work around, to be removed
-    _lambda_arn = event.get("context", {}).get("sessionAttributes", {}).get("lambda", None)
+    _lambda_arn = (
+        event.get("context", {}).get("sessionAttributes", {}).get("lambda", None)
+    )
 
     event["context"] = {
-        "sessionAttributes": {
-            "state": json.dumps(_state),
-            "lambda": _lambda_arn
-        }
+        "sessionAttributes": {"state": json.dumps(_state), "lambda": _lambda_arn}
     }
-    payload = create_payload(payload_data, response_event, response_trace, event.get("context", {}))
+    payload = create_payload(
+        payload_data, response_event, response_trace, event.get("context", {})
+    )
     return payload
 
 
 # Processes the result of a tool invocation and determines the next tool to use.
 def continue_execution(event):
     # get the session state from context
-    _state = json.loads(event.get("context", {}).get("sessionAttributes", {}).get("state", {}))
+    _state = json.loads(
+        event.get("context", {}).get("sessionAttributes", {}).get("state", {})
+    )
 
     # get the plan from context
     _plan = _state.get("plan", "")
@@ -115,14 +120,20 @@ def continue_execution(event):
     _tool_state = _state.get("tool_state", {})
 
     # get the last tool result
-    _tool_result = json.loads(event.get("input", {}).get("text", {})).get("toolResult", {})
+    _tool_result = json.loads(event.get("input", {}).get("text", {})).get(
+        "toolResult", {}
+    )
 
     # update context with last tool result
     _tool_state["last_tool_result"] = _tool_result.get("content", {})[0].get("text", "")
     if not _tool_state["parent_tool_result"]:
-        _tool_state["parent_tool_result"] = _tool_result.get("content", {})[0].get("text", "")
+        _tool_state["parent_tool_result"] = _tool_result.get("content", {})[0].get(
+            "text", ""
+        )
 
-    tool_to_use, function_signature, parent_tool_result = get_tool_to_execute(_plan, _tool_state)
+    tool_to_use, function_signature, parent_tool_result = get_tool_to_execute(
+        _plan, _tool_state
+    )
     _current_plan = _plan
 
     if tool_to_use:
@@ -132,16 +143,19 @@ def continue_execution(event):
                 "last_tool_used": function_signature,
                 "parent_tool_result": parent_tool_result,
                 "last_tool_result": None,
-                "is_summary": False
-            }
+                "is_summary": False,
+            },
         }
         return tool_to_use, dict(_state)
     return None, None
 
+
 # Extracts and executes the plan created by the model
 def execute_plan_on_generation(event):
     _plan = json.loads(event.get("input", {}).get("text", {}))
-    _plan = _plan.get("output", {}).get("content", {})[0].get("text", "").replace("\n", "")
+    _plan = (
+        _plan.get("output", {}).get("content", {})[0].get("text", "").replace("\n", "")
+    )
     tool_to_use, function_signature, parent_tool_result = get_tool_to_execute(_plan)
     _state = {
         "plan": _plan,
@@ -149,8 +163,8 @@ def execute_plan_on_generation(event):
             "last_tool_used": function_signature,
             "parent_tool_result": parent_tool_result,
             "last_tool_result": parent_tool_result,
-            "is_summary": False
-        }
+            "is_summary": False,
+        },
     }
     return tool_to_use, dict(_state)
 
@@ -159,49 +173,72 @@ def execute_plan_on_generation(event):
 def get_tool_to_execute(_plan, _tool_state=None):
     print("Plan:", _plan)
     # Extract plan between tags from _plan
-    effective_plan = re.findall(r'<plan>(.*?)</plan>', _plan.strip(), re.DOTALL)[0].strip()
-    tree = ET.ElementTree(ET.fromstring('<plan>' + effective_plan + '</plan>'))
+    effective_plan = re.findall(r"<plan>(.*?)</plan>", _plan.strip(), re.DOTALL)[
+        0
+    ].strip()
+    tree = ET.ElementTree(ET.fromstring("<plan>" + effective_plan + "</plan>"))
 
-    # Iterate through the plan 
+    # Iterate through the plan
     _to_continue_process = False
     for element in tree.iter():
         # If the element is a step, continue
-        if 'step' in element.tag:
+        if "step" in element.tag:
             plan_step = element.text
-            for_step = element.find('for')
+            for_step = element.find("for")
 
             # If there is a for tag within the element
             if for_step is not None and for_step.text:
-                if for_step.attrib and 'expression' in for_step.attrib:
+                if for_step.attrib and "expression" in for_step.attrib:
                     # get the for loop function (i.e. item in items)
-                    for_loop = re.findall(r'(.*?)in(.*)', for_step.attrib.get('expression', '').strip(), re.DOTALL)[0]
+                    for_loop = re.findall(
+                        r"(.*?)in(.*)",
+                        for_step.attrib.get("expression", "").strip(),
+                        re.DOTALL,
+                    )[0]
                     iteration_var = for_loop[0].strip()
                     function = for_step.text.strip()
                     last_listed_responses = _tool_state.get("parent_tool_result", {})
 
                     # get the list of values to replace
-                    var_to_replace = re.findall(f'={iteration_var}.(.*?),', function, re.DOTALL)[0].strip()
-                    replaceable_values = find_value(last_listed_responses, var_to_replace)
+                    var_to_replace = re.findall(
+                        f"={iteration_var}.(.*?),", function, re.DOTALL
+                    )[0].strip()
+                    replaceable_values = find_value(
+                        last_listed_responses, var_to_replace
+                    )
 
                     for replaceable_value in replaceable_values:
-                        function_param_filled = function.replace(f"{iteration_var}.{var_to_replace}", replaceable_value)
+                        function_param_filled = function.replace(
+                            f"{iteration_var}.{var_to_replace}", replaceable_value
+                        )
                         variable_name, repl_function = parse_tool(function_param_filled)
 
-                        if (_tool_state is not None
-                                and _tool_state.get("last_tool_used") == repl_function and not _to_continue_process):
+                        if (
+                            _tool_state is not None
+                            and _tool_state.get("last_tool_used") == repl_function
+                            and not _to_continue_process
+                        ):
                             _to_continue_process = True
                             continue
 
                         if _tool_state is not None and not _to_continue_process:
                             continue
 
-                        return create_tool_use(repl_function), repl_function, last_listed_responses
+                        return (
+                            create_tool_use(repl_function),
+                            repl_function,
+                            last_listed_responses,
+                        )
 
             # If there is no text or no plan but the fn:: prefix is included
-            elif 'fn::' in plan_step:
+            elif "fn::" in plan_step:
                 # parse the tool to use from the step
                 variable_name, function = parse_tool(plan_step)
-                if _tool_state is not None and _tool_state.get("last_tool_used") == function and not _to_continue_process:
+                if (
+                    _tool_state is not None
+                    and _tool_state.get("last_tool_used") == function
+                    and not _to_continue_process
+                ):
                     _to_continue_process = True
                     continue
 
@@ -219,19 +256,23 @@ def get_tool_to_execute(_plan, _tool_state=None):
 # Find all the replaceable values
 def find_value(string, key):
     results = []
-    values = re.findall(f'"(.*?){key}(.*?)"(.*?):(.*?)"(.*?)"', string.strip(), re.DOTALL)
+    values = re.findall(
+        f'"(.*?){key}(.*?)"(.*?):(.*?)"(.*?)"', string.strip(), re.DOTALL
+    )
     if values:
         for value in values:
             if isinstance(value[4], str):
-                results.append(str(f"\"{value[4]}\""))
+                results.append(str(f'"{value[4]}"'))
             else:
                 results.append(value[4])
 
-    values = re.findall(f'"(.*?){key}(.*?)"(.*?)=(.*?)"(.*?)"', string.strip(), re.DOTALL)
+    values = re.findall(
+        f'"(.*?){key}(.*?)"(.*?)=(.*?)"(.*?)"', string.strip(), re.DOTALL
+    )
     if values:
         for value in values:
             if isinstance(value[4], str):
-                results.append(str(f"\"{value[4]}\""))
+                results.append(str(f'"{value[4]}"'))
             else:
                 results.append(value[4])
 
@@ -241,29 +282,33 @@ def find_value(string, key):
 # extract function name and parameters from a plan step
 def parse_tool(_plan_step):
     _current_plan = str(_plan_step.strip())
-    variable_name = re.findall(r'(.*?)fn::', _current_plan, re.DOTALL)[0].replace('=', '').strip()
-    function = re.findall(r'(.*?)fn::(.*)', _current_plan, re.DOTALL)[0][1].strip()
+    variable_name = (
+        re.findall(r"(.*?)fn::", _current_plan, re.DOTALL)[0].replace("=", "").strip()
+    )
+    function = re.findall(r"(.*?)fn::(.*)", _current_plan, re.DOTALL)[0][1].strip()
     return variable_name, function
 
 
 # Prepares the payload for a tool invocation
 def create_tool_use(_function):
-    function = re.findall(r'(.*?)\((.*?)\)', _function.strip(), re.DOTALL)[0]
+    function = re.findall(r"(.*?)\((.*?)\)", _function.strip(), re.DOTALL)[0]
     predicted_params = function[1]
-    params = dict(e.strip().split('=') for e in predicted_params.split(','))
+    params = dict(e.strip().split("=") for e in predicted_params.split(","))
 
     return {
         "toolUse": {
             "toolUseId": str(uuid.uuid4()),
-            "name": function[0].replace("fn::", '').strip(),
-            "input": params
+            "name": function[0].replace("fn::", "").strip(),
+            "input": params,
         }
     }
 
 
 # Checks the state object to determine if the conversation turn is complete
 def is_end_state(event):
-    _state = json.loads(event.get("context", {}).get("sessionAttributes", {}).get("state", {}))
+    _state = json.loads(
+        event.get("context", {}).get("sessionAttributes", {}).get("state", {})
+    )
     return _state.get("tool_state", {}).get("is_summary", "")
 
 
@@ -277,7 +322,9 @@ def get_end_turn_payload(event):
 # Constructs the prompt for Bedrock
 def create_prompt(event, _create_prompt_function):
     # Prepare the Bedrock Converse API request
-    messages = construct_messages(event.get("context", {}), event.get("input", {}), _create_prompt_function)
+    messages = construct_messages(
+        event.get("context", {}), event.get("input", {}), _create_prompt_function
+    )
     return create_converse_api_prompt(event.get("context", {}), messages)
 
 
@@ -286,42 +333,29 @@ def create_payload(payload_data, action_event, trace_data, context):
     response = {
         "version": "1.0",
         "actionEvent": action_event,
-        "output": {
-            "text": payload_data,
-            "trace": {
-                "event": {
-                    "text": trace_data
-                }
-            }
-        },
+        "output": {"text": payload_data, "trace": {"event": {"text": trace_data}}},
         "context": {
             "sessionAttributes": context.get("sessionAttributes", {}),
-            "promptSessionAttributes": context.get("promptSessionAttributes", {})
-        }
+            "promptSessionAttributes": context.get("promptSessionAttributes", {}),
+        },
     }
     return response
 
 
 # Prepare the Bedrock Converse API request
 def create_converse_api_prompt(context, messages):
-    #Note for models:
-    #"meta.llama3-8b-instruct-v1:0" # no tool support in streaming/non-streaming mode; in us-west-2
-    #"mistral.mistral-small-2402-v1:0"  # no tool support in streaming mode; in us-east-1
+    # Note for models:
+    # "meta.llama3-8b-instruct-v1:0" # no tool support in streaming/non-streaming mode; in us-west-2
+    # "mistral.mistral-small-2402-v1:0"  # no tool support in streaming mode; in us-east-1
 
-    model_id = context.get("agentConfiguration", {}).get("defaultModelId", '')
+    model_id = context.get("agentConfiguration", {}).get("defaultModelId", "")
 
     tools = context.get("agentConfiguration", {}).get("tools", {})
     bedrock_converse_api_request = {
         "modelId": model_id,
         "messages": messages,
-        "inferenceConfig": {
-            "maxTokens": 500,
-            "temperature": 0,
-            "topP": 0.9
-        },
-        "toolConfig": {
-            "tools": tools
-        }
+        "inferenceConfig": {"maxTokens": 500, "temperature": 0, "topP": 0.9},
+        "toolConfig": {"tools": tools},
     }
     # Return the converse api request
     return bedrock_converse_api_request
@@ -337,29 +371,59 @@ def construct_messages(context, input, _create_prompt_function):
             intermediary_steps = turn.get("intermediarySteps", {})
             for intermediary_step in intermediary_steps:
                 if intermediary_step:
-                    orchestration_input = intermediary_step.get("orchestrationInput", {})
-                    orchestration_output = intermediary_step.get("orchestrationOutput", {})
+                    orchestration_input = intermediary_step.get(
+                        "orchestrationInput", {}
+                    )
+                    orchestration_output = intermediary_step.get(
+                        "orchestrationOutput", {}
+                    )
 
-                    if orchestration_input.get("state", '') == "START":
-                        messages.append(message('user', {'text': orchestration_input.get("text", '')}))
+                    if orchestration_input.get("state", "") == "START":
+                        messages.append(
+                            message(
+                                "user", {"text": orchestration_input.get("text", "")}
+                            )
+                        )
 
                     if _create_prompt_function == create_summary_system_prompt:
-                        if orchestration_input.get("state", '') == 'MODEL_INVOKED':
-                            messages.append(json.loads(orchestration_input.get("text", {})).get("output", {}))
+                        if orchestration_input.get("state", "") == "MODEL_INVOKED":
+                            messages.append(
+                                json.loads(orchestration_input.get("text", {})).get(
+                                    "output", {}
+                                )
+                            )
 
-                        if orchestration_input.get("state", '') == 'TOOL_INVOKED':
-                            messages.append(message('user', json.loads(orchestration_input.get("text", {}))))
+                        if orchestration_input.get("state", "") == "TOOL_INVOKED":
+                            messages.append(
+                                message(
+                                    "user",
+                                    json.loads(orchestration_input.get("text", {})),
+                                )
+                            )
 
-                        if orchestration_output.get("event", '') == 'INVOKE_TOOL':
-                            messages.append(message('assistant', json.loads(orchestration_output.get("text", {}))))
+                        if orchestration_output.get("event", "") == "INVOKE_TOOL":
+                            messages.append(
+                                message(
+                                    "assistant",
+                                    json.loads(orchestration_output.get("text", {})),
+                                )
+                            )
 
     if input:
         text = json.loads(input.get("text", {}))
         message_content = text
         if "text" in text and _create_prompt_function == create_summary_system_prompt:
-            message_content = {"text": text.get("text", "") + "\n\n" + _create_prompt_function(context)}
-        elif "text" in text and _create_prompt_function == create_planning_system_prompt:
-            message_content = {"text": create_planning_system_prompt(context) + "\n\n" + text.get("text", "")}
+            message_content = {
+                "text": text.get("text", "") + "\n\n" + _create_prompt_function(context)
+            }
+        elif (
+            "text" in text and _create_prompt_function == create_planning_system_prompt
+        ):
+            message_content = {
+                "text": create_planning_system_prompt(context)
+                + "\n\n"
+                + text.get("text", "")
+            }
         messages.append(message("user", message_content))
 
     return merge_conversation_turn(messages, context)
@@ -367,15 +431,17 @@ def construct_messages(context, input, _create_prompt_function):
 
 # Merges conversation history into single formatted message
 def merge_conversation_turn(messages, context):
-    model_id = context.get("agentConfiguration", {}).get("defaultModelId", '').lower()
-    
+    model_id = context.get("agentConfiguration", {}).get("defaultModelId", "").lower()
+
     if not messages:
         return messages
-    last_role = ''
+    last_role = ""
     merged_messages = []
     for _message in messages:
         if last_role == _message.get("role", ""):
-            merged_messages[len(merged_messages) - 1]["content"] = _message.get("content")
+            merged_messages[len(merged_messages) - 1]["content"] = _message.get(
+                "content"
+            )
         else:
             merged_messages.append(_message)
         last_role = _message.get("role")
@@ -384,20 +450,17 @@ def merge_conversation_turn(messages, context):
 
 # helper function for construct messages - formats in Bedrock Converse format
 def message(role, content):
-    return {
-        "role": role,
-        "content": [content]
-    }
+    return {"role": role, "content": [content]}
 
 
 # Prompt used at beginning of conversation turn to create a plan (Orchestration template)
 def create_planning_system_prompt(context):
     prompt_variables = ""
     if "promptSessionAttributes" in context:
-        for attribute in context['promptSessionAttributes']:
+        for attribute in context["promptSessionAttributes"]:
             prompt_variables += "<context>"
             prompt_variables += f"   <key>{attribute}</key>"
-            value = context['promptSessionAttributes'][attribute]
+            value = context["promptSessionAttributes"][attribute]
             prompt_variables += f"  <value>{value}</value>"
             prompt_variables += "</context>"
 
