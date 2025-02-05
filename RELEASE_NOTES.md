@@ -1,3 +1,8 @@
+## 02/05/2025
+Added to 
+[Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/)
+By creating a code sample for llama as an unoptimized model
+
 ## 01/12/2025
 Renaming examples folder for simplicity and adding documentation for single agents examples
 
