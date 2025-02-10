@@ -127,12 +127,22 @@ def create_agent_role_and_policies(agent_name, agent_foundation_model, kb_id=Non
         {
             "Sid": "AmazonBedrockAgentBedrockFoundationModelPolicy",
             "Effect": "Allow",
-            "Action": "bedrock:InvokeModel",
+            "Action": [
+                "bedrock:InvokeModel",
+                "bedrock:InvokeAgent",
+                "bedrock:GetFoundationModel",
+                "bedrock:GetInferenceProfile",
+                "bedrock:UseInferenceProfile",
+            ],
             "Resource": [
-                f"arn:aws:bedrock:{region}::foundation-model/{agent_foundation_model}"
+                f"arn:aws:bedrock:{region}::foundation-model/{agent_foundation_model}",
+                f"arn:aws:bedrock:{region}:{session.client('sts').get_caller_identity()['Account']}:inference-profile/{agent_foundation_model}",
+                "arn:aws:bedrock:us-east-1:478242907172:agent/*",
+                "arn:aws:bedrock:*::foundation-model/*",
             ],
         }
     ]
+
     # add Knowledge Base retrieve and retrieve and generate permissions if agent has KB attached to it
     if kb_id:
         statements.append(
