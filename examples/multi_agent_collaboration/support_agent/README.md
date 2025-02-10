@@ -10,6 +10,8 @@ Try sample prompts:
 Each of these gets routed quickly to the right sub-agent for subsequent processing.
 Conversation switching is seamless.
 
+## Architecture
+![Architecture](./Support-Agent.png)
 
 
 ## Prerequisites
