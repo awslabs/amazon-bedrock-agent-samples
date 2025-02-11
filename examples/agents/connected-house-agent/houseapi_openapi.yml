@@ -1,0 +1,272 @@
+openapi: "3.0.2"
+info:
+  title: House-API
+  description: |
+    API for fetching information about the house
+    This API provides endpoints to monitor weather conditions, temperature data, and camera feeds.
+  version: "1.0"
+
+paths:
+  /weather:
+    get:
+      summary: Get current weather information
+      description: |
+        Fetch current outdoor weather information from the are around the house including temperature 
+        and weather conditions. This endpoint provides comprehensive weather data 
+        from the local weather station.
+      responses:
+        200:
+          description: Successfully retrieved weather information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - location
+                  - temperature
+                  - weather_description
+                properties:
+                  location:
+                    type: string
+                    description: The location name (Hassela)
+                    example: "Hassela"
+                  temperature:
+                    type: number
+                    format: float
+                    description: Current temperature in Celsius
+                    example: 22.5
+                  weather_description:
+                    type: string
+                    description: Text description of current weather conditions
+                    example: "Partly cloudy"
+        401:
+          description: Unauthorized - Invalid or missing API key
+        500:
+          description: Internal server error
+      x-amazon-apigateway-auth:
+        type: AWS_IAM
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HouseApiFunction.Arn}/invocations"
+
+  /temp:
+    get:
+      summary: Get temperature information of the house
+      description: |
+        Fetch current temperature information for the house.
+      responses:
+        200:
+          description: Successfully retrieved temperature information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guestroom:
+                    type: object
+                    required:
+                      - temp
+                      - humidity
+                      - timestamp
+                    properties:
+                      temp:
+                        type: array
+                        items:
+                          type: number
+                          format: float
+                        description: Temperature readings in Celsius
+                        example: [20.4]
+                      humidity:
+                        type: array
+                        items:
+                          type: number
+                          format: float
+                        description: Humidity readings in percent
+                        example: [25.5]
+                  pannrum:
+                    type: object
+                    required:
+                      - temp
+                      - humidity
+                      - timestamp
+                    properties:
+                      temp:
+                        type: array
+                        items:
+                          type: number
+                          format: float
+                        description: Temperature readings in Celsius
+                        example: [15.1]
+                      humidity:
+                        type: array
+                        items:
+                          type: number
+                          format: float
+                        description: Humidity readings in percent
+                        example: [38.9]
+        401:
+          description: Unauthorized - Invalid or missing API key
+        500:
+          description: Internal server error
+      x-amazon-apigateway-auth:
+        type: AWS_IAM
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HouseApiFunction.Arn}/invocations"
+
+  /camera:
+    post:
+      summary: Camera query endpoint
+      description: Query a camera about its current view
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - camera
+                - question
+              properties:
+                camera:
+                  type: string
+                  enum: [backyard, kitchen, livingroom, diningroom]
+                  description: The camera to query
+                question:
+                  type: string
+                  description: The question to be processed about the camera view
+      responses:
+        200:
+          description: Successfully processed request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad request - Invalid input
+        401:
+          description: Unauthorized - Invalid or missing API key
+        500:
+          description: Internal server error
+      x-amazon-apigateway-auth:
+        type: AWS_IAM
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HouseApiFunction.Arn}/invocations"
+
+  /camera/history:
+    post:
+      summary: Camera history query endpoint
+      description: Unified endpoint for querying camera history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - camera
+                - question
+                - start_timestamp
+              properties:
+                camera:
+                  type: string
+                  enum: [backyard, kitchen, livingroom, diningroom]
+                  description: The camera to query
+                question:
+                  type: string
+                  description: The question to be processed about the camera view
+                start_timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO8601 timestamp of the start of the history query
+                end_timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO8601 timestamp of the end of the history query, or "now"
+      responses:
+        200:
+          description: Successfully processed request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Bad request - Invalid input
+        401:
+          description: Unauthorized - Invalid or missing API key
+        500:
+          description: Internal server error
+      x-amazon-apigateway-auth:
+        type: AWS_IAM
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HouseApiFunction.Arn}/invocations"
+
+  /camera/clip:
+    post:
+      summary: Camera clip generation endpoint
+      description: Unified endpoint for generating camera clips
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - camera
+                - start_timestamp
+              properties:
+                camera:
+                  type: string
+                  enum: [backyard, kitchen, livingroom, diningroom]
+                  description: The camera to generate clip from
+                start_timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO8601 timestamp of the start of the clip
+                end_timestamp:
+                  type: string
+                  format: date-time
+                  description: ISO8601 timestamp of the end of the clip, or "now"
+      responses:
+        200:
+          description: Successfully processed request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: URL to the generated clip
+                  message:
+                    type: string
+                    description: Status message
+        400:
+          description: Bad request - Invalid input
+        401:
+          description: Unauthorized - Invalid or missing API key
+        500:
+          description: Internal server error
+      x-amazon-apigateway-auth:
+        type: AWS_IAM
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: aws_proxy
+        uri:
+          Fn::Sub: "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HouseApiFunction.Arn}/invocations"

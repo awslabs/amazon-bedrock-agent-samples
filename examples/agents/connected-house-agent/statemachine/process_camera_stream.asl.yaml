@@ -1,0 +1,44 @@
+Comment: Process a statement upload.
+StartAt: GetFrames
+States:
+  GetFrames:
+    Type: Task
+    Resource: "${GetFramesFunctionArn}"
+    OutputPath: "$"
+    Parameters:
+      Payload.$: "$"
+    Retry:
+      - ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 2
+        MaxAttempts: 3
+        BackoffRate: 2
+    Next: ProcessFrames
+  ProcessFrames:
+    Type: Map
+    ItemProcessor:
+      ProcessorConfig:
+        Mode: INLINE
+      StartAt: ProcessFrame
+      States:
+        ProcessFrame:
+          Type: Task
+          Resource: "${ProcessFrameFunctionArn}"
+          OutputPath: "$"
+          Parameters:
+            Payload.$: "$"
+          Retry:
+            - ErrorEquals:
+                - Lambda.ServiceException
+                - Lambda.AWSLambdaException
+                - Lambda.SdkClientException
+                - Lambda.TooManyRequestsException
+              IntervalSeconds: 2
+              MaxAttempts: 3
+              BackoffRate: 2
+          End: True
+    End: True
+    MaxConcurrency: 3

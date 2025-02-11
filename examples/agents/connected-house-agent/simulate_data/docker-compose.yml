@@ -1,0 +1,70 @@
+version: "3"
+services:
+  kvs-streamer-kitchen:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.streamer
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${REGION}
+      - STREAM_NAME=kitchen
+      - VIDEO_FILE=kitchen.mp4
+    restart: unless-stopped
+
+  kvs-streamer-livingroom:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.streamer
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${REGION}
+      - STREAM_NAME=livingroom
+      - VIDEO_FILE=livingroom.mp4
+    restart: unless-stopped
+
+  kvs-streamer-diningroom:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.streamer
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${REGION}
+      - STREAM_NAME=diningroom
+      - VIDEO_FILE=diningroom.mp4
+    restart: unless-stopped
+
+  kvs-streamer-backyard:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.streamer
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${REGION}
+      - STREAM_NAME=backyard
+      - VIDEO_FILE=backyard.mp4
+    restart: unless-stopped
+
+  temperature-sensor:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.sensor
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${REGION}
+      - DYNAMODB_TABLE=${DYNAMODB_TABLE}
+    restart: unless-stopped

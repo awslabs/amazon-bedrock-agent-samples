@@ -1,0 +1,15 @@
+aws-lambda-powertools==3.4.0
+aws-xray-sdk==2.14.0
+boto3==1.35.94
+botocore==1.35.94
+certifi==2024.12.14
+charset-normalizer==3.4.1
+idna==3.10
+jmespath==1.0.1
+python-dateutil==2.9.0.post0
+requests==2.32.3
+s3transfer==0.10.4
+six==1.17.0
+typing_extensions==4.12.2
+urllib3==2.3.0
+wrapt==1.17.0
