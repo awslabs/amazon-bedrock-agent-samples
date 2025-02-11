@@ -3,7 +3,7 @@
   :wave: :wave: Welcome to the Amazon Bedrock Agent Samples repository :wave: :wave:
 </p>
 
-This repository provides examples and best practices for working with [Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/). 
+This repository provides examples and best practices for working with [Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/).
 
 Amazon Bedrock Agents enables you to automate complex workflows, build robust and scalable end-to-end solutions from experimentation to production and quickly adapt to new models and experiments.
 
@@ -17,7 +17,7 @@ With the [Amazon Bedrock multi-agent collaboration](https://docs.aws.amazon.com/
 
 <h3>Demo Video</h3>
 <hr />
-This one-hour video takes you through a deep dive introduction to Amazon Bedrock multi-agent collaboration, including a pair of demos, and a walkthrough of Unifying customer experiences, and Automating complex processes. You’ll also see a customer explain their experience with multi-agent solutions. 
+This one-hour video takes you through a deep dive introduction to Amazon Bedrock multi-agent collaboration, including a pair of demos, and a walkthrough of Unifying customer experiences, and Automating complex processes. You’ll also see a customer explain their experience with multi-agent solutions.
 
 <p align="center">
   <a href="https://youtu.be/7pvEYLW1yZw"><img src="https://markdown-videos-api.jorgenkh.no/youtube/7pvEYLW1yZw?width=640&height=360&filetype=jpeg" /></a>
@@ -36,7 +36,7 @@ This one-hour video takes you through a deep dive introduction to Amazon Bedrock
 
 ## Overview
 
-Amazon Bedrock Agents enables you to create AI-powered assistants that can perform complex tasks and interact with various APIs and services. 
+Amazon Bedrock Agents enables you to create AI-powered assistants that can perform complex tasks and interact with various APIs and services.
 
 This repository provides practical examples to help you understand and implement agentic solutions.
 
@@ -79,15 +79,13 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [src/utils](/src/utils/): This module contains utilities for building and using various Amazon Bedrock features, providing a higher level of abstraction than the underlying APIs.
 </details>
 
-
 ## Getting Started
 
 1. Navigate to [`src/`](/src/) for more details.
-2. To get started, navigate to the example you want to deploy in the [`examples/*`](/examples/) directory. 
-3. Follow the deployment steps in the `examples/*/*/README.md` file of the example. 
+2. To get started, navigate to the example you want to deploy in the [`examples/*`](/examples/) directory.
+3. Follow the deployment steps in the `examples/*/*/README.md` file of the example.
 
 ## Agents examples
-
 
 - [Analyst assistant using Code Interpretation](/examples/agents/agent_with_code_interpretation/)
 - [Agent using Amazon Bedrock Guardrails](/examples/agents/agent_with_guardrails_integration/)
@@ -101,6 +99,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Provide conversation history to Amazon Bedrock Agents](/examples/agents/manage_conversation_history/)
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/)
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
+- [Agents with access to house security camera in cloudformation](/examples/agents/connected-house-agent/)
 
 ## Multi-agent collaboration examples
 
@@ -122,7 +121,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 
 The code samples highlighted in this repository focus on showcasing different Amazon Bedrock Agents capabilities.
 
-Please check out our two-part blog series for best practices around building generative AI applications with Amazon Bedrock Agents: 
+Please check out our two-part blog series for best practices around building generative AI applications with Amazon Bedrock Agents:
 
 - [Best practices for building robust generative AI applications with Amazon Bedrock Agents – Part 1](https://aws.amazon.com/blogs/machine-learning/best-practices-for-building-robust-generative-ai-applications-with-amazon-bedrock-agents-part-1/)
 - [Best practices for building robust generative AI applications with Amazon Bedrock Agents – Part 2](https://aws.amazon.com/blogs/machine-learning/best-practices-for-building-robust-generative-ai-applications-with-amazon-bedrock-agents-part-2/)
@@ -136,18 +135,16 @@ Understand Bedrock Multi-agents Collaboration concepts by reading our [blog post
 - [Boto3 Python SDK Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent.html)
 - [Amazon Bedrock Samples](https://github.com/aws-samples/amazon-bedrock-samples/tree/main)
 
-
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
 
 ## License
 
 This project is licensed under the Apache-2.0 License.
 
 > [!IMPORTANT]
-> Examples in this repository are for demonstration purposes. 
+> Examples in this repository are for demonstration purposes.
 > Ensure proper security and testing when deploying to production environments.
 
 ## Contributors :muscle:
