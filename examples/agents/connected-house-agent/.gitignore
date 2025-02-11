@@ -1,0 +1,11 @@
+.aws-sam
+
+.DS_Store
+
+.stack-outputs.json
+
+.python-version
+
+bandit.txt
+
+cfn_nag.txt

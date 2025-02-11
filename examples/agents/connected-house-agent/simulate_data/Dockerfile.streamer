@@ -1,0 +1,43 @@
+# Specify platform to ensure compatibility
+FROM --platform=linux/arm64 ubuntu:20.04
+
+# Rest remains the same as before
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    automake \
+    build-essential \
+    cmake \
+    git \
+    gstreamer1.0-plugins-base-apps \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-tools \
+    libcurl4-openssl-dev \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    liblog4cplus-dev \
+    libssl-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN git clone https://github.com/awslabs/amazon-kinesis-video-streams-producer-sdk-cpp.git \
+    && cd amazon-kinesis-video-streams-producer-sdk-cpp \
+    && mkdir -p build \
+    && cd build \
+    && cmake -DBUILD_GSTREAMER_PLUGIN=ON .. \
+    && make
+
+COPY stream.sh /app/
+RUN chmod +x /app/stream.sh
+
+# Copy all 4 video files
+COPY sample_streams/ /app/
+
+ENV GST_PLUGIN_PATH=/app/amazon-kinesis-video-streams-producer-sdk-cpp/build
+ENV LD_LIBRARY_PATH=/app/amazon-kinesis-video-streams-producer-sdk-cpp/open-source/local/lib
+
+ENTRYPOINT ["/app/stream.sh"]

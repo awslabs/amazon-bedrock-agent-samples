@@ -1,0 +1,3 @@
+requests
+pytz
+aws-lambda-powertools==3.4.0

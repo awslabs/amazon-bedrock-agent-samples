@@ -1,0 +1,774 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  EventBridge to Lambda golden template.
+
+Parameters:
+  Environment:
+    Description: Environment
+    Type: String
+    Default: dev
+  HouseLocation:
+    Description: Location to fetch outside weather information from
+    Type: String
+    Default: Hassela
+  LLM:
+    Description: Foundation model inference profile to use.
+    Type: String
+    Default: us.amazon.nova-lite-v1:0
+    AllowedValues:
+      - us.amazon.nova-lite-v1:0
+      - us.amazon.nova-micro-v1:0
+      - us.amazon.nova-pro-v1:0
+      - us.anthropic.claude-3-5-haiku-20241022-v1:0
+      - us.anthropic.claude-3-5-sonnet-20241022-v2:0
+
+Globals:
+  Function:
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+        POWERTOOLS_LOGGER_SAMPLE_RATE: 1
+        POWERTOOLS_LOGGER_LOG_EVENT: true
+        POWERTOOLS_METRICS_NAMESPACE: connected-house-application
+
+Resources:
+  ##############################
+  ###       House API        ###
+  ##############################
+  HouseApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Timeout: 90
+      MemorySize: 256
+      Runtime: python3.11
+      Handler: app.lambda_handler
+      CodeUri: functions/house_api
+      Description: Lambda function serving the House API
+      Environment:
+        Variables:
+          MODEL_ID: !Ref LLM
+          POWERTOOLS_SERVICE_NAME: house-api
+          OPENWEATHER_API_KEY: !Sub "{{resolve:secretsmanager:${Environment}/openweather/api:SecretString:apikey}}"
+          ATHENA_BUCKET: !Ref AthenaBucket
+          CLIP_BUCKET: !Ref VideoClipBucket
+          ATHENA_DATABASE: !Ref ConnectedHouseDatabase
+          CAMERA_TABLE_NAME: !Ref CameraTable
+          TEMP_DDB_TABLE: !Ref TemperatureTable
+          WEATHER_LOCATION: !Ref HouseLocation
+      Events:
+        weather:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HouseApiGateway
+            Path: /weather
+            Method: GET
+        temp:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HouseApiGateway
+            Path: /temp
+            Method: GET
+        camera:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HouseApiGateway
+            Path: /camera
+            Method: POST
+        cameraHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HouseApiGateway
+            Path: /camera/history
+            Method: POST
+        cameraClip:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HouseApiGateway
+            Path: /camera/clip
+            Method: POST
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AthenaBucket
+        - S3CrudPolicy:
+            BucketName: !Ref CameraStreamLogsBucket
+        - S3CrudPolicy:
+            BucketName: !Ref VideoClipBucket
+        - AthenaQueryPolicy:
+            WorkGroupName: primary
+        - DynamoDBReadPolicy:
+            TableName: !Ref TemperatureTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - glue:GetTable
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+              Resource:
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog"
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${ConnectedHouseDatabase}"
+                - !Sub "arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/${ConnectedHouseDatabase}/*"
+                - !Sub "arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/primary"
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: "*" # Any LLM
+        - Statement:
+            - Effect: Allow
+              Action:
+                - kinesisvideo:GetDataEndpoint
+                - kinesisvideo:GetMedia
+                - kinesisvideo:GetImages
+                - kinesisvideo:DescribeStream
+                - kinesisvideo:ListStreams
+              Resource:
+                - !GetAtt BackyardStream.Arn
+                - !GetAtt KitchenStream.Arn
+                - !GetAtt LivingRoomStream.Arn
+                - !GetAtt DiningRoomStream.Arn
+
+  HouseApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${HouseApiFunction}"
+      RetentionInDays: 7
+
+  HouseApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      DefinitionBody:
+        Fn::Transform:
+          Name: "AWS::Include"
+          Parameters:
+            Location: "./houseapi_openapi.yml"
+      StageName: !Ref Environment
+
+  AthenaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfterOneDay
+            Status: Enabled
+            ExpirationInDays: 1
+
+  VideoClipBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfterOneDay
+            Status: Enabled
+            ExpirationInDays: 1
+
+  ##############################
+  ### PROCESS CAMERA STREAMS ###
+  ##############################
+
+  ProcessCameraStream:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/process_camera_stream.asl.yaml
+      DefinitionSubstitutions:
+        GetFramesFunctionArn: !GetAtt GetFramesFunction.Arn
+        ProcessFrameFunctionArn: !GetAtt ProcessFrameFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetFramesFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessFrameFunction
+        - AWSStepFunctionsFullAccess
+
+  TriggerStepfunctionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/process_camera_streams/trigger_stepfunction/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          STATEMACHINE_ARN: !GetAtt ProcessCameraStream.Arn
+          POWERTOOLS_SERVICE_NAME: trigger-statemachine
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !GetAtt ProcessCameraStream.Arn
+      Events:
+        MinuteTimer:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(1 minute)"
+
+  GetFramesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/process_camera_streams/get_frames/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 30
+      MemorySize: 512
+      Environment:
+        Variables:
+          FRAMES_BUCKET: !Ref FramesBucket
+          POWERTOOLS_SERVICE_NAME: get-frames
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref FramesBucket
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - kinesisvideo:GetDataEndpoint
+                - kinesisvideo:GetMedia
+                - kinesisvideo:GetImages
+                - kinesisvideo:DescribeStream
+                - kinesisvideo:ListStreams
+              Resource:
+                - !GetAtt BackyardStream.Arn
+                - !GetAtt KitchenStream.Arn
+                - !GetAtt LivingRoomStream.Arn
+                - !GetAtt DiningRoomStream.Arn
+
+  ProcessFrameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/process_camera_streams/process_frames/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      MemorySize: 256
+      Timeout: 45
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: process-frame
+          FRAMES_BUCKET: !Ref FramesBucket
+          DELIVERY_STREAM: !Ref DeliveryStream
+          MODEL_ID: !Ref LLM
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref FramesBucket
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref DeliveryStream
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: "*"
+
+  FramesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfterOneDay
+            Status: Enabled
+            ExpirationInDays: 1
+
+  FirehoseToS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - firehose.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: WritetoS3Permission
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                  - logs:CreateLogGroup
+                Resource:
+                  - !Sub "${CameraStreamLogsBucket.Arn}/*"
+                  - !GetAtt CameraStreamLogsBucket.Arn
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kinesisfirehose/*"
+
+  DeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: !GetAtt CameraStreamLogsBucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 180
+          SizeInMBs: 1 # Mb
+        CompressionFormat: UNCOMPRESSED
+        Prefix: data/!{timestamp:yyyy-MM-dd}/
+        ErrorOutputPrefix: errors/!{firehose:error-output-type}/!{timestamp:yyyy-MM-dd}/
+        RoleARN: !GetAtt FirehoseToS3Role.Arn
+
+  CameraStreamLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfterOneDay
+            Status: Enabled
+            ExpirationInDays: 30 # You may want to update how long you store camera logs
+
+  ConnectedHouseDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Description: Tables related to connected house agent
+
+  CameraTable:
+    Type: AWS::Glue::Table
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref ConnectedHouseDatabase
+      TableInput:
+        Name: cameras
+        TableType: EXTERNAL_TABLE
+        PartitionKeys:
+          - Name: ingest_date
+            Type: string
+        Parameters:
+          "projection.enabled": "true"
+          "projection.ingest_date.type": "date"
+          "projection.ingest_date.range": "2025-02-10,NOW"
+          "projection.ingest_date.format": "yyyy-MM-dd"
+          "projection.ingest_date.interval": "1"
+          "projection.ingest_date.interval.unit": "DAYS"
+          "storage.location.template": !Sub "s3://${CameraStreamLogsBucket}/data/${!ingest_date}/"
+        StorageDescriptor:
+          Location: !Sub s3://${CameraStreamLogsBucket}
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            Name: jq
+            SerializationLibrary: org.openx.data.jsonserde.JsonSerDe
+          BucketColumns: []
+          NumberOfBuckets: 0
+          Columns:
+            - Name: timestamp_string
+              Type: string
+            - Name: stream_name
+              Type: string
+            - Name: description
+              Type: string
+
+  ##############################
+  ###     Video streams      ###
+  ##############################
+  BackyardStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      DataRetentionInHours: 8760 # 1 year
+      Name: backyard
+
+  KitchenStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      DataRetentionInHours: 8760 # 1 year
+      Name: kitchen
+
+  LivingRoomStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      DataRetentionInHours: 8760 # 1 year
+      Name: livingroom
+
+  DiningRoomStream:
+    Type: AWS::KinesisVideo::Stream
+    Properties:
+      DataRetentionInHours: 8760 # 1 year
+      Name: diningroom
+
+  ##############################
+  ###   Temp sensor table    ###
+  ##############################
+
+  TemperatureTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  ##############################
+  ###     Bedrock Agent      ###
+  ##############################
+
+  HouseAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/house_agent_function/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Timeout: 120
+      MemorySize: 256
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: house-agent
+          BASE_URL: !Sub "https://${HouseApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: execute-api:Invoke
+              Resource:
+                - !Sub "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HouseApiGateway}/${Environment}/*/*" # Any HTTP verb on any endpoint
+
+  # Permission for any Bedrock Agent to invoke the Lambda
+  BedrockInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref HouseAgentFunction
+      Principal: bedrock.amazonaws.com
+
+  # Bedrock Agent
+  ConnectedHouseAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: connected-house-agent
+      Description: "Agent for monitoring conditions inside and outside of a house"
+      IdleSessionTTLInSeconds: 1800
+      FoundationModel: !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${LLM}"
+      AutoPrepare: true
+      Instruction: |
+        You are a helpful assistant that provides information from a connected home.
+        You use an API to query the house for both inside and outside conditions.
+        If asked, be upfront with what you can do for users.
+
+        You ALWAYS repond using the metric system for temperature etc.
+        You ALWAYS return the relevant information to the user, including generated presigned URLs and answers in the final response to the user.
+        You ALWAYS ensure that you use all necessary APIs available to you when fetching information from the house and its cameras.
+        If there are any errors returned from the APIs, be transparent in your response about what is happening.
+        Do NOT return a video clip of something unless you're asked to.
+        When thinking, you ALWAYS make sure to include all relevant properties in your request to the House API.
+      AgentResourceRoleArn: !GetAtt BedrockAgentRole.Arn
+      ActionGroups:
+        - ActionGroupName: HouseAPI
+          Description: Actions for querying the House API
+          ActionGroupState: ENABLED
+          SkipResourceInUseCheckOnDelete: true
+          ActionGroupExecutor:
+            Lambda: !GetAtt HouseAgentFunction.Arn
+          ApiSchema:
+            Payload: |
+              openapi: 3.0.0
+              info:
+                title: Hassela Home Monitoring API
+                description: |
+                  API for comprehensive monitoring of the Hassela house, including weather conditions, 
+                  indoor climate, and camera surveillance. This API provides access to real-time and 
+                  historical data about the house's environment and activities.
+                version: 1.0.0
+
+              paths:
+                /getWeather:
+                  post:
+                    operationId: getWeather
+                    summary: Get current outside weather information for the house
+                    description: |
+                      Use this endpoint when you need information about the current outdoor 
+                      weather conditions. This includes the current temperature 
+                      and a description of the weather conditions (like sunny, cloudy, rainy, etc.). 
+                      Use this when someone asks about the weather !Or  outdoor temperature
+                    responses:
+                      "200":
+                        description: Successful response with weather information
+                        content:
+                          application/json:
+                            schema:
+                              type: object
+                              properties:
+                                location:
+                                  type: string
+                                  example: "Hassela"
+                                temperature:
+                                  type: number
+                                  format: float
+                                  example: 22.5
+                                weather_description:
+                                  type: string
+                                  example: "Partly cloudy"
+
+                /getTemperature:
+                  post:
+                    operationId: getTemperature
+                    summary: Get indoor temperature and humidity readings
+                    description: |
+                      Use this endpoint when you need information about indoor temperatures 
+                      and humidity levels in specific rooms of the house. Currently monitors 
+                      the guestroom and pannrum (boiler room). Use this when someone asks 
+                      about indoor temperature, room temperature, indoor climate, or humidity 
+                      levels inside the house. This is particularly useful for monitoring 
+                      living conditions and the heating system's performance.
+                    responses:
+                      "200":
+                        description: Successful response with temperature and humidity data
+                        content:
+                          application/json:
+                            schema:
+                              type: object
+                              properties:
+                                guestroom:
+                                  type: object
+                                  properties:
+                                    temperature:
+                                      type: number
+                                      format: float
+                                      example: 20.4
+                                    humidity:
+                                      type: number
+                                      format: float
+                                      example: 25.5
+                                pannrum:
+                                  type: object
+                                  properties:
+                                    temperature:
+                                      type: number
+                                      format: float
+                                      example: 15.1
+                                    humidity:
+                                      type: number
+                                      format: float
+                                      example: 38.9
+
+                /askCamera:
+                  post:
+                    operationId: askCamera
+                    summary: Query any camera's current view
+                    description: |
+                      Use this endpoint to ask questions about what any camera in the house currently observes. 
+                      The house has cameras in several locations:
+                      - backyard: Looking out through a window from the top floor, overlooking the yard and lake
+                      - kitchen: Monitoring the kitchen area and cooking activities
+                      - livingroom: Observing the main living space and TV area
+                      - diningroom: Monitoring the dining area and table
+
+                      Specify which camera you want to query in the request along with your question. 
+                      Use this endpoint for real-time observations about current activities, presence 
+                      of people or animals, or conditions in these areas.
+                    requestBody:
+                      required: true
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            required:
+                              - camera
+                              - question
+                            properties:
+                              camera:
+                                type: string
+                                enum: [backyard, kitchen, livingroom, diningroom]
+                                description: The camera location to query
+                              question:
+                                type: string
+                                description: The question about what the camera observes
+                                example: "Is anyone in the room right now?"
+                    responses:
+                      "200":
+                        description: Successful response with answer about camera observations
+                        content:
+                          application/json:
+                            schema:
+                              type: object
+                              properties:
+                                message:
+                                  type: string
+                                  description: The answer to the camera-related question
+
+                /askCamera/history:
+                  post:
+                    operationId: askCameraHistory
+                    summary: Query historical observations from any camera
+                    description: |
+                      Use this endpoint to ask questions about what any camera observed during a specific time period. 
+                      This allows for historical analysis of activities and conditions in different areas:
+                      - backyard: Historical weather conditions, outdoor activities, or wildlife
+                      - kitchen: Past cooking activities, meal preparations, or kitchen usage
+                      - livingroom: Previous gatherings, TV watching sessions, or room occupancy
+                      - diningroom: Past dining events, meals, or table usage
+
+                      Specify the camera, time period, and your question in the request. This is particularly 
+                      useful for understanding patterns of activity, checking past events, or verifying 
+                      what happened during specific time periods.
+                    requestBody:
+                      required: true
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            required:
+                              - camera
+                              - question
+                              - start_timestamp
+                            properties:
+                              camera:
+                                type: string
+                                enum: [backyard, kitchen, livingroom, diningroom]
+                                description: The camera location to query
+                              question:
+                                type: string
+                                description: The question about historical observations
+                              start_timestamp:
+                                type: string
+                                description: Start time of the period to query (ISO8601 format)
+                                example: "2023-05-01T00:00:00Z"
+                              end_timestamp:
+                                type: string
+                                description: End time of the period to query (ISO8601 format or "now")
+                                example: "2023-05-02T00:00:00Z"
+                    responses:
+                      "200":
+                        description: Successful response with answer about historical observations
+                        content:
+                          application/json:
+                            schema:
+                              type: object
+                              properties:
+                                message:
+                                  type: string
+                                  description: The answer to the historical query
+
+                /getClip:
+                  post:
+                    operationId: getClip
+                    summary: Generate a video clip from any camera stream
+                    description: |
+                      Use this endpoint to generate video clips from any camera in the house during 
+                      a specified time period. Available cameras include:
+                      - backyard: Captures outdoor scenes, weather conditions, and yard activities
+                      - kitchen: Records cooking activities and kitchen usage
+                      - livingroom: Shows gatherings, TV watching, and general living room activities
+                      - diningroom: Captures dining events and table usage
+
+                      Specify which camera and the time period for the clip in your request. This is 
+                      useful for reviewing specific events, checking activities, or documenting 
+                      occurrences in different areas of the house. The endpoint returns a URL to 
+                      download the generated video clip.
+                    requestBody:
+                      required: true
+                      content:
+                        application/json:
+                          schema:
+                            type: object
+                            required:
+                              - camera
+                              - start_timestamp
+                            properties:
+                              camera:
+                                type: string
+                                enum: [backyard, kitchen, livingroom, diningroom]
+                                description: The camera to generate the clip from
+                              start_timestamp:
+                                type: string
+                                description: Start time of the clip (ISO8601 format)
+                                example: "2024-01-20T10:00:00Z"
+                              end_timestamp:
+                                type: string
+                                description: End time of the clip (ISO8601 format)
+                                example: "2024-01-20T10:01:00Z"
+                    responses:
+                      "200":
+                        description: Successful response with URL to download the video clip
+                        content:
+                          application/json:
+                            schema:
+                              type: object
+                              properties:
+                                url:
+                                  type: string
+                                  description: Presigned URL to download the generated video clip
+                                  example: "https://my-bucket.s3.amazonaws.com/clips/camera_20240120_100000.mp4?AWSAccessKeyId=..."
+
+  BedrockAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+      Policies:
+        - PolicyName: LambdaInvokePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt HouseAgentFunction.Arn
+
+  AgentVersion:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentAliasName: latest
+      AgentId: !Ref ConnectedHouseAgent
+      Description: Latest version of the agent
+
+Outputs:
+  APIGWEndpoint:
+    Value: !Sub "https://${HouseApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+  HouseApiFunction:
+    Description: HouseApiFunction name
+    Value: !Ref HouseApiFunction
+  HouseAgentFunction:
+    Description: HouseAgentFunction name
+    Value: !Ref HouseAgentFunction
+  DBName:
+    Description: Name of database created
+    Value: !Ref ConnectedHouseDatabase
+  TableName:
+    Description: Name of table for camera logs
+    Value: !Ref CameraTable
+  BackyardStreamStreamArn:
+    Description: ARN of the BackyardStream stream
+    Value: !GetAtt BackyardStream.Arn
+  KitchenStreamStreamArn:
+    Description: ARN of the KitchenStream stream
+    Value: !GetAtt KitchenStream.Arn
+  LivingRoomStreamStreamArn:
+    Description: ARN of the Living Room stream
+    Value: !GetAtt LivingRoomStream.Arn
+  DiningRoomStreamStreamArn:
+    Description: ARN of the Dining Room stream
+    Value: !GetAtt DiningRoomStream.Arn
+  AgentAliasID:
+    Value: !GetAtt AgentVersion.AgentAliasId
+  AgentId:
+    Value: !GetAtt ConnectedHouseAgent.AgentId
+  DDBTable:
+    Value: !Ref TemperatureTable
