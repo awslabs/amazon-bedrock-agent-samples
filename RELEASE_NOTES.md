@@ -1,17 +1,23 @@
+## 02/11/2025
+
+Adding [Agent with access to house security camera in cloudformation](/examples/agents/connected-house-agent/)
+
 ## 01/12/2025
+
 Renaming examples folder for simplicity and adding documentation for single agents examples
 
 ## 12/1/2024
 
 - Repository introduced with following examples:
+
 1. **[Hello World Agent](/examples/multi_agent_collaboration/00_hello_world_agent/)**
 2. **[DevOps Agent](/examples/multi_agent_collaboration/devops_agent/)**
 3. **[Energy Efficiency Management Agent](/examples/multi_agent_collaboration/energy_efficiency_management_agent/)**
-4. **[Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)** 
-5. **[Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)** 
-6. **[Sports Team Poet Agent](/examples/multi_agent_collaboration/team_poems_agent/)** 
-7. **[Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)** 
-8. **[Voyage Vituoso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)** 
+4. **[Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)**
+5. **[Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)**
+6. **[Sports Team Poet Agent](/examples/multi_agent_collaboration/team_poems_agent/)**
+7. **[Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)**
+8. **[Voyage Vituoso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)**
 
 - Repository introduced with following shared tool. Deployment is only supported with CloudFormation Stack:
 
@@ -24,6 +30,7 @@ Renaming examples folder for simplicity and adding documentation for single agen
 ## 1/31/2025
 
 - Following examples added for Amazon Bedrock Agents:
+
 1. [Analyst assistant using Code Interpretation](/examples/agents/agent_with_code_interpretation/)
 2. [Agent using Amazon Bedrock Guardrails](/examples/agents/agent_with_guardrails_integration/)
 3. [Agent using Amazon Bedrock Knowledge Bases](/examples/agents/agent_with_knowledge_base_integration/)
