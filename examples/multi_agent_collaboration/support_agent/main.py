@@ -17,8 +17,8 @@ import boto3
 from textwrap import dedent
 
 from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
-from src.utils.knowledge_base_confluence_helper import ConfluenceKnowledgeBasesForAmazonBedrock
-from src.utils.knowledge_base_webcrawler_helper import WebCrawlerKnowledgeBasesForAmazonBedrock
+from knowledge_base_confluence_helper import ConfluenceKnowledgeBasesForAmazonBedrock
+from knowledge_base_webcrawler_helper import WebCrawlerKnowledgeBasesForAmazonBedrock
 
 
 import logging

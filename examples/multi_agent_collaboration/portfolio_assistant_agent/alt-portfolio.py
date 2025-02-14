@@ -14,7 +14,7 @@ from src.utils.bedrock_agent import (
     Guardrail,
     region,
     account_id,
-    agents_helper, Tool2, ParameterSchema, ParamType
+    agents_helper, Tool, ParameterSchema, ParamType
 )
 import argparse
 bedrock_client = boto3.client("bedrock")
@@ -57,7 +57,7 @@ def main(args):
             goal="Fetch latest relevant news for a given stock based on a ticker.",
             instructions="Top researcher in financial markets and company announcements."
         )
-        # cls, name: str, code_file: str, schema: ParameterSchema, description: str = None)
+        # Imperatively define and attach a the web search tool
         tool_code = f"arn:aws:lambda:{region}:{account_id}:function:web_search"
         schema = ParameterSchema.create()
         schema.add_param("search_query", ParamType.STRING, "The query to search the web with", True)
@@ -68,7 +68,7 @@ def main(args):
         schema.add_param("topic", ParamType.STRING, description, False)
         description = "The number of days of history to search. Helps when looking for recent events or news."
         schema.add_param("days", ParamType.STRING, description, False)
-        web_search = Tool2.create("web_search", tool_code, schema, "Searches the web for information")
+        web_search = Tool.create("web_search", tool_code, schema, "Searches the web for information")
         news_agent.attach_tool(web_search)
         news_agent.prepare()
 
