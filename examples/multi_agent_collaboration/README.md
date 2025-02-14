@@ -24,6 +24,8 @@ collaborator.
 
 - **[Startup Advisor](./startup_advisor_agent/)** Have a new startup in mind, but haven't quite hired your marketing staff? Use the Startup Advisor to do your market research, come up with campaign ideas, write effective campaign copy, and get a comprehensive Markdown-formatted report. It uses a set of 5 collaborating sub-agents to get the job done, including: Lead Market Analyst, Content Creator, Creative Director, Chief Stategist, and Formatted Report Writer.
 
+- **[Support Agent](./support_agent/)** This is a good powering example to utilize the tickets, open git hub issues and public documentation effictevly. With support Agent you will be able to connect to JIRA and Guthub documentation to fetch any information needed regarding the opened/closed JIRA tasks or ask github related questions that can be of help to your developers.
+
 - **[Sports Team Poet](./team_poems_agent/)** This is a fun example for sports fans. The Sports Team Poet is a supervisor with a Sports Researcher and a Sports Poetry Writer. Pick your favorite team (go Celtics!) and see multi-agents collaborate to conduct web searches about your team and make a fun poem based on those insights. Have fun!
 
 - **[Trip Planner](./trip_planner_agent/)** The Trip Planner uses three sub-agents to help you build a robust itinerary. It leverages a Restaurant Scout and an Activity Finder to get great ideas, and an Itinerary Compiler to finish the job. Try it out for your next trip.

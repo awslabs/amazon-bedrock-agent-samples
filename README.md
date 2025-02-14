@@ -111,6 +111,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Mortgage Assistant Agent](/examples/multi_agent_collaboration/mortgage_assistant/)
 - [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)
 - [Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)
+- [Support Agent](examples/multi_agent_collaboration/support_agent)
 - [Team Poems Agent](/examples/multi_agent_collaboration/team_poems_agent/)
 - [Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)
 - [Voyage Virtuso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)
