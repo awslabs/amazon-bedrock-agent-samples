@@ -2,11 +2,12 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 
 """
-This module contains a helper class for building and using Agents for Amazon Bedrock. 
+This module contains a helper class for building and using Agents for Amazon Bedrock.
 The AgentsForAmazonBedrock class provides a convenient interface for working with Agents.
-It includes methods for creating, updating, and invoking Agents, as well as managing 
+It includes methods for creating, updating, and invoking Agents, as well as managing
 IAM roles and Lambda functions for action groups.
 """
+import copy
 
 import boto3
 import json
@@ -182,6 +183,7 @@ class AgentsForAmazonBedrock:
                 "Statement": [
                     {
                         "Effect": "Allow",
+                        "Action": "bedrock:InvokeModel",
                         "Principal": {"Service": "lambda.amazonaws.com"},
                         "Action": "sts:AssumeRole",
                     }
@@ -735,6 +737,10 @@ class AgentsForAmazonBedrock:
             # Pause to make sure role is created
             time.sleep(10)
 
+            _bedrock_agent_bedrock_allow_policy_statement = DEFAULT_AGENT_IAM_POLICY
+            _bedrock_policy_json = json.dumps(
+                _bedrock_agent_bedrock_allow_policy_statement
+            )
             if verbose:
                 print(
                     f"Role {_agent_role_name} created. ARN: {_agent_role['Role']['Arn']}"
@@ -1315,8 +1321,12 @@ class AgentsForAmazonBedrock:
     def _make_fully_cited_answer(
         self, orig_agent_answer, event, enable_trace=False, trace_level="none"
     ):
-        _citations = event.get("chunk", {}).get("attribution", {}).get("citations", [])
-        if _citations:
+        _citations = None
+        if event:
+            _citations = (
+                event.get("chunk", {}).get("attribution", {}).get("citations", [])
+            )
+        if event and _citations:
             if enable_trace:
                 print(
                     f"got {len(event['chunk']['attribution']['citations'])} citations \n"
@@ -1332,23 +1342,30 @@ class AgentsForAmazonBedrock:
         _pattern = "<sources></sources>"
         _cleaned_text = re.sub(_pattern, "", _cleaned_text)
 
+        if enable_trace and trace_level == "all":
+            print(colored(f"cleaned text: '{_cleaned_text}'", "red"))
+            print(colored(f"original answer: '{orig_agent_answer}'", "red"))
+
         _fully_cited_answer = ""
-        _curr_citation_idx = 0
+        _answer_prefix = ""
+        _interim_answer = ""
+        _citation_idx = 0
 
         for _citation in _citations:
             if enable_trace and trace_level == "all":
-                print(f"full citation: {_citation}")
+                print(colored(f"citation_idx: {_citation_idx}", "red"))
+                print(colored(f"full citation [{_citation_idx}]: {_citation}", "red"))
 
             _start = _citation["generatedResponsePart"]["textResponsePart"]["span"][
                 "start"
-            ] - (
-                _curr_citation_idx + 1
-            )  # +1
-            _end = (
-                _citation["generatedResponsePart"]["textResponsePart"]["span"]["end"]
-                - (_curr_citation_idx + 2)
-                + 4
-            )  # +2
+            ]
+            _end = _citation["generatedResponsePart"]["textResponsePart"]["span"]["end"]
+
+            if _citation_idx == 0:
+                _answer_prefix = _cleaned_text[:_start]
+            else:
+                _answer_prefix = ""
+
             _refs = _citation.get("retrievedReferences", [])
             if len(_refs) > 0:
                 _ref_url = (
@@ -1356,19 +1373,18 @@ class AgentsForAmazonBedrock:
                 )
             else:
                 _ref_url = ""
-                _fully_cited_answer = _cleaned_text
-                break
+                print(colored(f"  !!no retrieved references for citation!!", "red"))
 
-            _fully_cited_answer += _cleaned_text[_start:_end] + " [" + _ref_url + "] "
+            _interim_answer = (
+                _answer_prefix + _cleaned_text[_start:_end] + " [" + _ref_url + "] "
+            )
+            if enable_trace and trace_level == "all":
+                print(colored(f"fully cited: '{_interim_answer}'", "red"))
 
-            if _curr_citation_idx == 0:
-                _answer_prefix = _cleaned_text[:_start]
-                _fully_cited_answer = _answer_prefix + _fully_cited_answer
-
-            _curr_citation_idx += 1
+            _fully_cited_answer += _interim_answer
+            _citation_idx += 1
 
             if enable_trace and trace_level == "all":
-                print(f"\n\ncitation {_curr_citation_idx}:")
                 print(
                     f"got {len(_citation['retrievedReferences'])} retrieved references for this citation\n"
                 )
@@ -1378,12 +1394,596 @@ class AgentsForAmazonBedrock:
                 )
                 print(f"citation url: {_ref_url}\n============")
 
+        _last_end_span = _citations[len(_citations) - 1]["generatedResponsePart"][
+            "textResponsePart"
+        ]["span"]["end"]
+        _fully_cited_answer = _fully_cited_answer + _cleaned_text[_last_end_span:]
+
         if enable_trace and trace_level == "all":
-            print(
-                f"\nfullly cited answer:*************\n{_fully_cited_answer}\n*************"
-            )
+            print(colored(f"FINAL updated fully cited: {_fully_cited_answer}", "red"))
 
         return _fully_cited_answer
+
+    def invoke_inline_agent(
+        self,
+        request_params: Dict = {},
+        trace_level: str = "core",
+    ):
+        if "enableTrace" in request_params:
+            enable_trace = request_params["enableTrace"]
+        else:
+            request_params["enableTrace"] = enable_trace = False
+
+        if "sessionId" in request_params:
+            session_id = request_params["sessionId"]
+        else:
+            request_params["sessionId"] = session_id = str(uuid.uuid4())
+
+        _time_before_call = datetime.datetime.now()
+
+        _agent_resp = self._bedrock_agent_runtime_client.invoke_inline_agent(
+            **request_params
+        )
+
+        if _agent_resp["ResponseMetadata"]["RetryAttempts"] > 0:
+            print(
+                colored(
+                    f"  ** invokeAgent boto3 retries executed: {_agent_resp['ResponseMetadata']['RetryAttempts']}",
+                    "red",
+                )
+            )
+
+        if enable_trace:
+            if trace_level == "all":
+                print(f"invokeAgent API response object: {_agent_resp}")
+            else:
+                print(
+                    f"invokeAgent API request ID: {_agent_resp['ResponseMetadata']['RequestId']}"
+                )
+                print(f"invokeAgent API session ID: {session_id}")
+
+        # Return error message if invoke was unsuccessful
+        if _agent_resp["ResponseMetadata"]["HTTPStatusCode"] != 200:
+            _error_message = f"API Response was not 200: {_agent_resp}"
+            if enable_trace and trace_level == "all":
+                print(_error_message)
+            return _error_message
+
+        _total_in_tokens = 0
+        _total_out_tokens = 0
+        _total_llm_calls = 0
+        _orch_step = 0
+        _sub_step = 0
+        _num_response_chunks = 0
+        _time_before_orchestration = _overall_start_time = datetime.datetime.now()
+        _citations = []
+        _citations_event = None
+
+        _agent_answer = ""
+        _event_stream = _agent_resp["completion"]
+
+        try:
+            _sub_agent_name = "<collab-name-not-yet-provided>"
+            for _event in _event_stream:
+                _sub_agent_alias_id = None
+
+                if "chunk" in _event:
+                    _data = _event["chunk"]["bytes"]
+                    _tmp_agent_answer = _data.decode("utf8")
+                    if enable_trace and trace_level == "all":
+                        # print(f"tmp answer: '{_tmp_agent_answer}', streaming: {stream_final_response}, trace: {enable_trace}")
+                        print(
+                            f"tmp answer: '{_tmp_agent_answer}', trace: {enable_trace}"
+                        )
+
+                    # continue to build up the full answer
+                    _agent_answer += _tmp_agent_answer
+
+                    # stream the chunks
+
+                    # if _num_response_chunks == 0:
+                    #     _time_to_first_token = datetime.datetime.now() - _overall_start_time
+                    #     if enable_trace and stream_final_response:
+                    #         print(colored(f"Time to first token: {_time_to_first_token.total_seconds():,.1f}s\n", "yellow"))
+                    # _num_response_chunks += 1
+
+                    # if enable_trace and stream_final_response and _num_response_chunks < 3:
+                    #     print(colored(f"Answer chunk [{_num_response_chunks}]: {_tmp_agent_answer}", "blue"))
+
+                    # print all keys in _event["chunk"] dictionary if more than just 'bytes' provided
+                    if enable_trace and trace_level == "all":
+                        if len(_event["chunk"].keys()) > 1:
+                            print(
+                                f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}"
+                            )
+
+                    # remember the citations, if any are provided
+                    if "attribution" in _event["chunk"]:
+                        if "citations" in _event["chunk"]["attribution"]:
+                            _citations_event = copy.deepcopy(_event)
+                            _citations = _event["chunk"]["attribution"]["citations"]
+                            if enable_trace and trace_level == "all":
+                                print(colored(f"Citations: {_citations}", "blue"))
+
+                elif "returnControl" in _event:
+                    _agent_answer = _event["returnControl"]
+
+                if "trace" in _event and enable_trace:
+                    if trace_level == "all":
+                        print("---")
+                    else:
+                        if "callerChain" in _event["trace"]:
+                            if len(_event["trace"]["callerChain"]) > 1:
+                                _sub_agent_alias_arn = _event["trace"]["callerChain"][
+                                    1
+                                ]["agentAliasArn"]
+                                # get sub agent id by grabbing all text following the first '/' character
+                                _sub_agent_alias_id = _sub_agent_alias_arn.split(
+                                    "/", 1
+                                )[1]
+                                _sub_agent_name = "<not yet supported with inline>"  # multi_agent_names[_sub_agent_alias_id]
+
+                    if "routingClassifierTrace" in _event["trace"]["trace"]:
+                        _route = _event["trace"]["trace"]["routingClassifierTrace"]
+
+                        if "modelInvocationInput" in _route:
+                            _orch_step += 1
+                            print(colored(f"---- Step {_orch_step} ----", "green"))
+                            _time_before_routing = datetime.datetime.now()
+                            print(
+                                colored(
+                                    "Classifying request to immediately route to one collaborator if possible.",
+                                    "blue",
+                                )
+                            )
+
+                        if "modelInvocationOutput" in _route:
+                            _llm_usage = _route["modelInvocationOutput"]["metadata"][
+                                "usage"
+                            ]
+                            _in_tokens = _llm_usage["inputTokens"]
+                            _total_in_tokens += _in_tokens
+
+                            _out_tokens = _llm_usage["outputTokens"]
+                            _total_out_tokens += _out_tokens
+
+                            _total_llm_calls += 1
+                            _route_duration = (
+                                datetime.datetime.now() - _time_before_routing
+                            )
+
+                            _raw_resp_str = _route["modelInvocationOutput"][
+                                "rawResponse"
+                            ]["content"]
+                            _raw_resp = json.loads(_raw_resp_str)
+                            _classification = (
+                                _raw_resp["content"][0]["text"]
+                                .replace("<a>", "")
+                                .replace("</a>", "")
+                            )
+
+                            if _classification == UNDECIDABLE_CLASSIFICATION:
+                                print(
+                                    colored(
+                                        f"Routing classifier did not find a matching collaborator. Reverting to 'SUPERVISOR' mode.",
+                                        "magenta",
+                                    )
+                                )
+                            elif _classification == "keep_previous_agent":
+                                print(
+                                    colored(
+                                        f"Continuing conversation with previous collaborator.",
+                                        "magenta",
+                                    )
+                                )
+                            else:
+                                _sub_agent_name = _classification
+                                print(
+                                    colored(
+                                        f"Routing classifier chose collaborator: '{_classification}'",
+                                        "magenta",
+                                    )
+                                )
+                            print(
+                                colored(
+                                    f"Routing classifier took {_route_duration.total_seconds():,.1f}s, using {_in_tokens+_out_tokens} tokens (in: {_in_tokens}, out: {_out_tokens}).\n",
+                                    "yellow",
+                                )
+                            )
+
+                    if "failureTrace" in _event["trace"]["trace"]:
+                        print(
+                            colored(
+                                f"Agent error: {_event['trace']['trace']['failureTrace']['failureReason']}",
+                                "red",
+                            )
+                        )
+
+                    if "orchestrationTrace" in _event["trace"]["trace"]:
+                        _orch = _event["trace"]["trace"]["orchestrationTrace"]
+
+                        if trace_level in ["core", "outline"]:
+                            if "rationale" in _orch:
+                                _rationale = _orch["rationale"]
+                                print(colored(f"{_rationale['text']}", "blue"))
+
+                            if "invocationInput" in _orch:
+                                # NOTE: when agent determines invocations should happen in parallel
+                                # the trace objects for invocation input still come back one at a time.
+                                _input = _orch["invocationInput"]
+
+                                if "actionGroupInvocationInput" in _input:
+                                    if trace_level == "outline":
+                                        print(
+                                            colored(
+                                                f"Using tool: {_input['actionGroupInvocationInput']['function']}",
+                                                "magenta",
+                                            )
+                                        )
+                                    else:
+                                        if (
+                                            "function"
+                                            not in _input["actionGroupInvocationInput"]
+                                        ):
+                                            print(
+                                                colored(
+                                                    f"EXPECTING to capture 'Using tool', but 'function' not found\n{_input['actionGroupInvocationInput']}",
+                                                    "red",
+                                                )
+                                            )
+                                        else:
+                                            print(
+                                                colored(
+                                                    f"Using tool: {_input['actionGroupInvocationInput']['function']} with these inputs:",
+                                                    "magenta",
+                                                )
+                                            )
+                                            if (
+                                                "parameters"
+                                                in _input["actionGroupInvocationInput"]
+                                            ):
+                                                if (
+                                                    len(
+                                                        _input[
+                                                            "actionGroupInvocationInput"
+                                                        ]["parameters"]
+                                                    )
+                                                    == 1
+                                                ) and (
+                                                    _input[
+                                                        "actionGroupInvocationInput"
+                                                    ]["parameters"][0]["name"]
+                                                    == "input_text"
+                                                ):
+                                                    print(
+                                                        colored(
+                                                            f"{_input['actionGroupInvocationInput']['parameters'][0]['value']}",
+                                                            "magenta",
+                                                        )
+                                                    )
+                                                else:
+                                                    print(
+                                                        colored(
+                                                            f"{_input['actionGroupInvocationInput']['parameters']}\n",
+                                                            "magenta",
+                                                        )
+                                                    )
+                                            else:
+                                                print(
+                                                    colored(
+                                                        f"    no input parameters being sent\n",
+                                                        "magenta",
+                                                    )
+                                                )
+
+                                elif "agentCollaboratorInvocationInput" in _input:
+                                    _collab_name = _input[
+                                        "agentCollaboratorInvocationInput"
+                                    ]["agentCollaboratorName"]
+                                    _sub_agent_name = _collab_name
+                                    _collab_input_text = _input[
+                                        "agentCollaboratorInvocationInput"
+                                    ]["input"]["text"]
+                                    _collab_arn = _input[
+                                        "agentCollaboratorInvocationInput"
+                                    ]["agentCollaboratorAliasArn"]
+                                    _collab_ids = _collab_arn.split("/", 1)[1]
+
+                                    if trace_level == "outline":
+                                        print(
+                                            colored(
+                                                f"Using sub-agent collaborator: '{_collab_name} [{_collab_ids}]'",
+                                                "magenta",
+                                            )
+                                        )
+                                    else:
+                                        print(
+                                            colored(
+                                                f"Using sub-agent collaborator: '{_collab_name} [{_collab_ids}]' passing input text:",
+                                                "magenta",
+                                            )
+                                        )
+                                        print(
+                                            colored(
+                                                f"{_collab_input_text[0:TRACE_TRUNCATION_LENGTH]}\n",
+                                                "magenta",
+                                            )
+                                        )
+
+                                elif "codeInterpreterInvocationInput" in _input:
+                                    if trace_level == "outline":
+                                        print(
+                                            colored(
+                                                f"Using code interpreter", "magenta"
+                                            )
+                                        )
+                                    else:
+                                        console = Console()
+                                        _gen_code = _input[
+                                            "codeInterpreterInvocationInput"
+                                        ]["code"]
+                                        _code = f"```python\n{_gen_code}\n```"
+
+                                        console.print(
+                                            Markdown(f"**Generated code**\n{_code}")
+                                        )
+
+                                elif "knowledgeBaseLookupInput" in _input:
+                                    if trace_level == "outline":
+                                        print(
+                                            colored(f"Using knowledge base", "magenta")
+                                        )
+                                    else:
+                                        _kb_id = _input["knowledgeBaseLookupInput"][
+                                            "knowledgeBaseId"
+                                        ]
+                                        _kb_query = _input["knowledgeBaseLookupInput"][
+                                            "text"
+                                        ]
+                                        print(
+                                            colored(
+                                                f"Using knowledge base id: {_kb_id} to search for:",
+                                                "magenta",
+                                            )
+                                        )
+                                        print(colored(f"  {_kb_query}\n", "magenta"))
+
+                            if "observation" in _orch:
+                                if trace_level == "core":
+                                    _output = _orch["observation"]
+                                    if "actionGroupInvocationOutput" in _output:
+                                        print(
+                                            colored(
+                                                f"--tool outputs:\n{_output['actionGroupInvocationOutput']['text'][0:TRACE_TRUNCATION_LENGTH]}...\n",
+                                                "magenta",
+                                            )
+                                        )
+
+                                    if "agentCollaboratorInvocationOutput" in _output:
+                                        _collab_name = _output[
+                                            "agentCollaboratorInvocationOutput"
+                                        ]["agentCollaboratorName"]
+                                        _collab_output_text = _output[
+                                            "agentCollaboratorInvocationOutput"
+                                        ]["output"]["text"][0:TRACE_TRUNCATION_LENGTH]
+                                        print(
+                                            colored(
+                                                f"\n----sub-agent {_collab_name} output text:\n{_collab_output_text}...\n",
+                                                "magenta",
+                                            )
+                                        )
+
+                                    if "codeInterpreterInvocationOutput" in _output:
+                                        if (
+                                            "executionError"
+                                            in _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]
+                                        ):
+                                            _err = _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]["executionError"]
+                                            print(
+                                                colored(
+                                                    f"--- Code interpreter execution ERROR:\n{_err}\n---\n",
+                                                    "red",
+                                                )
+                                            )
+                                        elif (
+                                            "executionOutput"
+                                            in _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]
+                                        ):
+                                            _output = _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]["executionOutput"]
+                                            print(
+                                                colored(
+                                                    f"--- Code interpreter execution OUTPUT:\n{_output}\n---\n",
+                                                    "magenta",
+                                                )
+                                            )
+
+                                    if "knowledgeBaseLookupOutput" in _output:
+                                        _refs = _output["knowledgeBaseLookupOutput"][
+                                            "retrievedReferences"
+                                        ]
+                                        _ref_count = len(_refs)
+                                        print(
+                                            colored(
+                                                f"Knowledge base lookup output, {_ref_count} references:\n",
+                                                "magenta",
+                                            )
+                                        )
+                                        _curr = 1
+                                        for _ref in _refs:
+                                            print(
+                                                colored(
+                                                    f"  ({_curr}) {_ref['content']['text'][0:TRACE_TRUNCATION_LENGTH]}...\n",
+                                                    "magenta",
+                                                )
+                                            )
+                                            _curr += 1
+
+                                    if "finalResponse" in _output:
+                                        print(
+                                            colored(
+                                                f"Final response:\n{_output['finalResponse']['text'][0:TRACE_TRUNCATION_LENGTH]}...",
+                                                "cyan",
+                                            )
+                                        )
+
+                        if "modelInvocationOutput" in _orch:
+                            if _sub_agent_alias_id is not None:
+                                _sub_step += 1
+                                print(
+                                    colored(
+                                        f"---- Step {_orch_step}.{_sub_step} [using sub-agent name:{_sub_agent_name}, id:{_sub_agent_alias_id}] ----",
+                                        "green",
+                                    )
+                                )
+                            else:
+                                _orch_step += 1
+                                _sub_step = 0
+                                print(colored(f"---- Step {_orch_step} ----", "green"))
+
+                            _total_llm_calls += 1
+                            _orch_duration = (
+                                datetime.datetime.now() - _time_before_orchestration
+                            )
+
+                            if "metadata" in _orch["modelInvocationOutput"]:
+                                _llm_usage = _orch["modelInvocationOutput"]["metadata"][
+                                    "usage"
+                                ]
+                                _in_tokens = _llm_usage["inputTokens"]
+                                _total_in_tokens += _in_tokens
+
+                                _out_tokens = _llm_usage["outputTokens"]
+                                _total_out_tokens += _out_tokens
+
+                                print(
+                                    colored(
+                                        f"Took {_orch_duration.total_seconds():,.1f}s, using {_in_tokens+_out_tokens} tokens (in: {_in_tokens}, out: {_out_tokens}) to complete prior action, observe, orchestrate.",
+                                        "yellow",
+                                    )
+                                )
+                            else:
+                                print(
+                                    colored(
+                                        f"Took {_orch_duration.total_seconds():,.1f}s [token count metadata was not returned] to complete prior action, observe, orchestrate.",
+                                        "yellow",
+                                    )
+                                )
+
+                            # restart the clock for next step/sub-step
+                            _time_before_orchestration = datetime.datetime.now()
+
+                    elif "preProcessingTrace" in _event["trace"]["trace"]:
+                        _pre = _event["trace"]["trace"]["preProcessingTrace"]
+                        if "modelInvocationOutput" in _pre:
+                            _llm_usage = _pre["modelInvocationOutput"]["metadata"][
+                                "usage"
+                            ]
+                            _in_tokens = _llm_usage["inputTokens"]
+                            _total_in_tokens += _in_tokens
+
+                            _out_tokens = _llm_usage["outputTokens"]
+                            _total_out_tokens += _out_tokens
+
+                            _total_llm_calls += 1
+
+                            print(
+                                colored(
+                                    "Pre-processing trace, agent came up with an initial plan.",
+                                    "yellow",
+                                )
+                            )
+                            print(
+                                colored(
+                                    f"Used LLM tokens, in: {_in_tokens}, out: {_out_tokens}",
+                                    "yellow",
+                                )
+                            )
+
+                    elif "postProcessingTrace" in _event["trace"]["trace"]:
+                        _post = _event["trace"]["trace"]["postProcessingTrace"]
+                        if "modelInvocationOutput" in _post:
+                            _llm_usage = _post["modelInvocationOutput"]["metadata"][
+                                "usage"
+                            ]
+                            _in_tokens = _llm_usage["inputTokens"]
+                            _total_in_tokens += _in_tokens
+
+                            _out_tokens = _llm_usage["outputTokens"]
+                            _total_out_tokens += _out_tokens
+
+                            _total_llm_calls += 1
+                            print(colored("Agent post-processing complete.", "yellow"))
+                            print(
+                                colored(
+                                    f"Used LLM tokens, in: {_in_tokens}, out: {_out_tokens}",
+                                    "yellow",
+                                )
+                            )
+
+                    if trace_level == "all":
+                        print(json.dumps(_event["trace"], indent=2))
+
+                if "files" in _event.keys() and enable_trace:
+                    console = Console()
+                    files_event = _event["files"]
+                    console.print(Markdown("**Files**"))
+
+                    files_list = files_event["files"]
+                    for this_file in files_list:
+                        print(f"{this_file['name']} ({this_file['type']})")
+                        file_bytes = this_file["bytes"]
+
+                        # save bytes to file, given the name of file and the bytes
+                        file_name = os.path.join("output", this_file["name"])
+                        with open(file_name, "wb") as f:
+                            f.write(file_bytes)
+                        # if this_file['type'] == 'image/png' or this_file['type'] == 'image/jpeg':
+                        #     img = mpimg.imread(file_name)
+                        #     # plt.imshow(img)
+                        #     # plt.show()
+
+            if enable_trace:
+                duration = datetime.datetime.now() - _time_before_call
+
+                if trace_level in ["core", "outline"]:
+                    print(
+                        colored(
+                            f"Agent made a total of {_total_llm_calls} LLM calls, "
+                            + f"using {_total_in_tokens+_total_out_tokens} tokens "
+                            + f"(in: {_total_in_tokens}, out: {_total_out_tokens})"
+                            + f", and took {duration.total_seconds():,.1f} total seconds",
+                            "yellow",
+                        )
+                    )
+
+                if trace_level == "all":
+                    print(f"Returning agent answer as: {_agent_answer}")
+
+            # if stream_final_response and enable_trace and trace_level == "all":
+            #     print(f"\nagent answer: ^^^{_agent_answer}^^^\n")
+
+            _agent_answer = self._make_fully_cited_answer(
+                _agent_answer, _citations_event, enable_trace, trace_level
+            )
+
+            return _agent_answer
+
+        except Exception as e:
+            print(f"Caught exception while processing input to invokeAgent:\n")
+            print(f"  for input text:\n{request_params['inputText']}\n")
+            print(
+                f"  request ID: {_agent_resp['ResponseMetadata']['RequestId']}, retries: {_agent_resp['ResponseMetadata']['RetryAttempts']}\n"
+            )
+            print(f"Error: {e}")
+            raise Exception("Unexpected exception: ", e)
 
     def invoke(
         self,
@@ -1396,6 +1996,7 @@ class AgentsForAmazonBedrock:
         end_session: bool = False,
         trace_level: str = "core",
         multi_agent_names: dict = {},
+        stream_final_response: bool = False,
     ):
         """Invokes an agent with a given input text, while optional parameters
         also let you leverage an agent session, or target a specific agent alias.
@@ -1424,6 +2025,7 @@ class AgentsForAmazonBedrock:
             sessionState=session_state,
             enableTrace=enable_trace,
             endSession=end_session,
+            streamingConfigurations={"streamFinalResponse": stream_final_response},
         )
 
         if enable_trace:
@@ -1448,7 +2050,10 @@ class AgentsForAmazonBedrock:
         _total_llm_calls = 0
         _orch_step = 0
         _sub_step = 0
-        _time_before_orchestration = datetime.datetime.now()
+        _num_response_chunks = 0
+        _time_before_orchestration = _overall_start_time = datetime.datetime.now()
+        _citations = []
+        _citations_event = None
 
         _agent_answer = ""
         _event_stream = _agent_resp["completion"]
@@ -1460,10 +2065,54 @@ class AgentsForAmazonBedrock:
 
                 if "chunk" in _event:
                     _data = _event["chunk"]["bytes"]
-                    _agent_answer = _data.decode("utf8")
-                    _agent_answer = self._make_fully_cited_answer(
-                        _agent_answer, _event, enable_trace, trace_level
-                    )
+                    _tmp_agent_answer = _data.decode("utf8")
+                    if enable_trace and trace_level == "all":
+                        print(
+                            f"tmp answer: '{_tmp_agent_answer}', streaming: {stream_final_response}, trace: {enable_trace}"
+                        )
+
+                    # continue to build up the full answer
+                    _agent_answer += _tmp_agent_answer
+
+                    if _num_response_chunks == 0:
+                        _time_to_first_token = (
+                            datetime.datetime.now() - _overall_start_time
+                        )
+                        if enable_trace and stream_final_response:
+                            print(
+                                colored(
+                                    f"Time to first token: {_time_to_first_token.total_seconds():,.1f}s\n",
+                                    "yellow",
+                                )
+                            )
+                    _num_response_chunks += 1
+
+                    if (
+                        enable_trace
+                        and stream_final_response
+                        and _num_response_chunks < 3
+                    ):
+                        print(
+                            colored(
+                                f"Answer chunk [{_num_response_chunks}]: {_tmp_agent_answer}",
+                                "blue",
+                            )
+                        )
+
+                    # print all keys in _event["chunk"] dictionary if more than just 'bytes' provided
+                    if enable_trace and trace_level == "all":
+                        if len(_event["chunk"].keys()) > 1:
+                            print(
+                                f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}"
+                            )
+
+                    # remember the citations, if any are provided
+                    if "attribution" in _event["chunk"]:
+                        if "citations" in _event["chunk"]["attribution"]:
+                            _citations_event = copy.deepcopy(_event)
+                            _citations = _event["chunk"]["attribution"]["citations"]
+                            if enable_trace and trace_level == "all":
+                                print(colored(f"Citations: {_citations}", "blue"))
 
                 if "trace" in _event and enable_trace:
                     if trace_level == "all":
@@ -1771,15 +2420,6 @@ class AgentsForAmazonBedrock:
                                             )
                                         )
 
-                        # if 'modelInvocationInput' in _orch:
-                        #     if _sub_agent_alias_id is not None:
-                        #         _sub_step += 1
-                        #         print(colored(f"---- Step {_orch_step}.{_sub_step} [using sub-agent name:{_sub_agent_name}, id:{_sub_agent_alias_id}] ----", "green"))
-                        #     else:
-                        #         _orch_step += 1
-                        #         _sub_step = 0
-                        #         print(colored(f"---- Step {_orch_step} ----", "green"))
-
                         if "modelInvocationOutput" in _orch:
                             if _sub_agent_alias_id is not None:
                                 _sub_step += 1
@@ -1794,26 +2434,34 @@ class AgentsForAmazonBedrock:
                                 _sub_step = 0
                                 print(colored(f"---- Step {_orch_step} ----", "green"))
 
-                            _llm_usage = _orch["modelInvocationOutput"]["metadata"][
-                                "usage"
-                            ]
-                            _in_tokens = _llm_usage["inputTokens"]
-                            _total_in_tokens += _in_tokens
-
-                            _out_tokens = _llm_usage["outputTokens"]
-                            _total_out_tokens += _out_tokens
-
                             _total_llm_calls += 1
                             _orch_duration = (
                                 datetime.datetime.now() - _time_before_orchestration
                             )
 
-                            print(
-                                colored(
-                                    f"Took {_orch_duration.total_seconds():,.1f}s, using {_in_tokens+_out_tokens} tokens (in: {_in_tokens}, out: {_out_tokens}) to complete prior action, observe, orchestrate.",
-                                    "yellow",
+                            if "metadata" in _orch["modelInvocationOutput"]:
+                                _llm_usage = _orch["modelInvocationOutput"]["metadata"][
+                                    "usage"
+                                ]
+                                _in_tokens = _llm_usage["inputTokens"]
+                                _total_in_tokens += _in_tokens
+
+                                _out_tokens = _llm_usage["outputTokens"]
+                                _total_out_tokens += _out_tokens
+
+                                print(
+                                    colored(
+                                        f"Took {_orch_duration.total_seconds():,.1f}s, using {_in_tokens+_out_tokens} tokens (in: {_in_tokens}, out: {_out_tokens}) to complete prior action, observe, orchestrate.",
+                                        "yellow",
+                                    )
                                 )
-                            )
+                            else:
+                                print(
+                                    colored(
+                                        f"Took {_orch_duration.total_seconds():,.1f}s [token count metadata was not returned] to complete prior action, observe, orchestrate.",
+                                        "yellow",
+                                    )
+                                )
 
                             # restart the clock for next step/sub-step
                             _time_before_orchestration = datetime.datetime.now()
@@ -1904,6 +2552,13 @@ class AgentsForAmazonBedrock:
 
                 if trace_level == "all":
                     print(f"Returning agent answer as: {_agent_answer}")
+
+            if stream_final_response and enable_trace and trace_level == "all":
+                print(f"\nagent answer: ^^^{_agent_answer}^^^\n")
+
+            _agent_answer = self._make_fully_cited_answer(
+                _agent_answer, _citations_event, enable_trace, trace_level
+            )
 
             return _agent_answer
 
