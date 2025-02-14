@@ -7,8 +7,8 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, region, account_id, agents_helper
 from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
-import argparse
 
+import argparse
 from datetime import datetime, timedelta
 import time
 import os

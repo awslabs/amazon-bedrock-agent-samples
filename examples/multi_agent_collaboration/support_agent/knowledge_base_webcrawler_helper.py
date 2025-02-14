@@ -1047,6 +1047,7 @@ class WebCrawlerKnowledgeBasesForAmazonBedrock:
         password: str = None,
         region_name: str = "us-west-2"
     ) -> dict:
+        
         """
         Creates or updates a secret in AWS Secrets Manager for Confluence credentials.
         Supports Basic Authentication, OAuth 2.0, and Personal Access Token (PAT).
