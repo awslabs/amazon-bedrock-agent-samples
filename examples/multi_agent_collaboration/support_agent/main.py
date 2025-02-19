@@ -67,24 +67,24 @@ def main(args):
     print("creating Jira KB")
     kb_name = "jira-support-agent"
     
-    kb_confluence_id, ds__confluence_id = kb_helper.create_or_retrieve_confluence_knowledge_base(
+    kb_confluence_id, ds_confluence_id = kb_helper.create_or_retrieve_confluence_knowledge_base(
         kb_name,
         kb_description="Useful for answering questions about Jira tasks",
         confluence_url=confluence_url,
         secret_arn=secret_arn
         )
-    print(f"KB name: {kb_name}, kb_confluence_id: {kb_confluence_id}, ds_id: {ds__confluence_id}\n")
+    print(f"KB name: {kb_name}, kb_confluence_id: {kb_confluence_id}, ds_id: {ds_confluence_id}\n")
 
 
     print("Creation Github KB")
     kb_name = "github-agent"
-    Github_URL = "https://docs.github.com/en/"
-    kb_github_id, ds__github_id = kb_wc_helper.create_or_retrieve_webcrawler_knowledge_base(
+    Github_URL = "https://docs.github.com/en/actions"
+    kb_github_id, ds_github_id = kb_wc_helper.create_or_retrieve_webcrawler_knowledge_base(
         kb_name,
         kb_description="Useful for answering questions about Github tasks",
         URL=Github_URL
         )
-    print(f"KB name: {kb_name}, kb_github_id: {kb_github_id}, ds_id: {ds__github_id}\n")
+    print(f"KB name: {kb_name}, kb_github_id: {kb_github_id}, ds_id: {ds_github_id}\n")
 
 
     
@@ -94,12 +94,12 @@ def main(args):
         # ensure that the kb is available
         time.sleep(30)
         # sync knowledge base
-        kb_helper.synchronize_data(kb_confluence_id, ds__confluence_id)
-        kb_wc_helper.synchronize_data(kb_github_id, ds__github_id)
+        kb_helper.synchronize_data(kb_confluence_id, ds_confluence_id)
+        kb_wc_helper.synchronize_data(kb_github_id, ds_github_id)
         print('KB sync completed\n')
 
     if args.agent_greeting == "true":
-        JIRA_questions = Agent.direct_create(
+        JIRA_questions = Agent.create(
                 name="JIRA_questions",
                 role="JIRA related questions",
                 goal="Handle conversations about the Jira domain.",
@@ -118,7 +118,7 @@ def main(args):
                 llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
         )
 
-        Github_questions = Agent.direct_create(
+        Github_questions = Agent.create(
                 name="Github_questions",
                 role="Github related questions",
                 goal="Handle conversations about the Github.",
@@ -131,7 +131,7 @@ def main(args):
     do not engage with users about topics other than an Github issues and greetings. 
     leave those other topics for other experts to handle. 
     for example, do not respond to general questions about coding. However, respond to the greeting by another greeting               """),
-                kb_id=kb_confluence_id,
+                kb_id=kb_github_id,
                 kb_descr=dedent("""
             Use this knowledge base to answer general questions about Github issues"""),
                 llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
@@ -139,7 +139,7 @@ def main(args):
 
         
        
-        support_greeting_agent = Agent.direct_create(
+        support_greeting_agent = Agent.create(
                                 name="support_greeting_agent",
                                 role="Support Greeting Agent",
                                 goal="Handle the start of the conversation by greeting customers.",
@@ -162,12 +162,12 @@ def main(args):
     </instruction_2>
     </greeting_instructions>
     """,
-                                llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+                                llm="anthropic.claude-3-5-haiku-20241022-v1:0",
                                 code_interpreter=True, # lets us do mortgage calcs accurately
                                 verbose=False
                                 )
 
-        support_assistant = SupervisorAgent.direct_create("support_assistant", 
+        support_assistant = SupervisorAgent.create("support_assistant", 
                                     role="Support Assistant",
                                     goal="Provide a unified conversational experience for all things related to mortgages.",
                                     collaboration_type="SUPERVISOR_ROUTER",
