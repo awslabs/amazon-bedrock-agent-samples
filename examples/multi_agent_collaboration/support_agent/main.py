@@ -78,7 +78,7 @@ def main(args):
 
     print("Creation Github KB")
     kb_name = "github-agent"
-    Github_URL = "https://docs.github.com/en/"
+    Github_URL = "https://docs.github.com/en/actions"
     kb_github_id, ds_github_id = kb_wc_helper.create_or_retrieve_webcrawler_knowledge_base(
         kb_name,
         kb_description="Useful for answering questions about Github tasks",
