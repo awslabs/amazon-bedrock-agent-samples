@@ -1,6 +1,6 @@
 # Support Assistant Agent
 
-This example demonstrates the use of Amazon Bedrock Agents multi-agent collaboration with its built-in Routing Classifier feature. By simply enabling that mode for your supervisor, Bedrock automatically routes to the correct collaborating sub-agent using LLM intent classification optimized to route with sub-second latency. Contrast that with a traditional supervisor that must go through its own orchestration loop, a more expensive proposition that can take 3-6 seconds depending on which LLM you are using. This feature is most valuable when trying to build a unified customer experience across a set of sub-agents. In our example, we have 3 collaborators: one for general mortgage questions, one for handling conversations about Existing mortgages, and another for dealing with New mortgages.
+This is a good powering example to utilize the tickets, open git hub issues and public documentation effictevly. With support Agent you will be able to connect to JIRA and Guthub documentation to fetch any information needed regarding the opened/closed JIRA tasks or ask github related questions that can be of help to your developers.
 
 Try sample prompts:
 
@@ -35,12 +35,12 @@ pip3 install -r src/requirements.txt
 1. Deploy Amazon Bedrock Agents
 
 ```bash
-cd examples/multi_agent_collaboration/mortgage_assistant/
+cd examples/multi_agent_collaboration/support_agent/
 python3 main.py --recreate_agents "true" --confluence_url "<your confluence url>" --username "<your confluence username>" --token "<your confluence API access token>"
 ```
 To add a greeting agent for handling users greeting, you can use the below command:
 ```bash
-cd examples/multi_agent_collaboration/mortgage_assistant/
+cd examples/multi_agent_collaboration/support_agent/
 python3 main.py --recreate_agents "true" --agent_greeting "true" --confluence_url "<your confluence url>" --username "<your confluence username>" --token "<your confluence API access token>"
 ```
 

@@ -804,8 +804,7 @@ class WebCrawlerKnowledgeBasesForAmazonBedrock:
                         },
                     ]
                 },
-                'scope': 'SUBDOMAINS',
-            }
+            },        
         }
     },
                 vectorIngestionConfiguration={
