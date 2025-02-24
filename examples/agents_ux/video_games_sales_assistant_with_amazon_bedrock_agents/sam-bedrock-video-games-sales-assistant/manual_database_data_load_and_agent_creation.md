@@ -45,7 +45,8 @@ CREATE EXTENSION aws_s3 CASCADE;
 4. **Load the data to the table**
 
 Import the data from your Amazon S3 bucket by using the **table_import_from_s3** function of the **aws_s3 extension**, change the bucket name and the region.
-- Upload the **[video_games_sales_no_headers.csv](./resources/database/video_games_sales_no_headers.csv)** file to an S3 bucket (Contains information from [Video Game Sales](https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024) which is made available under the [ODC Attribution License](https://opendatacommons.org/licenses/odbl/1-0/)), and for the following command, change **\<your_bucket_name\>** and **\<region\>** with your own bucket name and with your appropriate region.
+
+- Upload the **[video_games_sales_no_headers.csv](./resources/database/video_games_sales_no_headers.csv)** file to an S3 bucket and for the following command, change **\<your_bucket_name\>** and **\<region\>** with your own bucket name and with your appropriate region.
 
 ```sql
 SELECT aws_s3.table_import_from_s3(
@@ -55,6 +56,9 @@ SELECT aws_s3.table_import_from_s3(
    aws_commons.create_s3_uri('<your_bucket_name>', 'video_games_sales_no_headers.csv', '<region>')
 );
 ```
+
+> [!NOTE]
+> The data source provided contains information from [Video Game Sales](https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024) which is made available under the [ODC Attribution License](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ## Create the Amazon Bedrock Agent
 
@@ -185,39 +189,41 @@ $instruction$
 Please ensure that the queries you generate are compatible with the following table information:
 
 <db_tables_available>
-  <video_games_sales_units>
-    <table_name>video_games_sales_units</table_name>
-    <table_description>This is a table for units sold of video games globally; the information is for 64,016 titles released from 1971 to 2024. Each record in the table contains a video game title (unique) with the total units sold for each region (1 North America, 2 Japan, 3 European Union (EU), and 4 the rest of the world), critics' scores, genres, consoles, and more.
-    </table_description>
-    <table_schema>
-    video_games_sales_units (
-        title TEXT, -- Only include this column in queries to search for a specific title of video game name
-        console TEXT,
-        genre TEXT,
-        publisher TEXT,
-        developer TEXT,
-        critic_score NUMERIC(3,1),
-        na_sales NUMERIC(4,2),
-        jp_sales NUMERIC(4,2),
-        pal_sales NUMERIC(4,2),
-        other_sales NUMERIC(4,2),
-        release_date DATE
-    )
-    </table_schema>
-    <data_dictionary>The Video Games Sales Units table has the following structure/schema:
-    title: Game title
-    console: Console the game was released for
-    genre: Genre of the game
-    publisher: Publisher of the game
-    developer: Developer of the game
-    critic_score: Metacritic score (out of 10)
-    na_sales: North American sales of copies in millions (units)
-    jp_sales: Japanese sales of copies in millions (units)
-    pal_sales: European & African sales of copies in millions (units)
-    other_sales: Rest of world sales of copies in millions (units)
-    release_date: Date the game was released on
-    </data_dictionary>
-  </video_games_sales_units>
+  <tables>
+    <table>
+      <table_name>video_games_sales_units</table_name>
+      <table_description>This is a table for units sold of video games globally; the information is for 64,016 titles released from 1971 to 2024. Each record in the table contains a video game title (unique) with the total units sold for each region (1 North America, 2 Japan, 3 European Union (EU), and 4 the rest of the world), critics' scores, genres, consoles, and more.</table_description>
+      <table_schema>
+      video_games_sales_units (
+          title TEXT, -- Only include this column in queries to search for a specific title of video game name
+          console TEXT,
+          genre TEXT,
+          publisher TEXT,
+          developer TEXT,
+          critic_score NUMERIC(3,1),
+          na_sales NUMERIC(4,2),
+          jp_sales NUMERIC(4,2),
+          pal_sales NUMERIC(4,2),
+          other_sales NUMERIC(4,2),
+          release_date DATE
+      )
+      </table_schema>
+      <data_dictionary>The Video Games Sales Units table has the following structure/schema:
+      title: Game title
+      console: Console the game was released for
+      genre: Genre of the game
+      publisher: Publisher of the game
+      developer: Developer of the game
+      critic_score: Metacritic score (out of 10)
+      na_sales: North American sales of copies in millions (units)
+      jp_sales: Japanese sales of copies in millions (units)
+      pal_sales: European & African sales of copies in millions (units)
+      other_sales: Rest of world sales of copies in millions (units)
+      release_date: Date the game was released on
+      </data_dictionary>
+    </table>
+  </tables>
+  <business_rules></business_rules>
 </db_tables_available>
 
 You have been provided with a set of functions to answer the user's question.

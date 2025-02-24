@@ -1,4 +1,4 @@
-# Tutorial to Deploy the Data Analyst Assistant for Video Game Sales Using Amazon Bedrock Agents
+# A Tutorial on Deploying the Data Analyst Assistant for Video Game Sales Using Amazon Bedrock Agents
 
 This solution provides a Generative AI Application reference that is able to access structured data stored in a PostgreSQL database based on a question-answering assistant that generates SQL queries to obtain the necessary data to provide an answer in natural language.
 
@@ -7,10 +7,8 @@ This solution provides a Generative AI Application reference that is able to acc
 ![Video Games Sales Assistant](./images/preview.png)
 
 > [!IMPORTANT]
-> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
-
-> [!IMPORTANT]
-> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> - This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> - Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 > [!TIP]
 > Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
@@ -28,6 +26,9 @@ To deploy the application, please follow these two steps:
 ## AWS Diagram Architecture
 
 ![Video Games Sales Assistant](./images/gen-ai-assistant-diagram.png)
+
+> [!NOTE]
+> This solution references the use of AWS IAM Credentials to connect to Amazon Bedrock and Amazon DynamoDB. **For the production environment, you can implement user authentication and authorization through Amazon Cognito or your own Identity Provider to ensure secure access to the generative AI assistant and data.**
 
 ## Application Preview
 

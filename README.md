@@ -88,7 +88,6 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 
 ## Agents examples
 
-
 - [Analyst assistant using Code Interpretation](/examples/agents/agent_with_code_interpretation/)
 - [Agent using Amazon Bedrock Guardrails](/examples/agents/agent_with_guardrails_integration/)
 - [Agent using Amazon Bedrock Knowledge Bases](/examples/agents/agent_with_knowledge_base_integration/)
@@ -101,7 +100,6 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Provide conversation history to Amazon Bedrock Agents](/examples/agents/manage_conversation_history/)
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/)
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
-- [Data Analyst Assistant for Video Game Sales with WebUI](/examples/agents/video_games_sales_assistant_with_amazon_bedrock_agents/)
 
 ## Multi-agent collaboration examples
 
@@ -119,6 +117,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 ## UX Demos
 
 - [Streamlit Demo UI](/examples/agents_ux/streamlit_demo/): Interactive UI for testing and demonstrating multiple Bedrock agents
+- [Data Analyst Assistant for Video Game Sales](/examples/agents_ux/video_games_sales_assistant_with_amazon_bedrock_agents/)
 
 ## Best Practices
 

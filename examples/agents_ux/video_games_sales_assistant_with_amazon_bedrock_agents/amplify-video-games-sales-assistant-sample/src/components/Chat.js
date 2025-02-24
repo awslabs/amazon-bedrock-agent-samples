@@ -580,11 +580,12 @@ const Chat = ({}) => {
                 <li ref={scrollRef} />
             </ul>
             ) : (
-            <Box textAlign={"center"} sx={{ pl: 1, pt: 1, pr: 1, pb: 10, height: height, display: "flex", alignItems: "flex-end" }}>
+            <Box textAlign={"center"} sx={{ pl: 1, pt: 1, pr: 1, pb: 6, height: height, display: "flex", alignItems: "flex-end" }}>
                 <div style={{ width: "100%" }}>
                     <img src="/images/Arch_Amazon-Bedrock_64.png" alt="Agents for Amazon Bedrock" />
-                    <Typography  variant="h5" sx={{ pb: 2, fontWeight: 500 }}>Agents for Amazon Bedrock</Typography>
-                    <Typography sx={{ fontSize: "1.1rem", pb: 1, fontWeight: 400 }}>{WELCOME_MESSAGE}</Typography>
+                    <Typography  variant="h5" sx={{ pb: 1, fontWeight: 500 }}>Agents for Amazon Bedrock</Typography>
+                    <Typography sx={{  pb: 4, fontWeight: 400 }}>Enable generative AI applications to execute multi step business tasks using natural language.</Typography>
+                    <Typography color="primary" sx={{ fontSize: "1.1rem", pb: 1, fontWeight: 500 }}>{WELCOME_MESSAGE}</Typography>
                 </div>
             </Box>
             )}

@@ -17,4 +17,3 @@ This repository is designed to get you started with Amazon Bedrock Agents by pro
 - [Provide conversation history to Amazon Bedrock Agents](./manage_conversation_history/): In this module, we will create an Amazon Bedrock Agent and understand how to initialize the Agent with Conversation History.
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/): Create an insurance claims assistant agent using an OpenAPI schema file for the action groups definition
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/): Create agents that ask for user confirmation before executing an action from an action group
-- [Data Analyst Assistant for Video Game Sales with WebUI](/examples/agents/video_games_sales_assistant_with_amazon_bedrock_agents/): Create a Generative AI assistant accessing PostgreSQL data through SQL query generation, providing natural language answers and chart visualizations.
