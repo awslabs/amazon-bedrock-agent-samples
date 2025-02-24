@@ -6,6 +6,7 @@ By the end of this tutorial, you'll have a fully functional Generative AI web ap
 
 > [!IMPORTANT]
 > This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> 
 > Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites

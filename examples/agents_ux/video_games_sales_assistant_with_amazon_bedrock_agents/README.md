@@ -8,6 +8,7 @@ This solution provides a Generative AI Application reference that is able to acc
 
 > [!IMPORTANT]
 > This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> 
 > Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 > [!TIP]
