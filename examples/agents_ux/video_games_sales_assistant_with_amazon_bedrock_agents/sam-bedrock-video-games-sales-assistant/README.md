@@ -5,8 +5,8 @@ This tutorial guides you through the process of setting up the back-end using AW
 By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
 
 > [!IMPORTANT]
-> - This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
-> - Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 

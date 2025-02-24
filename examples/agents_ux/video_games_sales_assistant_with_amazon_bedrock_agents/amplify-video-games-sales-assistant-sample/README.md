@@ -5,8 +5,8 @@ This tutorial guides you through the process of setting up a React front-end app
 By the end of this tutorial, you'll have a fully functional Generative AI web application that allows a guest user to interact with a Data Analyst Assistant for Video Game Sales using Amazon Bedrock Agents.
 
 > [!IMPORTANT]
-> - This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
-> - Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
