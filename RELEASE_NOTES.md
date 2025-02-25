@@ -1,3 +1,9 @@
+## 02/19/2025
+
+- multi_agent_collaboration folder added to with the following example:
+[Multi-Agent using models not yet optimized for Bedrock Agents](/examples/multi_agent_collaboration/not_yet_optimized_models_agent/)
+
+
 ## 02/18/2025
 Added to 
 [Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/)
