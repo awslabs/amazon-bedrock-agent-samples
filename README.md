@@ -99,7 +99,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Provide conversation history to Amazon Bedrock Agents](/examples/agents/manage_conversation_history/)
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/)
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
-- [Agents with access to house security camera in cloudformation](/examples/agents/connected-house-agent/)
+- [Agents with access to house security camera in cloudformation](/examples/agents/connected_house_agent/)
 
 ## Multi-agent collaboration examples
 
