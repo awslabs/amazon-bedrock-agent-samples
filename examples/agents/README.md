@@ -1,7 +1,6 @@
 # Amazon Bedrock Agent Examples
 
-
-This repository is designed to get you started with Amazon Bedrock Agents by providing a set of examples that demonstrate how to orchestrate agentic workflows. 
+This repository is designed to get you started with Amazon Bedrock Agents by providing a set of examples that demonstrate how to orchestrate agentic workflows.
 
 ## Examples
 
@@ -13,7 +12,8 @@ This repository is designed to get you started with Amazon Bedrock Agents by pro
 - [AWS CDK Agent](/examples/agents/cdk_agent/): define and deploy a Bedrock Agent using AWS CDK
 - [Custom orchestration Agent](/examples/agents/custom_orchestration_agent/): Create advanced agents using the custom orchestration functionality of Bedrock Agent
 - [Configure an inline agent at runtime](/examples/agents/inline_agent/): Configure and run agents at runtime with inline agents
-- [Utilize LangChain Tools with Amazon Bedrock Inline Agents](./langchain_tools_with_inline_agent/): In this code example we will orchestrate a workflow that utilizes LangChain tools like [TavilySearchResults](https://python.langchain.com/docs/integrations/tools/tavily_search/), [WikipediaQueryRun](https://api.python.langchain.com/en/latest/tools/langchain_community.tools.wikipedia.tool.WikipediaQueryRun.html), and [FileManagementToolkit](https://python.langchain.com/docs/integrations/tools/filesystem/), along with Amazon Bedrock Inline Agents. 
+- [Utilize LangChain Tools with Amazon Bedrock Inline Agents](./langchain_tools_with_inline_agent/): In this code example we will orchestrate a workflow that utilizes LangChain tools like [TavilySearchResults](https://python.langchain.com/docs/integrations/tools/tavily_search/), [WikipediaQueryRun](https://api.python.langchain.com/en/latest/tools/langchain_community.tools.wikipedia.tool.WikipediaQueryRun.html), and [FileManagementToolkit](https://python.langchain.com/docs/integrations/tools/filesystem/), along with Amazon Bedrock Inline Agents.
 - [Provide conversation history to Amazon Bedrock Agents](./manage_conversation_history/): In this module, we will create an Amazon Bedrock Agent and understand how to initialize the Agent with Conversation History.
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/): Create an insurance claims assistant agent using an OpenAPI schema file for the action groups definition
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/): Create agents that ask for user confirmation before executing an action from an action group
+- [Agent connected house](/examples/agents/connected_house_agent/): Create an agent conected your house surveillance cameras.
