@@ -8,6 +8,8 @@ This sample sets up a Bedrock Agent that can interact with data from real-time c
 
 The sample consists of three separate entities or "services".
 
+If you want learn abou how to connect your own cameras to Kinesis, the [developer guide](https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/gs-send-data.html) has some good examples. If you want to connect your own temperature sensors, you can use AWS IoT Core with your own microprocessors (instructions [here](https://docs.aws.amazon.com/iot/latest/developerguide/iot-ddb-rule.html)) or use any of the AWS SDKs to write data to DynamoDB.
+
 #### House API
 
 The API for the house. This is an IAM authenticated API that the agent can query depending on what information it wants.
