@@ -1,7 +1,3 @@
-## 02/11/2025
-
-Adding [Agent with access to house security camera in cloudformation](/examples/agents/connected-house-agent/)
-
 ## 01/12/2025
 
 Renaming examples folder for simplicity and adding documentation for single agents examples
@@ -45,3 +41,7 @@ Renaming examples folder for simplicity and adding documentation for single agen
 12. [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
 
 - [Streamlit](/examples/agents_ux/) UI demo added.
+
+## 02/26/2025
+
+Adding [Agent with access to house security camera in cloudformation](/examples/agents/connected_house_agent/)
