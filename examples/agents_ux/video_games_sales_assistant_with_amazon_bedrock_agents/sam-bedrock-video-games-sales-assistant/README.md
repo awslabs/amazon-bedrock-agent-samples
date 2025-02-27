@@ -4,15 +4,19 @@ This tutorial guides you through the process of setting up the back-end using AW
 
 By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
 
-> IMPORTANT: This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
-
-> IMPORTANT: Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> [!IMPORTANT]
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> 
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
 * SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * [Python 3.9 or a later major version installed](https://www.python.org/downloads/) 
-* Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock.
+* [Boto3 1.36 or a later major version installed](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
+* Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock
+
+**Before proceeding further, verify that you have successfully installed and configured all the listed prerequisites in your development environment.**
 
 ## SAM Deployment
 
@@ -46,9 +50,8 @@ After uploading the SAM project and changeset created:
 
 - Deploy this changeset? [y/N]: **Y**
 
-> If you prefer, you can continue creating the following resources manually [here](./manual_database_data_load_and_agent_creation.md).
-
-After completing the SAM deployment, execute the following commands to save the environment variables for use in subsequent configurations.
+> [!TIP]
+> Alternatively, you can choose to follow [this manual](./manual_database_data_load_and_agent_creation.md) to continue creating the Amazon Bedrock Agent step-by-step in the AWS Console. Otherwise, continue with the instructions below.
 
 ``` bash
 # Set the stack name environment variable
@@ -79,16 +82,19 @@ EOF
 
 ## Loading Data Sample to the PostgreSQL Databae
 
-> Execute the following command to create the database and load the data source.
+Execute the following command to create the database and load the data source.
 
 ``` bash
 pip install boto3
 python3 resources/create-sales-database.py
 ```
 
-## Amazon Bedrock Agent Creation
+The script executed uses the **[video_games_sales_no_headers.csv](./resources/database/video_games_sales_no_headers.csv)** as the data source.
 
-> **IMPORTANT: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+> [!NOTE]
+> The data source provided contains information from [Video Game Sales](https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024) which is made available under the [ODC Attribution License](https://opendatacommons.org/licenses/odbl/1-0/).
+
+## Amazon Bedrock Agent Creation
 
 Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
 
@@ -96,10 +102,13 @@ Execute the following command to create the Amazon Bedrock Agent. This step will
 python3 resources/create-amazon-bedrock-agent.py
 ```
 
-The Agent was configured with the following information:
+The Amazon Bedrock Agent was created and configured with the following information:
 - [Agent Instruction](./resources/agent-instructions.txt)
 - [Agent Orchestration Strategy](./resources/agent-orchestration-strategy.txt)
 - [Agent API Schema for the Action Group](./resources/agent-api-schema.json)
+
+> [!IMPORTANT] 
+> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
 
 ## Testing the Agent
 
@@ -125,7 +134,7 @@ To use the Agent application, once you have a **Prepared** version for testing, 
 ## Cleaning-up Resources (optional)
 
 The next steps are optional and demonstrate how to delete the resources that we've created.
-Update the following exports with the values of the services you created before, and then execute."
+Update the following exports with the values of the services you created before, and then execute.
 
 ``` bash
 # Set the stack name environment variable
@@ -157,3 +166,7 @@ sam delete
 ```
 
 ## Thank You
+
+## License
+
+This project is licensed under the Apache-2.0 License.

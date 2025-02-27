@@ -1,0 +1,43 @@
+{
+    "code": "mortgage_application_function.py",
+    "definition": [
+        {
+            "name": "get_application_details",
+            "description": "Retrieves the details about an application for a new mortgage. The function takes a customer ID, but it is purely optional. The function implementation can retrieve it from session state instead. Details include the application ID, application date, application status, application type, application amount, application tentative rate, and application term in years.",
+            "parameters": {
+                "customer_id": {
+                    "description": "The unique identifier of the customer whose mortgage application details is to be retrieved.",
+                    "type": "string",
+                    "required": false
+                }
+            }
+        },
+        {
+            "name": "get_mortgage_rate_history",
+            "description": "Retrieves the history of mortgage interest rates going back a given number of days, defaults to 30. History is returned as a list of objects, where each object contains the date and the interest rate to 2 decimal places.",
+            "parameters": {
+                "day_count": {
+                    "description": "The number of days of interest rate history, defaults to 30. Use 1 for latest rate.",
+                    "type": "string",
+                    "required": true
+                },
+                "type": {
+                    "description": "The type of mortgage, defaults to '30-year-fixed'. Can also be '15-year-fixed'",
+                    "type": "string",
+                    "required": false
+                }
+            }
+        },
+        {
+            "name": "get_mortgage_app_doc_status",
+            "description": "Retrieves the list of required documents for a mortgage application in process, along with their respectiv statuses (COMPLETED or MISSING). The function takes a customer ID, but it is purely optional. The funciton implementation can retrieve it from session state instead. This function returns a list of objects, where each object represents a required document type. The required document types for a mortgage application are: proof of income, employment information, proof of assets, and credit information. Each object in the returned list contains the type of the required document and its corresponding status.",
+            "parameters": {
+                "customer_id": {
+                    "description": "The unique identifier of the customer whose mortgage application document status is to be retrieved.",
+                    "type": "string",
+                    "required": false
+                }
+            }
+        }
+    ]
+}

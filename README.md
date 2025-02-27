@@ -7,7 +7,7 @@ This repository provides examples and best practices for working with [Amazon Be
 
 Amazon Bedrock Agents enables you to automate complex workflows, build robust and scalable end-to-end solutions from experimentation to production and quickly adapt to new models and experiments.
 
-With the [Amazon Bedrock multi-agent collaboration](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) feature you can plan and execute complex tasks across different agents using the supervisor collaboration mode. As well as have an unified conversation across agents with built-in intent classification using the supervisor with routing collaboration mode and fallback to the supervisor mode when an intention cannot be detected. Amazon Bedrock Agents will provide you with traces to observe your agents behavior across multi-agent flows and with the guardrails, security and privacy that are standard across Amazon Bedrock features.
+With [Amazon Bedrock multi-agent collaboration](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) you can plan and execute complex tasks across agents using supervisor mode. You can also have unified conversations across agents with built-in intent classification using the supervisor with routing mode and fallback to supervisor mode when a single intention cannot be detected. Amazon Bedrock Agents provides you with traces to observe your agents' behavior across multi-agent flows and provides guardrails, security and privacy that are standard across Amazon Bedrock features.
 
 ![architecture](https://github.com/awslabs/amazon-bedrock-agent-samples/blob/main/images/architecture.gif?raw=true)
 
@@ -109,6 +109,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Mortgage Assistant Agent](/examples/multi_agent_collaboration/mortgage_assistant/)
 - [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)
 - [Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)
+- [Support Agent](examples/multi_agent_collaboration/support_agent)
 - [Team Poems Agent](/examples/multi_agent_collaboration/team_poems_agent/)
 - [Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)
 - [Voyage Virtuso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)
@@ -116,6 +117,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 ## UX Demos
 
 - [Streamlit Demo UI](/examples/agents_ux/streamlit_demo/): Interactive UI for testing and demonstrating multiple Bedrock agents
+- [Data Analyst Assistant for Video Game Sales](/examples/agents_ux/video_games_sales_assistant_with_amazon_bedrock_agents/)
 
 ## Best Practices
 

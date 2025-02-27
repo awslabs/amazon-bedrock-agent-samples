@@ -44,7 +44,7 @@ def extract_kv(s):
 
 def get_all_alerts_api():
     # All the alert rules are stored in this folder. This is an optional filter
-    alert_rules_folder = 'slack-poc-cons-alert'
+    alert_rules_folder = 'devops-agent-demo'
     
     
     # Set up the headers for authentication

@@ -28,7 +28,7 @@ from src.utils.bedrock_agent import (
 )
 import uuid
 
-stock_data_agent = Agent.direct_create(
+stock_data_agent = Agent.create(
     name="stock_data_agent",
     role="Financial Data Collector",
     goal="Retrieve accurate stock trends for a given ticker.",
@@ -51,7 +51,7 @@ stock_data_agent = Agent.direct_create(
 response = stock_data_agent.invoke(
     input_text="What is the stock trend for AMZN?",
     session_id: str = str(uuid.uuid1()),
-    enable_trace: bool = False,
+enable_trace: bool = False,
 )
 print(response)
 ```

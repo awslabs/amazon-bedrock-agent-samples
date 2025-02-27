@@ -4,19 +4,12 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-import boto3
-from src.utils.bedrock_agent import (
-    Agent,
-    SupervisorAgent,
-    Task,
-    Guardrail,
-    region,
-    account_id,
-    agents_helper
-)
 import argparse
+import boto3
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, Guardrail, region, account_id
+
 bedrock_client = boto3.client("bedrock")
 
 
@@ -27,12 +20,12 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="portfolio_assistant", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("portfolio_assistant", verbose=True)
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="portfolio_assistant", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="news_agent", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="stock_data_agent", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="analyst_agent", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("portfolio_assistant", verbose=True)
+        Agent.delete_by_name("news_agent", verbose=True)
+        Agent.delete_by_name("stock_data_agent", verbose=True)
+        Agent.delete_by_name("analyst_agent", verbose=True)
         response = bedrock_client.list_guardrails()
         for _gr in response["guardrails"]:
             if _gr["name"] == "no_bitcoin_guardrail":
@@ -51,7 +44,7 @@ def main(args):
         )
 
         # Define News Agent
-        news_agent = Agent.direct_create(
+        news_agent = Agent.create(
             name="news_agent",
             role="Market News Researcher",
             goal="Fetch latest relevant news for a given stock based on a ticker.",
@@ -88,7 +81,7 @@ def main(args):
         )
 
         # Define Stock Data Agent
-        stock_data_agent = Agent.direct_create(
+        stock_data_agent = Agent.create(
             name="stock_data_agent",
             role="Financial Data Collector",
             goal="Retrieve accurate stock trends for a given ticker.",
@@ -110,7 +103,7 @@ def main(args):
         )
 
         # Define Analyst Agent
-        analyst_agent = Agent.direct_create(
+        analyst_agent = Agent.create(
             name="analyst_agent",
             role="Financial Analyst",
             goal="Analyze stock trends and market news to generate insights.",
@@ -118,21 +111,21 @@ def main(args):
         )
 
         # Create Tasks
-        news_task = Task.direct_create(
+        news_task = Task.create(
             name="news_task",
             description=f"Retrieve latest news about the given stock ticker: {inputs['ticker']}.",
             expected_output="List of 5 relevant news articles.",
             inputs=inputs,
         )
 
-        stock_data_task = Task.direct_create(
+        stock_data_task = Task.create(
             name="stock_data_task",
             description=f"Retrieve stock price history for the given stock ticker: {inputs['ticker']}",
             expected_output="JSON object containing stock price history.",
             inputs=inputs,
         )
 
-        analysis_task = Task.direct_create(
+        analysis_task = Task.create(
             name="analysis_task",
             description=(
                 f"""
@@ -146,7 +139,7 @@ def main(args):
             inputs=inputs,
         )
 
-        portfolio_assistant = SupervisorAgent.direct_create(
+        portfolio_assistant = SupervisorAgent.create(
             "portfolio_assistant",
             role="Portfolio Assistant",
             goal="Analyze a given potential stock investment and provide a report with a set of investment considerations",

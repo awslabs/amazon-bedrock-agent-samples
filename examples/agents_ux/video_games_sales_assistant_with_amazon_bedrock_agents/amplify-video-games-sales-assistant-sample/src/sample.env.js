@@ -1,19 +1,25 @@
-const APP_NAME = "Data Analyst Assistant";
-const APP_SUBJECT = "Video Games Sales";
-const WELCOME_MESSAGE = "I'm your Video Games Sales Data Analyst, crunching data for insights.";
-
-const AGENT_ID = "";
-const AGENT_ALIAS_ID = "";
-const QUESTION_ANSWERS_TABLE_NAME = "";
+// AWS Credentials
 
 const ACCESS_KEY_ID = "";
 const SECRET_ACCESS_KEY = "";
 const AWS_REGION = "";
 
-const MODEL_ID_FOR_CHART_AND_DASHBOARD = "us.anthropic.claude-3-5-sonnet-20241022-v2:0";
+// Amazon Bedrock Agent and DynamoDB Table
+
+const AGENT_ID = "";
+const AGENT_ALIAS_ID = "";
+const QUESTION_ANSWERS_TABLE_NAME = "";
+
+// Application Information
+
+const APP_NAME = "Data Analyst Assistant";
+const APP_SUBJECT = "Video Games Sales";
+const WELCOME_MESSAGE = "I'm your Video Games Sales Data Analyst, crunching data for insights.";
+
+// --------------------------------
 
 const MAX_LENGTH_INPUT_SEARCH = 140;
-
+const MODEL_ID_FOR_CHART_AND_DASHBOARD = "us.anthropic.claude-3-5-sonnet-20241022-v2:0";
 const CHART_PROMPT = "Help me to create chart configuartion in React.js for \"ApexCharts\" using the following information:\n\
 \n\
 <information>\n\

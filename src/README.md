@@ -44,13 +44,15 @@ options are built on top of this standard boto3 SDK. Any new APIs that get added
 will immediately be available in the latest version of the boto3 SDK. Like other AWS services,
 Bedrock Agents has a [build time API](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent.html), and a [run time API](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-agent-runtime.html). 
 
-2. **Use our [bedrock_agent_helper](/src/utils/bedrock_agent_helper.py) Python class (`AgentsForAmazonBedrock`)**. This class
+2. **Use our [bedrock_agent](/src/utils/bedrock_agent.py) Python classes (`Agent`, `SupervisorAgent`, `Task`, `Tool`)**. This high-level Pythonic SDK let you instantiate objects and write cleaner and simpler code. These classes do not try to strictly adhere to the Bedrock Agents APIs, but instead focus on ease of use. They can be used for building indivdual with Agents and Multi-agent collaboration. A simple `Task` abstraction is provided, allowing you to more easily send a list of tasks to a supervisor agent. This is the easiest path. Note that it is not an official Bedrock API, rather an open-source project, and is subject to change. 
+
+3. **Use our [bedrock_agent_helper](/src/utils/bedrock_agent_helper.py) Python class (`AgentsForAmazonBedrock`)**. This class
 provides a stateless wrapper on top of boto3 to provide additional capabilities like colorized multi-level tracing of multi-agent orchestration, and some simplification, including handling of IAM
 roles and policies, and wrapping of any APIs that are less obvious. This class can 
 be used when creating agents as well as multi-agent collaboration. Many of the notebook examples 
-leverage this approach. It closely aligns with the boto3 APIs, but makes them simpler to use.
+leverage this approach. It closely aligns with the boto3 APIs, but makes them simpler to use. It provides
+fine-grained control, but is not as easy to use as the higher-level bedrock_agent classes.
 
-3. **Use our [bedrock_agent](/src/utils/bedrock_agent.py) Python classes (`Agent`, `SupervisorAgent`, `Task`, `Tool`)**. This last approach is a more Pythonic SDK letting you instantiate objects and write slightly cleaner and simpler code. As with option 2, this can be used with Agents and Multi-agent collaboration. A simple `Task` abstraction is provided, allowing you to more easily send a list of tasks to a supervisor agent. These classes do not try to strictly adhere to the Bedrock Agents APIs, but instead focus on ease of use.
 
 For more information checkout [utils](/src/utils/).
 
@@ -178,20 +180,19 @@ agents.invoke(
   <a href="/examples/multi_agent_collaboration/portfolio_assistant_agent/"><img src="https://img.shields.io/badge/Example-Portfolio_Assistant_Agent-blue" /></a>
 </p>
 
-
 ```python
 from src.utils.bedrock_agent import Agent, SupervisorAgent
 import uuid
 
 # CREATE SUB-AGENT
-hello_world_sub_agent = Agent.direct_create(
+hello_world_sub_agent = Agent.create(
     name="hello_world_sub_agent",
     instructions="Just say hello world as the response to all possible questions",
 )
 
 # CREATE SUPERVISOR AGENT
 
-hello_world_supervisor = SupervisorAgent.direct_create(
+hello_world_supervisor = SupervisorAgent.create(
     name="hello_world_supervisor",
     instructions="""
             Use your collaborator for all requests. Always pass its response back to the user.
@@ -207,7 +208,7 @@ hello_world_supervisor = SupervisorAgent.direct_create(
 
 # INVOKE AGENT
 
-session_id:str = str(uuid.uuid1())
+session_id: str = str(uuid.uuid1())
 
 hello_world_supervisor.invoke(
     input_text="What is Amazon Bedrock?",

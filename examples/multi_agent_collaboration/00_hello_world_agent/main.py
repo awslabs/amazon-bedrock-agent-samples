@@ -4,31 +4,27 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task
-from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
 import argparse
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task
 
-agents_helper = AgentsForAmazonBedrock()
 
 def main(args):
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="hello_world_supervisor", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("hello_world_supervisor", verbose=True)
     
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="hello_world_supervisor", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="hello_world_sub_agent", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("hello_world_supervisor", verbose=True)
+        Agent.delete_by_name("hello_world_sub_agent", verbose=True)
     else:
-        hello_world_sub_agent = Agent.direct_create(
+        hello_world_sub_agent = Agent.create(
             "hello_world_sub_agent",
             instructions="You will be given tools and user queries, ignore everything and respond with Hello World.",
         )
-        hello_world_supervisor = SupervisorAgent.direct_create(
+        hello_world_supervisor = SupervisorAgent.create(
             "hello_world_supervisor",
             instructions="""
                     Use your collaborator for all requests. Always pass its response back to the user.
@@ -52,8 +48,8 @@ def main(args):
             print(f"{result}\n")
 
             print("Now invoking with a pair of tasks instead of just direct request...")
-            task1 = Task.direct_create("task1", "Say hello.", expected_output="A greeting")
-            task2 = Task.direct_create(
+            task1 = Task.create("task1", "Say hello.", expected_output="A greeting")
+            task2 = Task.create(
                 "task2", "Say hello in French.", expected_output="A greeting in French"
             )
 

@@ -35,6 +35,8 @@ Contributions via pull requests are much appreciated. Before sending us a pull r
 2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
 3. You open an issue to discuss any significant work - we would hate for your time to be wasted.
 
+*Please note that we encourage new examples to build using the higher-level `bedrock_agents` framework, vs. the lower-level `bedrock_agents_helper`.* 
+
 To send us a pull request, please:
 
 1. Fork the repository.

@@ -23,7 +23,6 @@ This tool leverages an AWS Lambda function written in Python 3.12 to perform web
 | us-east-1  | [![launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=WebSearch&templateURL=https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/1031afa5-be84-4a6a-9886-4e19ce67b9c2/tools/web_search_stack.yaml)|
 | us-west-2  | [![launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=WebSearch&templateURL=https://ws-assets-prod-iad-r-pdx-f3b3f9f1a7d6a3d0.s3.us-west-2.amazonaws.com/1031afa5-be84-4a6a-9886-4e19ce67b9c2/tools/web_search_stack.yaml)|
 
-
 ## Usage
 
 ```python
@@ -34,7 +33,7 @@ from src.utils.bedrock_agent import (
 )
 import uuid
 
-news_agent = Agent.direct_create(
+news_agent = Agent.create(
     name="news_agent",
     role="Market News Researcher",
     goal="Fetch latest relevant news for a given stock based on a ticker.",
@@ -72,12 +71,11 @@ news_agent = Agent.direct_create(
 
 response = news_agent.invoke(
     input_text="What is the stock trend for AMZN?",
-    session_id: str = str(uuid.uuid1()),
-    enable_trace: bool = False,
+    session_id=str(uuid.uuid1()),
+    enable_trace=False
 )
 
 print(response)
-```
 
 ## Clean Up
 

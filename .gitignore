@@ -15,7 +15,9 @@ tests/
 # local copies
 agent-old.py
 knowledge_bases-old.py
+lambda_mask_string.py
 *.pptx
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
