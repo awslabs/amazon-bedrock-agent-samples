@@ -23,11 +23,14 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 task_yaml_path = os.path.join(current_dir, "tasks.yaml")
 agent_yaml_path = os.path.join(current_dir, "agents.yaml")
 
+
 def main(args):
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
         if not Agent.exists("investment_advisor"):
-            print("'investment_advisor' agent does not exist. Please rerun with --recreate_agents 'true'")
+            print(
+                "'investment_advisor' agent does not exist. Please rerun with --recreate_agents 'true'"
+            )
             return
     else:
         Agent.set_force_recreate_default(True)
@@ -50,7 +53,7 @@ def main(args):
             "target_roi": args.target_roi,
             "investment_timeline": args.investment_timeline,
             "expected_rental": args.expected_rental,
-            "market_area": args.market_area
+            "market_area": args.market_area,
         }
 
         # Load tasks from YAML
@@ -58,10 +61,18 @@ def main(args):
             yaml_task_content = yaml.safe_load(file)
 
         # Create task objects
-        property_research_task = Task("property_research_task", yaml_task_content, inputs)
-        market_intelligence_task = Task("market_intelligence_task", yaml_task_content, inputs)
-        financial_analysis_task = Task("financial_analysis_task", yaml_task_content, inputs)
-        investment_recommendation_task = Task("investment_recommendation_task", yaml_task_content, inputs)
+        property_research_task = Task(
+            "property_research_task", yaml_task_content, inputs
+        )
+        market_intelligence_task = Task(
+            "market_intelligence_task", yaml_task_content, inputs
+        )
+        financial_analysis_task = Task(
+            "financial_analysis_task", yaml_task_content, inputs
+        )
+        investment_recommendation_task = Task(
+            "investment_recommendation_task", yaml_task_content, inputs
+        )
 
         # Define tool definitions
         property_data_tools = [
@@ -72,30 +83,29 @@ def main(args):
                     "address": {
                         "description": "The property address to look up in the format Street, City, State, Zip",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "data_type": {
                         "description": "Type of data to retrieve (property_data, value_estimate, rent_estimate)",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "propertyType": {
                         "description": "Needed when data_type=value_estimate or rent_estimate. The type of property obtained with data_type=property_data",
                         "type": "string",
-                        "required": False
+                        "required": False,
                     },
                     "bedrooms": {
                         "description": "Needed when data_type=value_estimate or rent_estimate. The number of bedrooms in the property obtained with data_type=property_data",
                         "type": "string",
-                        "required": False
+                        "required": False,
                     },
                     "squareFootage": {
                         "description": "Needed when data_type=value_estimate or rent_estimate. The total living area size of the property, in square feet obtained with data_type=property_data",
                         "type": "string",
-                        "required": False
-                    }
-
-                }
+                        "required": False,
+                    },
+                },
             },
             {
                 "name": "market_data_lookup",
@@ -104,14 +114,14 @@ def main(args):
                     "zip_code": {
                         "description": "The 5-digit zip code to look up",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "data_type": {
                         "description": "Type of data to retrieve (Sale, Rental)",
                         "type": "string",
-                        "required": True
-                    }
-                }
+                        "required": True,
+                    },
+                },
             },
             {
                 "name": "investment_analysis",
@@ -120,15 +130,15 @@ def main(args):
                     "investment_data": {
                         "description": "JSON string containing investment parameters (purchase_price, down_payment_percent, interest_rate, term_years, rental_income, property_taxes, insurance, maintenance, vacancy_rate, property_management, hoa)",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "analysis_type": {
                         "description": "Type of analysis to perform: 'mortgage_calc' (mortgage payment details), 'cash_flow' (monthly income/expenses), 'roi' (return on investment metrics), or 'all' (default: all analyses)",
                         "type": "string",
-                        "required": False
-                    }
-                }
-            }
+                        "required": False,
+                    },
+                },
+            },
         ]
 
         economic_data_tools = [
@@ -139,14 +149,14 @@ def main(args):
                     "series_id": {
                         "description": "The FRED series ID for the economic indicator",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "units": {
                         "description": "Data value transformation (lin=no transformation, pch=percent change, ph1=percent change from year ago)",
                         "type": "string",
-                        "required": False
-                    }
-                }
+                        "required": False,
+                    },
+                },
             },
             {
                 "name": "series_search",
@@ -155,15 +165,15 @@ def main(args):
                     "search_text": {
                         "description": "Keywords to match against economic data series",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     },
                     "limit": {
                         "description": "Maximum number of series to return (default: 10)",
                         "type": "string",
-                        "required": False
-                    }
-                }
-            }
+                        "required": False,
+                    },
+                },
+            },
         ]
 
         # Define web search tool
@@ -218,7 +228,7 @@ def main(args):
                         "description": "The name of the table to use for storage.",
                         "type": "string",
                         "required": True,
-                    }
+                    },
                 },
             },
         }
@@ -238,7 +248,7 @@ def main(args):
                         "description": "The name of the table to use for storage.",
                         "type": "string",
                         "required": True,
-                    }
+                    },
                 },
             },
         }
@@ -252,7 +262,7 @@ def main(args):
                     "table_name": {
                         "description": "The name of the working memory table to delete.",
                         "type": "string",
-                        "required": True
+                        "required": True,
                     }
                 },
             },
@@ -263,11 +273,14 @@ def main(args):
             yaml_agent_content = yaml.safe_load(file)
 
         # Property data function ARN (would be created separately)
-        property_data_lambda = f"arn:aws:lambda:{region}:{account_id}:function:property_data"
+        property_data_lambda = (
+            f"arn:aws:lambda:{region}:{account_id}:function:property_data"
+        )
 
         # Economic data function ARN (would be created separately)
-        economic_data_lambda = f"arn:aws:lambda:{region}:{account_id}:function:economic_data"
-
+        economic_data_lambda = (
+            f"arn:aws:lambda:{region}:{account_id}:function:economic_data"
+        )
 
         # Create the specialized agents
         property_researcher = Agent(
@@ -276,16 +289,16 @@ def main(args):
             tools=[
                 {
                     "code": property_data_lambda,
-                    "definition": property_data_tools[0]  # property_lookup
+                    "definition": property_data_tools[0],  # property_lookup
                 },
                 {
                     "code": property_data_lambda,
-                    "definition": property_data_tools[1]  # market_data_lookup
+                    "definition": property_data_tools[1],  # market_data_lookup
                 },
                 web_search_tool,
                 set_value_for_key,
-                get_key_value
-            ]
+                get_key_value,
+            ],
         )
 
         financial_analyst = Agent(
@@ -294,12 +307,12 @@ def main(args):
             tools=[
                 {
                     "code": property_data_lambda,
-                    "definition": property_data_tools[2]  # investment_analysis
+                    "definition": property_data_tools[2],  # investment_analysis
                 },
                 web_search_tool,
                 set_value_for_key,
-                get_key_value
-            ]
+                get_key_value,
+            ],
         )
 
         market_intelligence = Agent(
@@ -309,19 +322,19 @@ def main(args):
                 web_search_tool,
                 {
                     "code": property_data_lambda,
-                    "definition": property_data_tools[1]  # market_data_lookup
+                    "definition": property_data_tools[1],  # market_data_lookup
                 },
                 {
                     "code": economic_data_lambda,
-                    "definition": economic_data_tools[0]  # series_observations
+                    "definition": economic_data_tools[0],  # series_observations
                 },
                 {
                     "code": economic_data_lambda,
-                     "definition": economic_data_tools[1]  # series_search
+                    "definition": economic_data_tools[1],  # series_search
                 },
                 set_value_for_key,
-                get_key_value
-            ]
+                get_key_value,
+            ],
         )
 
         # Create the supervisor agent
@@ -337,19 +350,20 @@ def main(args):
 
             time_before_call = datetime.datetime.now()
             print(f"Time before call: {time_before_call}\n")
-            
+
             # Generate unique working memory table name
             folder_name = "investment-analysis-" + str(uuid.uuid4())
-            
+
             try:
                 result = investment_advisor.invoke_with_tasks(
                     [
                         property_research_task,
                         market_intelligence_task,
                         financial_analysis_task,
-                        investment_recommendation_task
+                        investment_recommendation_task,
                     ],
-                    additional_instructions=dedent(f"""
+                    additional_instructions=dedent(
+                        f"""
                             Use a single project table in Working Memory for this entire set of tasks,
                             using table name: {folder_name}. When making requests to your collaborators,
                             tell them the working memory table name, and the named keys they should 
@@ -393,21 +407,23 @@ def main(args):
                             
                             For the final response, provide a comprehensive investment recommendation 
                             that includes property analysis, financial projections, and market insights.
-                            """),
+                            """
+                    ),
                     processing_type="sequential",
                     enable_trace=True,
                     trace_level=args.trace_level,
                 )
-                
+
                 print(result)
             except Exception as e:
                 print(f"Error invoking agent: {e}")
                 traceback.print_exc()
-                
+
             duration = datetime.datetime.now() - time_before_call
             print(f"\nTime taken: {duration.total_seconds():,.1f} seconds")
         else:
             print("Recreated agents.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Real Estate Investment Advisor")
@@ -415,86 +431,86 @@ if __name__ == "__main__":
         "--recreate_agents",
         required=False,
         default="false",
-        help="False if reusing existing agents."
+        help="False if reusing existing agents.",
     )
     parser.add_argument(
         "--trace_level",
         required=False,
         default="core",
-        help="The level of trace, 'core', 'outline', 'all'."
+        help="The level of trace, 'core', 'outline', 'all'.",
     )
     parser.add_argument(
         "--clean_up",
         required=False,
         default="false",
-        help="Cleanup all infrastructure."
+        help="Cleanup all infrastructure.",
     )
-    
+
     # Property research parameters
     parser.add_argument(
         "--address",
         required=False,
         default="5500 Grand Lake Dr, San Antonio, TX 78244",
-        help="Address of the property to analyze."
+        help="Address of the property to analyze.",
     )
     parser.add_argument(
         "--property_type",
         required=False,
         default="Single Family",
-        help="Type of property (Single Family, Condo, Multi-Family, etc.)."
+        help="Type of property (Single Family, Condo, Multi-Family, etc.).",
     )
     parser.add_argument(
         "--investment_goal",
         required=False,
         default="Long-term rental income with moderate appreciation",
-        help="Investment goal (cash flow, appreciation, etc.)."
+        help="Investment goal (cash flow, appreciation, etc.).",
     )
     parser.add_argument(
         "--budget_range",
         required=False,
         default="$350,000 - $450,000",
-        help="Budget range for the investment."
+        help="Budget range for the investment.",
     )
-    
+
     # Financial analysis parameters
     parser.add_argument(
         "--purchase_price",
         required=False,
         default="399000",
-        help="Purchase price of the property."
+        help="Purchase price of the property.",
     )
     parser.add_argument(
         "--down_payment",
         required=False,
         default="20",
-        help="Down payment amount as percentage."
+        help="Down payment amount as percentage.",
     )
     parser.add_argument(
         "--target_roi",
         required=False,
         default="6",
-        help="Target return on investment percentage."
+        help="Target return on investment percentage.",
     )
     parser.add_argument(
         "--investment_timeline",
         required=False,
         default="10 years",
-        help="Investment timeline."
+        help="Investment timeline.",
     )
     parser.add_argument(
         "--expected_rental",
         required=False,
         default="2500",
-        help="Expected monthly rental income."
+        help="Expected monthly rental income.",
     )
-    
+
     # Market intelligence parameters
     parser.add_argument(
         "--market_area",
         required=False,
         default="San Antonio, TX",
-        help="Market area for analysis."
+        help="Market area for analysis.",
     )
-    
+
     args = parser.parse_args()
     main(args)
