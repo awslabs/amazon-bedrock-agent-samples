@@ -22,6 +22,8 @@ collaborator.
 
 - **[Portfolio Assistant](./portfolio_assistant_agent/)** Portfolio Assistant has three collaborators, a News agent, a Stock Data agent, and a Financial Analyst. These specialists are orchestrated to perform investment analysis for a given stock ticker based on the latest news and recent stock price movements.
 
+- **[Real Estate Investment Agent](./real_estate_investment_agent/)** The Real Estate Investment Agent provides comprehensive property investment analysis by leveraging three specialised collaborative agents working together. It combines detailed property research, economic data analysis, and financial modeling to deliver data-driven investment recommendations.
+
 - **[Startup Advisor](./startup_advisor_agent/)** Have a new startup in mind, but haven't quite hired your marketing staff? Use the Startup Advisor to do your market research, come up with campaign ideas, write effective campaign copy, and get a comprehensive Markdown-formatted report. It uses a set of 5 collaborating sub-agents to get the job done, including: Lead Market Analyst, Content Creator, Creative Director, Chief Stategist, and Formatted Report Writer.
 
 - **[Support Agent](./support_agent/)** This is a good powering example to utilize the tickets, open git hub issues and public documentation effictevly. With support Agent you will be able to connect to JIRA and Guthub documentation to fetch any information needed regarding the opened/closed JIRA tasks or ask github related questions that can be of help to your developers.

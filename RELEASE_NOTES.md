@@ -76,3 +76,13 @@ By creating a code sample for llama as an unoptimized model
 
 Adding [Agent with access to house security camera in cloudformation](/examples/agents/connected_house_agent/)
 
+## 03/03/2025
+
+- Adding the following MAC example:
+
+1. [Real Estate Investment Agent](/examples/multi_agent_collaboration/real_estate_investment_agent/)
+
+- Adding the following shared tools. Deployment is only supported with CloudFormation Stack:
+
+1. [Economic Data Tool](/src/shared/economic_data/)
+2. [Property Data Tool](/src/shared/property_data/)
