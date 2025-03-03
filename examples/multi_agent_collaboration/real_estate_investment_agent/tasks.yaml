@@ -1,0 +1,95 @@
+property_research_task:
+  description: >
+    Research property at {address} and its surrounding area.
+    Focus on property details, historical price trends, and neighborhood characteristics.
+    Utilize property data lookup tools and web search to gather comprehensive information.
+
+    Property Information:
+    - Address: {address}
+    - Property Type: {property_type}
+    - Investment Goal: {investment_goal}
+    - Budget Range: {budget_range}
+    - Asking Purchase Price: {purchase_price}
+    - Target Monthly Rental Income: {expected_rental}
+  expected_output: >
+    A detailed property analysis including:
+    - Property specifications and condition
+    - Historical price trends
+    - Neighborhood analysis
+    - Recent comparable sales and rentals
+    - Comparison of Asking Price vs Value Estimate
+    - Comparison of Target Monthly Rental Income vs Rental Estimate
+    - Local market trends
+    - Potential risk factors
+
+financial_analysis_task:
+  description: >
+    Perform comprehensive financial analysis for the property investment opportunity.
+    First, retrieve both property-specific data and economic indicators from working memory:
+    
+    1. From property_researcher: Retrieve property specifications, HOA fees, property taxes, and other costs.
+    2. From market_intelligence: Retrieve current mortgage rates, regional vacancy rates, and inflation data.
+    
+    Use these actual data points rather than estimates to calculate ROI projections, 
+    mortgage scenarios, and cash flow analysis.
+
+    Investment Parameters:
+    - Purchase Price: {purchase_price}
+    - Down Payment Available: {down_payment}
+    - Target ROI: {target_roi}
+    - Investment Timeline: {investment_timeline}
+    - Expected Rental Income: {expected_rental}
+  expected_output: >
+    A detailed financial analysis including:
+    - Mortgage payment scenarios based on current FRED mortgage rates
+    - Cash flow projections using actual property costs and regional vacancy rates
+    - ROI calculations with comparison to target ROI of {target_roi}
+    - Rental growth projections based on CPI data
+    - Investment risk assessment incorporating economic indicators
+    - Tax implications
+    - Whether the asking price and rental income are competitive to area comparables
+    - Recommendations for financing structure
+
+market_intelligence_task:
+  description: >
+    Analyze broader market conditions affecting the investment at {address}.
+    Research economic indicators, development plans, and market trends.
+    
+    Use the economic data tools to retrieve critical indicators for {market_area}:
+    - 30-year fixed-rate mortgage average (MORTGAGE30US)
+    - Regional house price index (use state code + STHPI, e.g., TXSTHPI for Texas)
+    - Regional rental vacancy rates (use state code + RVAC, e.g., TXRVAC for Texas)
+    - Consumer Price Index for rent (CUSR0000SEHA)
+    - Regional unemployment rate (use state code + UR, e.g., TXUR for Texas)
+    
+    Use these indicators to evaluate market stability and potential appreciation.
+    
+    Analysis Focus:
+    - Market Area: {market_area}
+    - Property Type: {property_type}
+    - Investment Timeline: {investment_timeline}
+  expected_output: >
+    A comprehensive market analysis including:
+    - Local market trends with supporting economic data
+    - Current and historical mortgage rate analysis
+    - Regional house price appreciation trends
+    - Rental vacancy rate analysis and impact on investment
+    - Inflation projections and impact on future rental income
+    - Employment trends and market stability assessment
+    - Development and zoning updates
+    - Market risk factors
+    - Growth potential assessment
+
+investment_recommendation_task:
+  description: >
+    Compile all research and analysis into a final investment recommendation.
+    Consider property analysis, financial projections, and market intelligence.
+    Provide clear go/no-go recommendation with supporting rationale.
+  expected_output: >
+    A detailed investment recommendation including:
+    - Executive summary
+    - Key findings from all analyses
+    - Risk/reward assessment
+    - Clear investment recommendations
+    - Realistic alternative scenarios to consider
+    - Next steps if proceeding

@@ -1,0 +1,519 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This CloudFormation template deploys Property Data tool functionality using AWS Lambda Function
+
+Parameters:
+  RentcastApiKey:
+    Type: String
+    NoEcho: true
+    Description: Provide your RentCast API Key
+    MinLength: 1
+
+Resources:
+  ######################
+  ##### API Keys ######
+  ####################
+
+  RentcastApiKeySecret:
+    Type: 'AWS::SecretsManager::Secret'
+    DeletionPolicy: Retain
+    Properties:
+      Name: !Sub 
+              - "RENTCAST_API_KEY_${StackId}"
+              - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+      Description: 'API Key for RentCast service'
+      SecretString: !Ref RentcastApiKey
+
+  ########################
+  ##### PropertyData #####
+  ######################
+
+  AgentLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.12
+      FunctionName: property_data
+      Handler: index.lambda_handler
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 300
+      Environment:
+        Variables:
+          LOG_LEVEL: "DEBUG"
+          RENTCAST_API_KEY_NAME: !Sub 
+          - "RENTCAST_API_KEY_${StackId}"
+          - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+      Code:
+        ZipFile: |
+            import json
+            import os
+            import urllib.request
+            import urllib.parse
+            import boto3
+            from botocore.exceptions import ClientError
+            import logging
+
+            # Setup logging
+            log_level = os.environ.get("LOG_LEVEL", "DEBUG").strip().upper()
+            logging.basicConfig(
+                format="[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
+            )
+            logger = logging.getLogger(__name__)
+            logger.setLevel(log_level)
+
+            # Initialize boto3 clients
+            secretsmanager = boto3.client('secretsmanager')
+
+            # Constants
+            API_BASE_URL = "https://api.rentcast.io/v1"
+            API_KEY_SECRET_NAME = os.environ.get("RENTCAST_API_KEY_NAME", "RENTCAST_API_KEY")
+            FUNCTION_NAMES = ["property_lookup", "market_data_lookup", "investment_analysis"]
+            MAX_RESPONSE_SIZE = 15000  # Target max response size in bytes (conservative)
+
+            def get_api_key():
+                """Retrieve the RentCast API key from AWS Secrets Manager"""
+                try:
+                    secret_value = secretsmanager.get_secret_value(SecretId=API_KEY_SECRET_NAME)
+                    return secret_value["SecretString"]
+                except ClientError as e:
+                    logger.error(f"Error retrieving API key from Secrets Manager: {e}")
+                    raise e
+
+            def make_api_request(endpoint, params=None):
+                """Make a request to the RentCast API"""
+                api_key = get_api_key()
+                
+                # Build the URL
+                url = f"{API_BASE_URL}/{endpoint}"
+                if params:
+                    query_string = urllib.parse.urlencode(params)
+                    url = f"{url}?{query_string}"
+                
+                logger.debug(f"Making API request to: {url}")
+                
+                # Create request with API key header
+                headers = {
+                    "X-Api-Key": api_key,
+                    "Accept": "application/json"
+                }
+                
+                request = urllib.request.Request(url, headers=headers)
+                
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        return json.loads(response.read().decode('utf-8'))
+                except urllib.error.HTTPError as e:
+                    error_message = f"HTTP Error: {e.code} - {e.reason}"
+                    if e.code == 429:
+                        error_message = "Rate limit exceeded. Please try again later."
+                    elif e.code == 401:
+                        error_message = "API authentication error. Please check your API key."
+                    logger.error(error_message)
+                    return {"error": error_message}
+                except Exception as e:
+                    logger.error(f"Error making API request: {e}")
+                    return {"error": str(e)}
+
+            def reduce_json_size(data, max_string_length=300):
+                """Reduce the size of a JSON object by truncating long strings and pruning deep structures"""
+                if isinstance(data, dict):
+                    return {k: reduce_json_size(v, max_string_length) for k, v in data.items()}
+                elif isinstance(data, list):
+                    # For long lists, keep only the first few items
+                    if len(data) > 10:
+                        return [reduce_json_size(item, max_string_length) for item in data[:10]]
+                    return [reduce_json_size(item, max_string_length) for item in data]
+                elif isinstance(data, str) and len(data) > max_string_length:
+                    return data[:max_string_length] + "..."
+                else:
+                    return data
+
+            def ensure_response_size(data):
+                """Ensure the response size is within limits by progressively reducing data"""
+                # First attempt with minimal reduction
+                reduced_data = reduce_json_size(data, 300)
+                json_str = json.dumps(reduced_data)
+                
+                # If still too large, apply more aggressive reduction
+                if len(json_str.encode('utf-8')) > MAX_RESPONSE_SIZE:
+                    reduced_data = reduce_json_size(data, 100)
+                    json_str = json.dumps(reduced_data)
+                
+                # Final fallback if still too large
+                if len(json_str.encode('utf-8')) > MAX_RESPONSE_SIZE:
+                    logger.warning("Response still too large after reduction, applying final reduction")
+                    # Create a summary version with only essential fields
+                    if isinstance(data, dict):
+                        essential_fields = ['id', 'address', 'price', 'rent', 'bedrooms', 'bathrooms', 'squareFootage']
+                        summary = {k: data.get(k) for k in essential_fields if k in data}
+                        summary['note'] = "Response was too large and has been summarized. Please make more specific requests."
+                        return summary
+                
+                return reduced_data
+
+            def property_lookup(address, data_type="property_data", propertyType=None, bedrooms=None, bathrooms=None, squareFootage=None, include_history=True):
+                """
+                Look up property information from RentCast API
+                
+                Parameters:
+                - address: Property address in the format Street, City, State, Zip
+                - data_type: Type of data to retrieve (property_data, value_estimate, rent_estimate)
+                - propertyType: Property type (needed for value_estimate and rent_estimate)
+                - bedrooms: Number of bedrooms (needed for value_estimate and rent_estimate)
+                - bathrooms: Number of bathrooms (needed for value_estimate and rent_estimate)
+                - squareFootage: Square footage (needed for value_estimate and rent_estimate)
+                - include_history: Whether to include historical data (default: False)
+                
+                Returns property information with size limitations
+                """
+                if not address:
+                    return {"error": "Address must be provided"}
+                    
+                # Handle the different types of lookups
+                if data_type == "property_data":
+                    endpoint = "properties"
+                    params = {"address": address, "limit": 1}
+                    data = make_api_request(endpoint, params)
+                    
+                    # If we got a list of properties, get the first one
+                    if isinstance(data, list) and len(data) > 0:
+                        property_id = data[0]['id']
+                        endpoint = f"properties/{property_id}"
+                        data = make_api_request(endpoint)
+                    
+                    # Limit the amount of historical data if needed
+                    if not include_history:
+                        if 'history' in data:
+                            # Keep only the most recent entries
+                            history_keys = sorted(data['history'].keys(), reverse=True)
+                            if len(history_keys) > 3:
+                                limited_history = {k: data['history'][k] for k in history_keys[:3]}
+                                data['history'] = limited_history
+                                data['history']['note'] = "Historical data limited to most recent entries."
+                        
+                        # Limit tax history if present
+                        if 'taxAssessments' in data:
+                            tax_keys = sorted(data['taxAssessments'].keys(), reverse=True)
+                            if len(tax_keys) > 3:
+                                limited_tax = {k: data['taxAssessments'][k] for k in tax_keys[:3]}
+                                data['taxAssessments'] = limited_tax
+                                data['taxAssessments']['note'] = "Tax assessment history limited to most recent entries."
+                    
+                    return ensure_response_size(data)
+                        
+                elif data_type == "value_estimate":
+                    endpoint = "avm/value"
+                    params = {"address": address, "compCount": 6}
+                    
+                    # Add optional parameters if provided
+                    if propertyType:
+                        params["propertyType"] = propertyType
+                    if bedrooms:
+                        params["bedrooms"] = bedrooms 
+                    if bathrooms:
+                        params["bathrooms"] = bathrooms
+                    if squareFootage:
+                        params["squareFootage"] = squareFootage
+                        
+                    data = make_api_request(endpoint, params)
+                    return ensure_response_size(data)
+                    
+                elif data_type == "rent_estimate":
+                    endpoint = "avm/rent/long-term"
+                    params = {"address": address, "compCount": 6}
+                    
+                    if propertyType:
+                        params["propertyType"] = propertyType
+                    if bedrooms:
+                        params["bedrooms"] = bedrooms
+                    if bathrooms:
+                        params["bathrooms"] = bathrooms
+                    if squareFootage:
+                        params["squareFootage"] = squareFootage
+                        
+                    data = make_api_request(endpoint, params)
+                    return ensure_response_size(data)
+                
+                else:
+                    return {"error": f"Invalid data_type: {data_type}. Must be one of: property_data, value_estimate, rent_estimate"}
+
+            def market_data_lookup(zip_code=None, data_type="All", history_range=1):
+                """
+                Look up market data from RentCast API
+                
+                Parameters:
+                - zip_code: 5-digit zip code
+                - data_type: Type of data to retrieve (Sale, Rental)
+                - history_range: Number of months of historical data to retrieve (default: 1)
+                
+                Returns market statistics
+                """
+                if not zip_code:
+                    return {"error": "zip_code must be provided"}
+                    
+                endpoint = "markets"
+                params = {
+                    "dataType": data_type,
+                    "historyRange": history_range  # Limit historical data to reduce response size
+                }
+                
+                if zip_code:
+                    params["zipCode"] = zip_code
+                
+                data = make_api_request(endpoint, params)
+                return ensure_response_size(data)
+
+            def investment_analysis(investment_data, analysis_type="all"):
+                """
+                Performs investment calculations for a real estate property
+                
+                Parameters:
+                - investment_data: JSON string containing investment parameters including
+                purchase_price, down_payment_percent, interest_rate, and optionally
+                term_years, rental_income, property_taxes, insurance, maintenance,
+                vacancy_rate, property_management, hoa
+                - analysis_type: Type of analysis to perform ('mortgage_calc', 'cash_flow', 'roi', 'all')
+                
+                Returns financial analysis
+                """
+                # Parse the JSON input
+                try:
+                    data = json.loads(investment_data)
+                    
+                    # Extract parameters with defaults
+                    purchase_price = float(data.get("purchase_price", 0))
+                    down_payment_percent = float(data.get("down_payment_percent", 0))
+                    interest_rate = float(data.get("interest_rate", 0))
+                    term_years = int(data.get("term_years", 30))
+                    rental_income = float(data.get("rental_income", 0))
+                    property_taxes = float(data.get("property_taxes", 0))  # Annual property taxes in dollars
+                    insurance = float(data.get("insurance", 0))  # Annual insurance in dollars
+                    maintenance = float(data.get("maintenance", 0))  # Annual maintenance in dollars
+                    vacancy_rate = float(data.get("vacancy_rate", 5))  # Percentage
+                    property_management = float(data.get("property_management", 0))  # Monthly fee in dollars or percentage
+                    property_management_is_percent = "property_management_is_percent" in data and data["property_management_is_percent"]
+                    hoa = float(data.get("hoa", 0))  # Monthly HOA fee
+                    
+                except (ValueError, json.JSONDecodeError) as e:
+                    return {"error": f"Invalid investment data format: {str(e)}"}
+                
+                # Validate analysis_type
+                valid_types = ["mortgage_calc", "cash_flow", "roi", "all"]
+                analysis_type = analysis_type.lower()
+                if analysis_type not in valid_types:
+                    return {"error": f"Invalid analysis_type: {analysis_type}. Must be one of {valid_types}"}
+                
+                # Calculate down payment and loan amount
+                down_payment = purchase_price * (down_payment_percent / 100)
+                loan_amount = purchase_price - down_payment
+                
+                # Calculate mortgage details
+                monthly_interest_rate = (interest_rate / 100) / 12
+                num_payments = term_years * 12
+                
+                # Calculate monthly payment using the mortgage formula
+                if monthly_interest_rate == 0:
+                    monthly_payment = loan_amount / num_payments
+                else:
+                    monthly_payment = loan_amount * (monthly_interest_rate * (1 + monthly_interest_rate) ** num_payments) / ((1 + monthly_interest_rate) ** num_payments - 1)
+                
+                # Calculate monthly expenses
+                monthly_property_taxes = property_taxes / 12  # Convert annual to monthly
+                monthly_insurance = insurance / 12  # Convert annual to monthly
+                monthly_maintenance = maintenance / 12  # Convert annual to monthly
+                monthly_vacancy = (vacancy_rate / 100) * rental_income  # Vacancy as percentage of rent
+                
+                # Handle property management - could be flat fee or percentage of rent
+                if property_management_is_percent:
+                    monthly_property_management_fee = (property_management / 100) * rental_income
+                else:
+                    monthly_property_management_fee = property_management  # Already monthly
+                
+                total_monthly_expenses = (
+                    monthly_payment + 
+                    monthly_property_taxes + 
+                    monthly_insurance + 
+                    monthly_maintenance + 
+                    monthly_vacancy + 
+                    monthly_property_management_fee +
+                    hoa
+                )
+                
+                # Calculate cash flow
+                monthly_cash_flow = rental_income - total_monthly_expenses
+                annual_cash_flow = monthly_cash_flow * 12
+                
+                # Calculate ROI
+                total_investment = down_payment + 2000  # Adding closing costs as a simplified assumption
+                roi = (annual_cash_flow / total_investment) * 100 if total_investment > 0 else 0
+                
+                # Calculate cap rate - based on Net Operating Income (NOI) excluding mortgage
+                annual_operating_expenses = (
+                    property_taxes + 
+                    insurance + 
+                    maintenance + 
+                    (monthly_vacancy * 12) + 
+                    (monthly_property_management_fee * 12) + 
+                    (hoa * 12)
+                )
+                annual_noi = (rental_income * 12) - annual_operating_expenses
+                cap_rate = (annual_noi / purchase_price) * 100 if purchase_price > 0 else 0
+                
+                results = {}
+                
+                if analysis_type == "mortgage_calc" or analysis_type == "all":
+                    results["mortgage"] = {
+                        "loan_amount": round(loan_amount, 2),
+                        "down_payment": round(down_payment, 2),
+                        "monthly_payment": round(monthly_payment, 2),
+                        "total_payments": round(monthly_payment * num_payments, 2),
+                        "total_interest": round((monthly_payment * num_payments) - loan_amount, 2)
+                    }
+                
+                if analysis_type == "cash_flow" or analysis_type == "all":
+                    results["cash_flow"] = {
+                        "monthly_income": round(rental_income, 2),
+                        "monthly_expenses": {
+                            "mortgage": round(monthly_payment, 2),
+                            "property_taxes": round(monthly_property_taxes, 2),
+                            "insurance": round(monthly_insurance, 2),
+                            "maintenance": round(monthly_maintenance, 2),
+                            "vacancy": round(monthly_vacancy, 2),
+                            "property_management": round(monthly_property_management_fee, 2),
+                            "hoa": round(hoa, 2)
+                        },
+                        "total_monthly_expenses": round(total_monthly_expenses, 2),
+                        "monthly_cash_flow": round(monthly_cash_flow, 2),
+                        "annual_cash_flow": round(annual_cash_flow, 2)
+                    }
+                
+                if analysis_type == "roi" or analysis_type == "all":
+                    results["roi"] = {
+                        "total_investment": round(total_investment, 2),
+                        "annual_cash_flow": round(annual_cash_flow, 2),
+                        "roi_percentage": round(roi, 2),
+                        "cap_rate": round(cap_rate, 2)
+                    }
+                
+                return results
+
+            def get_named_parameter(event, name):
+                """Extract a named parameter from the event object"""
+                for param in event.get("parameters", []):
+                    if param["name"] == name:
+                        return param["value"]
+                return None
+
+            def lambda_handler(event, context):
+                """Lambda handler function"""
+                logger.debug(f"Received event: {event}")
+                
+                agent = event.get("agent", "")
+                action_group = event.get("actionGroup", "")
+                function = event.get("function", "")
+                parameters = event.get("parameters", [])
+                
+                response_body = {"TEXT": {"body": "Error: Function not implemented"}}
+                
+                if function == "property_lookup":
+                    address = get_named_parameter(event, "address")
+                    data_type = get_named_parameter(event, "data_type") or "property_data"
+                    propertyType = get_named_parameter(event, "propertyType")
+                    bedrooms = get_named_parameter(event, "bedrooms")
+                    bathrooms = get_named_parameter(event, "bathrooms")
+                    squareFootage = get_named_parameter(event, "squareFootage")
+                    include_history = get_named_parameter(event, "include_history")
+                    include_history = True if include_history is None else include_history.lower() == 'true'
+                    
+                    if not address:
+                        response_body = {"TEXT": {"body": "Error: Missing required parameter 'address'"}}
+                    else:
+                        result = property_lookup(
+                            address=address, 
+                            data_type=data_type,
+                            propertyType=propertyType,
+                            bedrooms=bedrooms,
+                            bathrooms=bathrooms,
+                            squareFootage=squareFootage,
+                            include_history=include_history
+                        )
+                        response_body = {"TEXT": {"body": json.dumps(result, indent=2)}}
+                    
+                elif function == "market_data_lookup":
+                    zip_code = get_named_parameter(event, "zip_code")
+                    data_type = get_named_parameter(event, "data_type") or "All"
+                    history_range = get_named_parameter(event, "history_range") or "1"
+                    
+                    if not zip_code:
+                        response_body = {"TEXT": {"body": "Error: Missing required parameter 'zip_code'"}}
+                    else:
+                        result = market_data_lookup(zip_code, data_type, history_range)
+                        response_body = {"TEXT": {"body": json.dumps(result, indent=2)}}
+                    
+                elif function == "investment_analysis":
+                    investment_data = get_named_parameter(event, "investment_data")
+                    analysis_type = get_named_parameter(event, "analysis_type") or "all"
+                
+                    if not investment_data:
+                        response_body = {"TEXT": {"body": "Error: Missing required parameter 'investment_data'"}}
+                    else:
+                        result = investment_analysis(investment_data, analysis_type)
+                        response_body = {"TEXT": {"body": json.dumps(result, indent=2)}}
+                
+                action_response = {
+                    "actionGroup": action_group,
+                    "function": function,
+                    "functionResponse": {
+                        "responseBody": response_body
+                    }
+                }
+                
+                return {
+                    "response": action_response,
+                    "messageVersion": event.get("messageVersion", "1.0")
+                }
+
+  AgentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GetSecretsManagerSecret
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:RENTCAST_API_KEY_*
+
+  AgentAliasLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AgentLambdaFunction.Arn
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*
+
+  AgentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AgentLambdaFunction.Arn
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
+
+Outputs:
+  PropertyDataLambdaFunction:
+    Value: !Ref AgentLambdaFunction
