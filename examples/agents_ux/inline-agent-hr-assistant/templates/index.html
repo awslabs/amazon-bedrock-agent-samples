@@ -38,6 +38,7 @@
             width: 100%;
             padding: 12px;
             font-size: 16px;
+            margin-top: 20px;
         }
         .error-message {
             color: #dc3545;
@@ -45,76 +46,99 @@
             margin-top: 10px;
             display: none;
         }
-        
+        .role-description {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 10px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="header">
             <h1>HR Portal Login</h1>
-            <p>Please login to access the HR Assistant</p>
+            <p>Please select your role to access the HR Assistant</p>
         </div>
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" class="form-control" id="username" required>
+                <label for="roleSelect">Select Role:</label>
+                <select class="form-control" id="roleSelect" required>
+                    <option value="" selected disabled>-- Select Role --</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Manager">Manager</option>
+                </select>
+                <div id="roleDescription" class="role-description"></div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" class="form-control" id="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-login">Login</button>
+            <button type="submit" class="btn btn-primary btn-login">Enter Portal</button>
             <div id="errorMessage" class="error-message text-center"></div>
         </form>
     </div>
 
     <script>
-        // Mock user database
-        const users = {
-            'E1001': { password: 'password123', name: 'Employee1', access: 'Employee' },
-            'E1002': { password: 'password123', name: 'Employee2', access: 'Employee' },
-            'E1015': { password: 'password123', name: 'Employee15', access: 'Manager' }
+        // User details mapping
+        const roleDetails = {
+            'Employee': {
+                employeeId: 'E1001',
+                name: 'Employee1',
+                access: 'Employee'
+            },
+            'Manager': {
+                employeeId: 'E1015',
+                name: 'Employee15',
+                access: 'Manager'
+            }
         };
 
         // JWT token generation (mock version)
         function generateToken(employeeId, name, access) {
-                const token = btoa(JSON.stringify({
-                    employeeId,
-                    name,
-                    access,
-                    exp: Date.now() + (60 * 60 * 1000) // 1 hour expiration
-                }));
-                return token;
+            const token = btoa(JSON.stringify({
+                employeeId,
+                name,
+                access,
+                exp: Date.now() + (60 * 60 * 1000) // 1 hour expiration
+            }));
+            return token;
+        }
+
+        // Role descriptions
+        document.getElementById('roleSelect').addEventListener('change', function() {
+            const role = this.value;
+            let description = '';
+            
+            if (role === 'Employee') {
+                description = 'Standard access to HR policies and basic tools';
+            } else if (role === 'Manager') {
+                description = 'Enhanced access including managerial tools and compensation information';
             }
+            
+            document.getElementById('roleDescription').textContent = description;
+        });
 
-        // Update the login form to use Employee ID
-        document.querySelector('label[for="username"]').textContent = 'Employee ID';
-        document.getElementById('username').placeholder = 'Enter Employee ID (e.g., E1001)';
-
-        // Simplified login handler
+        // Form submission handler
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const employeeId = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const role = document.getElementById('roleSelect').value;
             const errorMessage = document.getElementById('errorMessage');
             
-            if (users[employeeId] && users[employeeId].password === password) {
-                const user = users[employeeId];
-                const token = generateToken(employeeId, user.name, user.access);
-                
-                // Store essential user info
-                localStorage.setItem('hrToken', token);
-                localStorage.setItem('userName', user.name);
-                localStorage.setItem('employeeId', employeeId);
-                localStorage.setItem('access', user.access);
-                
-                // Redirect to chatbot
-                window.location.href = '/chatbot';
-            } else {
+            if (!role) {
                 errorMessage.style.display = 'block';
-                errorMessage.textContent = 'Invalid Employee ID or password';
+                errorMessage.textContent = 'Please select a role';
+                return;
             }
+            
+            const userDetails = roleDetails[role];
+            const token = generateToken(userDetails.employeeId, userDetails.name, userDetails.access);
+            
+            // Store essential user info
+            localStorage.setItem('hrToken', token);
+            localStorage.setItem('userName', userDetails.name);
+            localStorage.setItem('employeeId', userDetails.employeeId);
+            localStorage.setItem('access', userDetails.access);
+            
+            // Redirect to chatbot
+            window.location.href = '/chatbot';
         });
     </script>
 </body>

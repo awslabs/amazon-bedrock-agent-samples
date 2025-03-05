@@ -17,3 +17,4 @@ This repository is designed to get you started with Amazon Bedrock Agents by pro
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/): Create an insurance claims assistant agent using an OpenAPI schema file for the action groups definition
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/): Create agents that ask for user confirmation before executing an action from an action group
 - [Agent connected house](/examples/agents/connected_house_agent/): Create an agent conected your house surveillance cameras.
+- [Agent with metadata filtering](/examples/agents/metadata_filtering_amazon_bedrock_agents/): Create an agent with metadata filtering to optimize the retrieval of relevant information from a knowledge base.
