@@ -67,14 +67,13 @@ Renaming examples folder for simplicity and adding documentation for single agen
 
 
 ## 02/18/2025
-Added to 
-[Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/)
-By creating a code sample for llama as an unoptimized model
-
+Added to [Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/) By creating a code sample for llama as an unoptimized model
 
 ## 02/26/2025
-
 Adding [Agent with access to house security camera in cloudformation](/examples/agents/connected_house_agent/)
+
+## 02/27/2025
+[metadata-filtering-amazon-bedrock-agents](/examples/agents/metadata_filtering_amazon_bedrock_agents/)
 
 ## 03/03/2025
 

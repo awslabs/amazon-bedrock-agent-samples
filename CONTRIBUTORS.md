@@ -9,4 +9,5 @@
 - [Uriel Ramirez](https://github.com/aurbac)
 - [Aidan Ricci](https://github.com/aidan-ricci)
 - [Niklas Palm](https://github.com/niklas-palm)
+- [Yannie Wu](https://github.com/yanniewu)
 - [Bhavin Patel](https://github.com/bhavinjpatel)
