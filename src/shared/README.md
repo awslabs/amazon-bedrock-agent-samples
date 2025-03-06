@@ -5,3 +5,5 @@ To demonstrate use of a Bedrock Agents Action Group as a reusable tool across mu
 - **[Stock Data Tool](./stock_data/)**
 - **[Web Search Tool](./web_search/)**
 - **[Working Memory Tool](./working_memory/)**
+- **[Economic Data Tool](./economic_data/)**
+- **[Property Data Tool](./property_data/)**

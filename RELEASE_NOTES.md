@@ -77,4 +77,13 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 ## 02/27/2025
 [metadata-filtering-amazon-bedrock-agents](/examples/agents/metadata_filtering_amazon_bedrock_agents/)
 
+## 03/03/2025
 
+- Adding the following MAC example:
+
+1. [Real Estate Investment Agent](/examples/multi_agent_collaboration/real_estate_investment_agent/)
+
+- Adding the following shared tools. Deployment is only supported with CloudFormation Stack:
+
+1. [Economic Data Tool](/src/shared/economic_data/)
+2. [Property Data Tool](/src/shared/property_data/)

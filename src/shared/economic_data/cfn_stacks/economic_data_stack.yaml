@@ -1,0 +1,327 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This CloudFormation template deploys Economic Data tool functionality using AWS Lambda Function with FRED API integration
+
+Parameters:
+  FredApiKey:
+    Type: String
+    NoEcho: true
+    Description: Provide your FRED API Key
+    MinLength: 1
+
+Resources:
+  ######################
+  ##### API Keys ######
+  ####################
+
+  FredApiKeySecret:
+    Type: 'AWS::SecretsManager::Secret'
+    DeletionPolicy: Retain
+    Properties:
+      Name: !Sub 
+              - "FRED_API_KEY_${StackId}"
+              - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+      Description: 'API Key for FRED (Federal Reserve Economic Data) service'
+      SecretString: !Ref FredApiKey
+
+  ########################
+  ##### EconomicData #####
+  ######################
+
+  AgentLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.12
+      FunctionName: economic_data
+      Handler: index.lambda_handler
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 300
+      Environment:
+        Variables:
+          LOG_LEVEL: "DEBUG"
+          FRED_API_KEY_NAME: !Sub 
+          - "FRED_API_KEY_${StackId}"
+          - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+      Code:
+        ZipFile: |
+            import json
+            import os
+            import urllib.request
+            import urllib.parse
+            import boto3
+            from botocore.exceptions import ClientError
+            import logging
+
+            # Setup logging
+            log_level = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
+            logging.basicConfig(
+                format="[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
+            )
+            logger = logging.getLogger(__name__)
+            logger.setLevel(log_level)
+
+            # Initialize boto3 clients
+            secretsmanager = boto3.client('secretsmanager')
+
+            # Constants
+            API_BASE_URL = "https://api.stlouisfed.org/fred"
+            API_KEY_SECRET_NAME = os.environ.get("FRED_API_KEY_NAME", "FRED_API_KEY")
+            FUNCTION_NAMES = ["series_observations", "series_search"]
+            DEFAULT_LIMIT = 30
+            DEFAULT_FILE_TYPE = "json"
+            DEFAULT_SORT_ORDER = "desc"
+
+            def get_api_key():
+                """Retrieve the FRED API key from AWS Secrets Manager"""
+                try:
+                    secret_value = secretsmanager.get_secret_value(SecretId=API_KEY_SECRET_NAME)
+                    return secret_value["SecretString"]
+                except ClientError as e:
+                    logger.error(f"Error retrieving API key from Secrets Manager: {e}")
+                    raise e
+
+            def make_api_request(endpoint, params=None):
+                """Make a request to the FRED API"""
+                api_key = get_api_key()
+                
+                # Add API key to params
+                if params is None:
+                    params = {}
+                
+                params['api_key'] = api_key
+                params['file_type'] = params.get('file_type', DEFAULT_FILE_TYPE)
+                
+                # Build the URL
+                url = f"{API_BASE_URL}/{endpoint}"
+                query_string = urllib.parse.urlencode(params)
+                url = f"{url}?{query_string}"
+                
+                logger.debug(f"Making API request to: {url}")
+                
+                # Create request
+                request = urllib.request.Request(url)
+                
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        return json.loads(response.read().decode('utf-8'))
+                except urllib.error.HTTPError as e:
+                    error_message = f"HTTP Error: {e.code} - {e.reason}"
+                    logger.error(error_message)
+                    return {"error": error_message}
+                except Exception as e:
+                    logger.error(f"Error making API request: {e}")
+                    return {"error": str(e)}
+
+            def series_observations(series_id, observation_start=None, observation_end=None, limit=None, sort_order=None, units=None, frequency=None):
+                """
+                Get the observations or data values for an economic data series
+                
+                Parameters:
+                - series_id: The FRED series ID
+                - observation_start: Start date for observations (YYYY-MM-DD format)
+                - observation_end: End date for observations (YYYY-MM-DD format)
+                - limit: Maximum number of observations to return
+                - sort_order: Sort order (asc or desc)
+                - units: Data value transformation (lin, chg, ch1, pch, pc1, pca, cch, cca, log)
+                - frequency: Frequency to aggregate values to (d, w, bw, m, q, sa, a)
+                
+                Returns observations for the specified series
+                """
+                if not series_id:
+                    return {"error": "series_id must be provided"}
+                    
+                params = {
+                    "series_id": series_id
+                }
+                
+                if observation_start:
+                    params["observation_start"] = observation_start
+                
+                if observation_end:
+                    params["observation_end"] = observation_end
+                
+                if limit:
+                    params["limit"] = limit
+                else:
+                    params["limit"] = DEFAULT_LIMIT
+                
+                if sort_order:
+                    params["sort_order"] = sort_order
+                else:
+                    params["sort_order"] = DEFAULT_SORT_ORDER
+                
+                if units:
+                    params["units"] = units
+                
+                if frequency:
+                    params["frequency"] = frequency
+                
+                return make_api_request("series/observations", params)
+
+            def series_search(search_text, search_type=None, limit=None, order_by=None, sort_order=None, filter_variable=None, filter_value=None):
+                """
+                Search for economic data series that match keywords
+                
+                Parameters:
+                - search_text: The words to match against economic data series
+                - search_type: Determines the type of search (full_text or series_id)
+                - limit: Maximum number of series to return
+                - order_by: Order results by values of the specified attribute
+                - sort_order: Sort results in ascending or descending order
+                - filter_variable: The attribute to filter results by
+                - filter_value: The value of the filter_variable attribute to filter results by
+                
+                Returns series that match the search criteria
+                """
+                if not search_text:
+                    return {"error": "search_text must be provided"}
+                
+                params = {
+                    "search_text": search_text
+                }
+                
+                if search_type:
+                    params["search_type"] = search_type
+                
+                if limit:
+                    params["limit"] = limit
+                else:
+                    params["limit"] = DEFAULT_LIMIT
+                
+                if order_by:
+                    params["order_by"] = order_by
+                
+                if sort_order:
+                    params["sort_order"] = sort_order
+                
+                if filter_variable:
+                    params["filter_variable"] = filter_variable
+                
+                if filter_value:
+                    params["filter_value"] = filter_value
+                
+                return make_api_request("series/search", params)
+
+            def get_named_parameter(event, name):
+                """Extract a named parameter from the event object"""
+                for param in event.get("parameters", []):
+                    if param["name"] == name:
+                        return param["value"]
+                return None
+
+            def lambda_handler(event, context):
+                """Lambda handler function"""
+                logger.debug(f"Received event: {event}")
+                
+                agent = event.get("agent", "")
+                action_group = event.get("actionGroup", "")
+                function = event.get("function", "")
+                parameters = event.get("parameters", [])
+                
+                response_body = {"TEXT": {"body": "Error: Function not implemented"}}
+                
+                if function == "series_observations":
+                    series_id = get_named_parameter(event, "series_id")
+                    observation_start = get_named_parameter(event, "observation_start")
+                    observation_end = get_named_parameter(event, "observation_end")
+                    limit = get_named_parameter(event, "limit")
+                    sort_order = get_named_parameter(event, "sort_order")
+                    units = get_named_parameter(event, "units")
+                    frequency = get_named_parameter(event, "frequency")
+                    
+                    if not series_id:
+                        response_body = {"TEXT": {"body": "Error: Missing required parameter 'series_id'"}}
+                    else:
+                        result = series_observations(
+                            series_id,
+                            observation_start,
+                            observation_end,
+                            limit,
+                            sort_order,
+                            units,
+                            frequency
+                        )
+                        response_body = {"TEXT": {"body": json.dumps(result, indent=2)}}
+                    
+                elif function == "series_search":
+                    search_text = get_named_parameter(event, "search_text")
+                    search_type = get_named_parameter(event, "search_type")
+                    limit = get_named_parameter(event, "limit")
+                    order_by = get_named_parameter(event, "order_by")
+                    sort_order = get_named_parameter(event, "sort_order")
+                    filter_variable = get_named_parameter(event, "filter_variable")
+                    filter_value = get_named_parameter(event, "filter_value")
+                    
+                    if not search_text:
+                        response_body = {"TEXT": {"body": "Error: Missing required parameter 'search_text'"}}
+                    else:
+                        result = series_search(
+                            search_text,
+                            search_type,
+                            limit,
+                            order_by,
+                            sort_order,
+                            filter_variable,
+                            filter_value
+                        )
+                        response_body = {"TEXT": {"body": json.dumps(result, indent=2)}}
+                
+                action_response = {
+                    "actionGroup": action_group,
+                    "function": function,
+                    "functionResponse": {
+                        "responseBody": response_body
+                    }
+                }
+                
+                return {
+                    "response": action_response,
+                    "messageVersion": event.get("messageVersion", "1.0")
+                }
+
+
+  AgentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GetSecretsManagerSecret
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:FRED_API_KEY_*
+
+  AgentAliasLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AgentLambdaFunction.Arn
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*
+
+  AgentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt AgentLambdaFunction.Arn
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
+
+Outputs:
+  EconomicDataLambdaFunction:
+    Value: !Ref AgentLambdaFunction
