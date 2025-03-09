@@ -229,7 +229,7 @@ This pattern ensures you get accurate valuation and rental estimates based on th
 
 ## Security
 
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+See [CONTRIBUTING](/CONTRIBUTING.md#security-issue-notifications) for more information.
 
 ## License
 
