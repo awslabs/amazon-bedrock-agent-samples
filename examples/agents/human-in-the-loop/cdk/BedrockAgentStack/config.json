@@ -1,0 +1,20 @@
+{
+    "_comment1": "Bedrock Agent definition",
+    "agentName": "hr-assistant-cdk",
+    "agentAliasName": "hr-assistant-no-roc",
+    "agentDescription": "Agent in charge of creating time off requests",
+    "agentInstruction": "You are an HR assistant that manages time off requests for employees. Employees must have sufficient time off to make requests.",
+    "getTimeOffActionGroup": "Action for getting current time off balance",
+    "getTimeOffActionGroupName": "GetTimeOff",
+    "requestTimeOffActionGroup": "Action for creating a time off request.",
+    "requestTimeOffActionGroupName": "RequestTimeOff",
+    "_comment2": "Bedrock models supported",
+    "agentModelId": "anthropic.claude-3-5-haiku-20241022-v1:0",
+    "_comment3": "function definition",
+    "func_gettime_name": "get_time_off",
+    "func_gettime_description": "Get current time off balance",
+    "func_createtimeoff_name": "create_time_off_request",
+    "func_createtimeoff_description": "Create a time off request",
+    "func_createtimeoff_start_date": "start_date",
+    "func_createtimeoff_number_of_days": "number_of_days"
+  }
