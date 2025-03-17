@@ -103,3 +103,10 @@ Do you wish to deploy these changes (y/n)? y
 
 6. Configure the alias settings in the modal dialog and create the alias.
 ![Configure alias settings](../images/console-create-alias-modal.png)
+
+## Clean Up
+To clean up the infrastructure, simply run the `cdk destroy` command.
+```
+(.venv) bedrock-hr-assistant-roc/cdk $ cdk destroy
+Are you sure you want to delete: BedrockAgentStack (y/n)? y
+```

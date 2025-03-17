@@ -65,3 +65,6 @@ The interface supports three different interaction modes:
 * Learn more about what other models are on [Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/foundation-models-reference.html).
 * Host your frontend on [AWS Amplify](https://docs.aws.amazon.com/amplify/latest/userguide/welcome.html).
 * Implement Responsible AI on your Agent utilizing [Guardrails on Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html).
+
+## Clean Up
+See [clean up](./cdk/README.md/#clean-up).

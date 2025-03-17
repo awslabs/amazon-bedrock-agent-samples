@@ -92,3 +92,7 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 ## 03/10/2025
 
 [Computer use Agent](/examples/agents/computer_use/)
+
+## 03/17/2025
+
+[Human-in-the-loop Agent](/examples/agents/human-in-the-loop/)
