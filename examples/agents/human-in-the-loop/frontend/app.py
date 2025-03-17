@@ -1,14 +1,21 @@
 import streamlit as st
 import uuid
-from agent import InvokeAgent, CompleteReturnControl, ProvideAgentConfirmation, Some_Api_Call
+from agent import (
+    InvokeAgent,
+    CompleteReturnControl,
+    ProvideAgentConfirmation,
+    Some_Api_Call,
+)
 
 
 st.title("HR Assistant")
+
 
 def clear_session_state():
     # Clear all the session state variables
     for key in list(st.session_state.keys()):
         del st.session_state[key]
+
 
 def handle_submit_time_off():
     # This function will be called when the form is submitted
@@ -26,25 +33,32 @@ def handle_submit_time_off():
     print(f"Got ROC completion response from agent: {resp}")
     st.session_state.messages.append({"role": "assistant", "content": resp})
 
+
 def handle_confirm_time_off():
     # This function will be called when the user confirms action
     print("Confirming time off")
-    st.session_state.messages.append({"role": "user", "content": "User confirming time off"})
+    st.session_state.messages.append(
+        {"role": "user", "content": "User confirming time off"}
+    )
     roc_payload = st.session_state.roc_payload
-    roc_payload['action'] = 'CONFIRM'
+    roc_payload["action"] = "CONFIRM"
     resp = ProvideAgentConfirmation(st.session_state.session_id, roc_payload)
     print(f"Got ROC completion response from agent: {resp}")
     st.session_state.messages.append({"role": "assistant", "content": resp})
 
+
 def handle_reject_time_off():
     # This function will be called when user rejects action
     print("Rejecting time off")
-    st.session_state.messages.append({"role": "user", "content": "User canceling time off request"})
+    st.session_state.messages.append(
+        {"role": "user", "content": "User canceling time off request"}
+    )
     roc_payload = st.session_state.roc_payload
-    roc_payload['action'] = 'DENY'
+    roc_payload["action"] = "DENY"
     resp = ProvideAgentConfirmation(st.session_state.session_id, roc_payload)
     print(f"Got ROC completion response from agent: {resp}")
     st.session_state.messages.append({"role": "assistant", "content": resp})
+
 
 # Add this button to your UI
 if st.button("Clear Session"):
@@ -78,29 +92,47 @@ if prompt := st.chat_input("What is up?"):
         try:
             response = InvokeAgent(st.session_state.session_id, prompt)
             print(f"Got response from agent: {response}")
-            
+
             if response["type"] == "returnControl":
                 # create a table with the return control data
-                st.session_state.messages.append({"role": "assistant", "content": "Giving user option to edit time off request before submitting"})
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": "Giving user option to edit time off request before submitting",
+                    }
+                )
                 with st.form("return_control_form"):
                     st.write("Time Off Request")
-                    number_of_days = st.number_input("Number of Days", step=0.25, value=float(response["number_of_days"]), key='roc_number_of_days')
-                    start_date = st.date_input("Start Date", value=response["start_date"], key='roc_start_date')
-                    st.form_submit_button(label="Submit", on_click=handle_submit_time_off)
+                    number_of_days = st.number_input(
+                        "Number of Days",
+                        step=0.25,
+                        value=float(response["number_of_days"]),
+                        key="roc_number_of_days",
+                    )
+                    start_date = st.date_input(
+                        "Start Date", value=response["start_date"], key="roc_start_date"
+                    )
+                    st.form_submit_button(
+                        label="Submit", on_click=handle_submit_time_off
+                    )
                     st.session_state.roc_payload = response
             elif response["type"] == "confirmation":
                 # display confirm / deny actions
                 message = f"Would you like to confirm your time off starting {response["start_date"]} for {response["number_of_days"]} days?"
                 st.write(message)
-                st.session_state.messages.append({"role": "assistant", "content": message})
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": message}
+                )
                 st.session_state.roc_payload = response
                 st.button("Confirm", on_click=handle_confirm_time_off)
                 st.button("Reject", on_click=handle_reject_time_off)
             else:
                 # Add assistant response to chat history if not doing ROC
                 st.write(response["message"])
-                st.session_state.messages.append({"role": "assistant", "content": response["message"]})
-                    
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": response["message"]}
+                )
+
         except Exception as e:
             print(e)
             response = "Sorry, I had an error. Please try again."
