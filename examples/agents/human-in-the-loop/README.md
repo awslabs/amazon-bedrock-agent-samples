@@ -5,12 +5,13 @@ This repo provides a backend for showcasing the human-in-the-loop capabilities i
 The implementation demonstrates how to build intelligent HR assistants that can handle time-off requests with varying levels of human oversight.
 This allows organizations to maintain appropriate control and verification of automated processes while leveraging AI capabilities.
 
-![Architecture Diagram](./images/diagram-overall-arch.png)
-
 The provided APIs demonstrate three key patterns:
 * Direct automation without human intervention
 * Confirmation-based workflows requiring human approval
 * Return of Control (ROC) scenarios where human input or verification is needed
+
+## Architecture Diagram
+![Architecture Diagram](./images/diagram-overall-arch.png)
 
 ## Prerequisites
 Before getting started, ensure you have the following installed:
@@ -60,6 +61,9 @@ The interface supports three different interaction modes:
 3. Set up the frontend using the [Frontend guide](./frontend/README.md).
 4. Update the Bedrock agent manually to use confirmation and/or return of control. See the [CDK implementation](../cdk/README.md#updating-agent-to-use-human-in-the-loop-capabilities) guide for more details.
 5. Update the frontend environment variables and rerun. More details can be found in the [Frontend guide](./frontend/README.md).
+
+## Sample Prompts
+I'd like to request 3 days off for 2025-07-03.
 
 ## Next Steps
 * Learn more about what other models are on [Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/foundation-models-reference.html).
