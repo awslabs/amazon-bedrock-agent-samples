@@ -77,7 +77,7 @@ def create_error_response(event, errorString, code=500):
     return action_response
 
 
-def get_employee_time_off_balance(user_id):
+def get_employee_time_off_balance():
     resp = {
         "remaining_balance": 10.25,
     }
@@ -110,7 +110,7 @@ def lambda_handler(event, context):
     elif actionGroup == "GetTimeOff":
         print("Got action group: GetTimeOffBalance")
         return create_success_function_response(
-            event, get_employee_time_off_balance(user_id)
+            event, get_employee_time_off_balance()
         )
     else:
         print(f"Unknown action group: {actionGroup}")
