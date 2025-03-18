@@ -1,7 +1,7 @@
 # Bedrock-HR-Assistant-ROC
 
 ## Purpose
-This repo provides a backend for showcasing the human-in-the-loop capabilities in Amazon Bedrock, specifically focusing on Return of Control (ROC) functionality. This repo is for demonstrative purposes only, and the application code is not meant for production use.
+This repo provides a backend for showcasing the human_in_the_loop capabilities in Amazon Bedrock, specifically focusing on Return of Control (ROC) functionality. This repo is for demonstrative purposes only, and the application code is not meant for production use.
 The implementation demonstrates how to build intelligent HR assistants that can handle time-off requests with varying levels of human oversight.
 This allows organizations to maintain appropriate control and verification of automated processes while leveraging AI capabilities.
 
@@ -59,7 +59,7 @@ The interface supports three different interaction modes:
 1. Deploy the Amazon Bedrock Agent using the the [CDK implementation](./cdk/README.md) guide in the repo.
 2. Confirm the default behavior of the agent in the AWS console by using a prompt like "I'd like to request time off for 3 days starting 2025-07-05."
 3. Set up the frontend using the [Frontend guide](./frontend/README.md).
-4. Update the Bedrock agent manually to use confirmation and/or return of control. See the [CDK implementation](../cdk/README.md#updating-agent-to-use-human-in-the-loop-capabilities) guide for more details.
+4. Update the Bedrock agent manually to use confirmation and/or return of control. See the [CDK implementation](./cdk/README.md#updating-agent-to-use-human-in-the-loop-capabilities) guide for more details.
 5. Update the frontend environment variables and rerun. More details can be found in the [Frontend guide](./frontend/README.md).
 
 ## Sample Prompts

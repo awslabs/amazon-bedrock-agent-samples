@@ -105,7 +105,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
 - [Agents with access to house security camera in cloudformation](/examples/agents/connected_house_agent/)
 - [Agents with metadata filtering](/examples/agents/metadata_filtering_amazon_bedrock_agents/)
-- [Agents with human-in-the-loop](/examples/agents/human-in-the-loop/)
+- [Agents with human_in_the_loop](/examples/agents/human_in_the_loop/)
 
 ## Multi-agent collaboration examples
 

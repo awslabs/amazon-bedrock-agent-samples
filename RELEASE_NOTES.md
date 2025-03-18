@@ -95,4 +95,4 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 
 ## 03/17/2025
 
-[Human-in-the-loop Agent](/examples/agents/human-in-the-loop/)
+[Human-in-the-loop Agent](/examples/agents/human_in_the_loop/)

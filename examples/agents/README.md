@@ -19,5 +19,5 @@ This repository is designed to get you started with Amazon Bedrock Agents by pro
 - [Agent using OpenAPI schema](/examples/agents/open_api_schema_agent/): Create an insurance claims assistant agent using an OpenAPI schema file for the action groups definition
 - [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/): Create agents that ask for user confirmation before executing an action from an action group
 - [Agent connected house](/examples/agents/connected_house_agent/): Create an agent conected your house surveillance cameras
--- [Agents with human-in-the-loop](/examples/agents/human-in-the-loop/): Create an agent with confirmation and return-of-control capabilities.
+-- [Agents with human_in_the_loop](/examples/agents/human_in_the_loop/): Create an agent with confirmation and return-of-control capabilities.
 

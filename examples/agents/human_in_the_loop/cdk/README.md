@@ -62,7 +62,7 @@ Do you wish to deploy these changes (y/n)? y
 5. Under aliases, you should see an alias named "hr-assistant-no-roc" representing an Agent without any return of control capabilities.
 6. You can test your agent by following [these instructions](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-test.html).
 
-## Updating Agent to use human-in-the-loop capabilities
+## Updating Agent to use human_in_the_loop capabilities
 
 ### Adding confirmation to agent
 
