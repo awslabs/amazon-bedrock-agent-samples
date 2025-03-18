@@ -8,7 +8,7 @@ from aws_cdk import (
     aws_iam as iam,
     CfnOutput,
     aws_bedrock as bedrock,
-    aws_logs as logs
+    aws_logs as logs,
 )
 import json
 from constructs import Construct
@@ -55,7 +55,11 @@ class BedrockAgentStack(Stack):
             )
         )
 
-        log_group = logs.LogGroup(self, "BedrockActionGroup-HRAssistant", retention=logs.RetentionDays.ONE_WEEK)
+        log_group = logs.LogGroup(
+            self,
+            "BedrockActionGroup-HRAssistant",
+            retention=logs.RetentionDays.ONE_WEEK,
+        )
 
         base_lambda_policy = iam.ManagedPolicy(
             self,
@@ -67,13 +71,11 @@ class BedrockAgentStack(Stack):
                     actions=[
                         "logs:CreateLogGroup",
                         "logs:CreateLogStream",
-                        "logs:PutLogEvents"
+                        "logs:PutLogEvents",
                     ],
-                    resources=[
-                        log_group.log_group_arn
-                    ]
+                    resources=[log_group.log_group_arn],
                 )
-            ]
+            ],
         )
 
         lambda_role = iam.Role(
@@ -181,17 +183,6 @@ class BedrockAgentStack(Stack):
             function_name=action_group_function.function_name,
             principal="bedrock.amazonaws.com",
             source_arn=cfn_agent.attr_agent_arn,
-        )
-
-        NagSuppressions.add_resource_suppressions(
-            agent_role,
-            [
-                {
-                    "id": "AwsSolutions-IAM4",
-                    "reason": "This is a sample. For production use, reduce the permissions as needed."
-                }
-            ],
-            True,
         )
 
         # Agent is created with booking-agent-alias and prepared, so it shoudld be ready to test #

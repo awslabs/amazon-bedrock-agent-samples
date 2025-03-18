@@ -109,9 +109,7 @@ def lambda_handler(event, context):
         )
     elif actionGroup == "GetTimeOff":
         print("Got action group: GetTimeOffBalance")
-        return create_success_function_response(
-            event, get_employee_time_off_balance()
-        )
+        return create_success_function_response(event, get_employee_time_off_balance())
     else:
         print(f"Unknown action group: {actionGroup}")
         return create_error_response(event, "Unknown action group", 400)

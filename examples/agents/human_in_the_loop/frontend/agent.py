@@ -95,11 +95,9 @@ def CompleteReturnControl(session_id, payload):
                 "invocationId": payload["invocationId"],
                 "returnControlInvocationResults": [
                     {
-                        "apiResult": {
+                        "functionResult": {
                             "actionGroup": payload["actionGroup"],
-                            "apiPath": payload["apiPath"],
-                            "httpMethod": payload["httpMethod"],
-                            "httpStatusCode": 200,
+                            "function": payload["function"],
                             "responseBody": {"TEXT": {"body": body}},
                         }
                     }
@@ -172,7 +170,7 @@ def ProvideAgentConfirmation(session_id, payload):
         return completion
     except ClientError as e:
         print(f"Couldn't provide agent confirmation. {e}")
-        raise
+        return f"Encountered error when processing agent confirmation. session_id: {session_id}"
     except Exception as e:
         print(f"Couldn't provide agent confirmation. {e}")
         raise
@@ -190,35 +188,23 @@ def Parse_Roc_Response(payload):
     final_resp = {}
     pprint.pp(payload)
     invocation_inputs = payload["returnControl"]["invocationInputs"]
-    print(f"invocationInputs: {invocation_inputs}")
-    if "apiInvocationInput" in invocation_inputs[0]:
-        params = invocation_inputs[0]["apiInvocationInput"]["requestBody"]["content"][
-            "application/json"
-        ]["properties"]
-        final_resp["invocationId"] = payload["returnControl"]["invocationId"]
-        final_resp["apiPath"] = invocation_inputs[0]["apiInvocationInput"]["apiPath"]
-        final_resp["httpMethod"] = invocation_inputs[0]["apiInvocationInput"][
-            "httpMethod"
-        ]
-        final_resp["actionGroup"] = invocation_inputs[0]["apiInvocationInput"][
-            "actionGroup"
-        ]
+    invocation_type = invocation_inputs[0]["functionInvocationInput"][
+        "actionInvocationType"
+    ]
+    print(f"type: {invocation_type}, invocationInputs: {invocation_inputs}")
+    if invocation_type == "RESULT":
         final_resp["type"] = "returnControl"
-        for param in params:
-            final_resp[param["name"]] = param["value"]
     else:
         final_resp["type"] = "confirmation"
-        final_resp["invocationId"] = payload["returnControl"]["invocationId"]
-        final_resp["actionGroup"] = invocation_inputs[0]["functionInvocationInput"][
-            "actionGroup"
-        ]
-        final_resp["function"] = invocation_inputs[0]["functionInvocationInput"][
-            "function"
-        ]
-        params = invocation_inputs[0]["functionInvocationInput"]["parameters"]
-        for param in params:
-            final_resp[param["name"]] = param["value"]
 
+    final_resp["invocationId"] = payload["returnControl"]["invocationId"]
+    final_resp["actionGroup"] = invocation_inputs[0]["functionInvocationInput"][
+        "actionGroup"
+    ]
+    final_resp["function"] = invocation_inputs[0]["functionInvocationInput"]["function"]
+    params = invocation_inputs[0]["functionInvocationInput"]["parameters"]
+    for param in params:
+        final_resp[param["name"]] = param["value"]
     print(f"*****************Returning****************")
     print(final_resp)
     return final_resp
