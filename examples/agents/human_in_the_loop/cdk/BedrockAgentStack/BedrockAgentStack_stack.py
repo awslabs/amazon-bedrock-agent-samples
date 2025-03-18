@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_iam as iam,
     CfnOutput,
     aws_bedrock as bedrock,
+    aws_logs as logs
 )
 import json
 from constructs import Construct
@@ -54,6 +55,8 @@ class BedrockAgentStack(Stack):
             )
         )
 
+        log_group = logs.LogGroup(self, "BedrockActionGroup-HRAssistant", retention=logs.RetentionDays.ONE_WEEK)
+
         base_lambda_policy = iam.ManagedPolicy(
             self,
             "LambdaBasicExecutionPolicy",
@@ -67,7 +70,7 @@ class BedrockAgentStack(Stack):
                         "logs:PutLogEvents"
                     ],
                     resources=[
-                        f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/lambda/BedrockActionGroup-HRAssistant"
+                        log_group.log_group_arn
                     ]
                 )
             ]
@@ -75,7 +78,7 @@ class BedrockAgentStack(Stack):
 
         lambda_role = iam.Role(
             scope=self,
-            id="IndexCreatorLambdaRole",
+            id="HRAssistantLambdaRole",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[base_lambda_policy],
         )
@@ -90,6 +93,8 @@ class BedrockAgentStack(Stack):
             timeout=Duration.seconds(300),
             role=lambda_role,
             function_name="BedrockActionGroup-HRAssistant",
+            log_group=log_group,
+            log_format="JSON",
         )
 
         # Create the Agent
@@ -176,6 +181,17 @@ class BedrockAgentStack(Stack):
             function_name=action_group_function.function_name,
             principal="bedrock.amazonaws.com",
             source_arn=cfn_agent.attr_agent_arn,
+        )
+
+        NagSuppressions.add_resource_suppressions(
+            agent_role,
+            [
+                {
+                    "id": "AwsSolutions-IAM4",
+                    "reason": "This is a sample. For production use, reduce the permissions as needed."
+                }
+            ],
+            True,
         )
 
         # Agent is created with booking-agent-alias and prepared, so it shoudld be ready to test #

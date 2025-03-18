@@ -96,18 +96,6 @@ def create_employee_time_off_request(event):
 
 
 def lambda_handler(event, context):
-    sessionAttributes = None
-    user_id = ""
-    if "sessionAttributes" in event and "user_id" in event["sessionAttributes"]:
-        sessionAttributes = event["sessionAttributes"]
-        print(f"Got session details: {sessionAttributes}")
-        user_id = sessionAttributes["user_id"]
-        print(f"Got user id: {user_id}")
-    else:
-        # Real app would likely throw error here. Swallowing so I can test agent in console.
-        user_id = 14
-    #    return create_error_response(event, 'Missing user ID', 500)
-
     promptAttributes = None
     if "promptAttributes" in event:
         print(f"Got prompt details: {promptAttributes}")

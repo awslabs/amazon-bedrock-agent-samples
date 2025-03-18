@@ -1,7 +1,7 @@
 # Bedrock-HR-Assistant-ROC
 
 ## Purpose
-This repo provides a backend for showcasing the human_in_the_loop capabilities in Amazon Bedrock, specifically focusing on Return of Control (ROC) functionality. This repo is for demonstrative purposes only, and the application code is not meant for production use.
+This repo provides a backend for showcasing the human-in-the-loop capabilities in Amazon Bedrock, specifically focusing on Return of Control (ROC) functionality. This repo is for demonstrative purposes only, and the application code is not meant for production use.
 The implementation demonstrates how to build intelligent HR assistants that can handle time-off requests with varying levels of human oversight.
 This allows organizations to maintain appropriate control and verification of automated processes while leveraging AI capabilities.
 
