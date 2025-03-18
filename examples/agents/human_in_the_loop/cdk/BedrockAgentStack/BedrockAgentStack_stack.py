@@ -18,7 +18,7 @@ class BedrockAgentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Aspects.of(self).add(AwsSolutionsChecks())
+        Aspects.of(self).add(AwsSolutionsChecks())
 
         # Load configuration
         with open("./BedrockAgentStack/config.json", "r") as config_file:
@@ -41,7 +41,7 @@ class BedrockAgentStack(Stack):
         agent_role = iam.Role(
             scope=self,
             id="AgentRole",
-            role_name="AmazonBedrockExecutionRoleForAgents-HotelGenAI",
+            role_name="AmazonBedrockExecutionRoleForAgents-HumanInTheLoop",
             assumed_by=iam.ServicePrincipal("bedrock.amazonaws.com"),
         )
 
@@ -54,6 +54,32 @@ class BedrockAgentStack(Stack):
             )
         )
 
+        base_lambda_policy = iam.ManagedPolicy(
+            self,
+            "LambdaBasicExecutionPolicy",
+            description="Allows Lambda functions to write to CloudWatch Logs",
+            statements=[
+                iam.PolicyStatement(
+                    effect=iam.Effect.ALLOW,
+                    actions=[
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    resources=[
+                        f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/lambda/BedrockActionGroup-HRAssistant"
+                    ]
+                )
+            ]
+        )
+
+        lambda_role = iam.Role(
+            scope=self,
+            id="IndexCreatorLambdaRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[base_lambda_policy],
+        )
+
         # Create the lambda function for the Agent Action Group
         action_group_function = lambda_.Function(
             self,
@@ -62,6 +88,8 @@ class BedrockAgentStack(Stack):
             code=lambda_.Code.from_asset("../backend/"),
             handler="lambda.lambda_handler",
             timeout=Duration.seconds(300),
+            role=lambda_role,
+            function_name="BedrockActionGroup-HRAssistant",
         )
 
         # Create the Agent
