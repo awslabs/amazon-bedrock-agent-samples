@@ -1,0 +1,8 @@
+boto3
+yfinance
+pandas
+langchain
+langgraph
+geocoder
+streamlit
+streamlit-folium
