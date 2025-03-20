@@ -19,29 +19,27 @@ Once the backend is deployed, you can proceed with setting up the frontend appli
 
 ### Create virtual environment
 ```
-$ cd <path-to-repo>
-bedrock-hr-assistant-roc $ cd ./frontend
-bedrock-hr-assistant-roc/frontend $ python3 -m venv .venv
-bedrock-hr-assistant-roc/frontend $ source .venv/bin/activate
-(.venv) bedrock-hr-assistant-roc/frontend $ pip3 install -r requirements.txt
+cd amazon-bedrock-agent-samples/examples/agents/human_in_the_loop/frontend
+
+python3 -m venv .venv
+
+source .venv/bin/activate
+
+pip3 install -r requirements.txt
 ```
 
 ### Create a local .env file
 ```
-(.venv) bedrock-hr-assistant-roc/frontend $ cp .env.example .env
+cp .env.example .env
 ```
 Replace the values of `AGENT_ID` and `AGENT_ALIAS_ID` to be the values of your deployed Agent in Bedrock.
 
-### Confirm region is us-west-2
-Ensure infrastructure is being deployed to `us-west-2`.
-```
-(.venv) bedrock-hr-assistant-roc/frontend $ env | grep AWS_DEFAULT
-AWS_DEFAULT_REGION=us-west-2
-```
 ### Run the app
+To run the app, first make sure your region is set to `us-west-2` and then you can set the port of your choice.
 ```
-# Use a different port if you want
-(.venv) bedrock-hr-assistant-roc/frontend $ streamlit run app.py --server.port=8080
+export AWS_DEFAULT_REGION=us-west-2
+
+streamlit run app.py --server.port=8080
 ```
 
 By default, the application provides a simple chat interface where users can interact with the HR assistant:

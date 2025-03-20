@@ -1,4 +1,4 @@
-# Bedrock-HR-Assistant-ROC
+# Human-in-the-Loop HR Assistant
 
 ## Purpose
 This repo provides a backend for showcasing the human-in-the-loop capabilities in Amazon Bedrock, specifically focusing on Return of Control (ROC) functionality. This repo is for demonstrative purposes only, and the application code is not meant for production use.
@@ -37,6 +37,9 @@ The application consists of two main components that need to be deployed:
 
 ## UI Preview
 Once deployed, you'll be able to interact with an interface similar to the one shown below:
+
+> [!CAUTION]
+> Disclaimer: The current [backend API](./backend/lambda.py) does not do input validation and sanitizaton. After performing return-of-control, the agent does not do further validation on any data. E.g. if you change the request to 100 days, the API layer is responsible for handling the request accordingly and this demonstration does not do that.
 
 ![UI Preview](./images/ui-roc-step-one.png)
 

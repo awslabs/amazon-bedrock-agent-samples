@@ -10,46 +10,75 @@ Additionally, ensure you have:
 
 To verify your AWS CLI setup is working correctly, run:
 ```bash
-$ aws s3 ls
+aws s3 ls
 2025-01-15 10:30:25 my-bucket-name
 2025-02-20 15:45:12 another-bucket-name
 2025-03-10 09:15:33 deployment-artifacts
 ```
 If you see your S3 buckets listed, your AWS CLI is properly to execute commands on your account.
 
-#### Setting up Virtual Environment
-
-In order to use the cdk, you must first set up a virtual environment and install dependencies. First, navigate to the CDK folder in the repo:
-```
-$ cd <path-to-repo>
-bedrock-hr-assistant-roc $ cd ./cdk
-```
-
-Then create a virtual environment and install dependencies. This will install the aws-cdk in the virtual environment.
-```
-bedrock-hr-assistant-roc/cdk $ python3 -m venv .venv
-... # should see (.venv) before terminal prompt afterwards
-(.venv) bedrock-hr-assistant-roc/cdk $ pip3 install -r requirements.txt
-```
-
 ## Deployment
 
-It should take approximately one minute to deploy the entire stack. Make sure to set up your virtual environment first.
+### Setting up Virtual Environment
+
+In order to use the cdk, you must first set up a virtual environment and install dependencies. This will install the aws-cdk in the virtual environment.
+```
+git clone https://github.com/awslabs/amazon-bedrock-agent-samples
+
+cd amazon-bedrock-agent-samples/examples/agents/human_in_the_loop/cdk
+
+python3 -m venv .venv
+
+source .venv/bin/activate
+
+pip3 install -r requirements.txt
+```
 
 ### Confirm region is us-west-2
-Ensure infrastructure is being deployed to `us-west-2`.
+Ensure infrastructure is being deployed to `us-west-2` and bootstrap the `cdk`
 ```
-(.venv) bedrock-hr-assistant-roc/frontend $ env | grep AWS_DEFAULT
-AWS_DEFAULT_REGION=us-west-2
+export AWS_DEFAULT_REGION=us-west-2
+
+cdk bootstrap
 ```
 
 ### Deploy the infrastructure
+It should take 1-2 minutes to deploy the entire stack. Make sure to set up your virtual environment first.
 ```
-(.venv) bedrock-hr-assistant-roc/cdk $ cdk bootstrap
-(.venv) bedrock-hr-assistant-roc/cdk $ cdk synth 
-... # you may see some node EOL messages
-(.venv) bedrock-hr-assistant-roc/cdk $ cdk deploy 
-... # should see 5 resources pop up
+cdk synth 
+
+cdk deploy 
+```
+
+You should get prompted to deploy the changes.
+
+```
+IAM Statement Changes
+┌───┬─────────────────────────────┬────────┬─────────────────────────────┬─────────────────────────────┬──────────────────────────────┐
+│   │ Resource                    │ Effect │ Action                      │ Principal                   │ Condition                    │
+├───┼─────────────────────────────┼────────┼─────────────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ + │ ${AgentRole.Arn}            │ Allow  │ sts:AssumeRole              │ Service:bedrock.amazonaws.c │                              │
+│   │                             │        │                             │ om                          │                              │
+├───┼─────────────────────────────┼────────┼─────────────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ + │ ${BedrockAgentActionGroupEx │ Allow  │ lambda:InvokeFunction       │ Service:bedrock.amazonaws.c │ "ArnLike": {                 │
+│   │ ecutor}                     │        │                             │ om                          │   "AWS:SourceArn": "${CfnAge │
+│   │                             │        │                             │                             │ nt.AgentArn}"                │
+│   │                             │        │                             │                             │ }                            │
+├───┼─────────────────────────────┼────────┼─────────────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ + │ ${HRAssistantLambdaRole.Arn │ Allow  │ sts:AssumeRole              │ Service:lambda.amazonaws.co │                              │
+│   │ }                           │        │                             │ m                           │                              │
+├───┼─────────────────────────────┼────────┼─────────────────────────────┼─────────────────────────────┼──────────────────────────────┤
+│ + │ arn:${AWS::Partition}:bedro │ Allow  │ bedrock:InvokeModel         │ AWS:${AgentRole}            │                              │
+│   │ ck:${AWS::Region}::foundati │        │ lambda:InvokeFunction       │                             │                              │
+│   │ on-model/anthropic.claude-3 │        │                             │                             │                              │
+│   │ -5-haiku-20241022-v1:0      │        │                             │                             │                              │
+└───┴─────────────────────────────┴────────┴─────────────────────────────┴─────────────────────────────┴──────────────────────────────┘
+IAM Policy Changes
+┌───┬──────────────────────────┬───────────────────────────────┐
+│   │ Resource                 │ Managed Policy ARN            │
+├───┼──────────────────────────┼───────────────────────────────┤
+│ + │ ${HRAssistantLambdaRole} │ ${LambdaBasicExecutionPolicy} │
+└───┴──────────────────────────┴───────────────────────────────┘
 Do you wish to deploy these changes (y/n)? y
 ```
 
@@ -105,8 +134,21 @@ Do you wish to deploy these changes (y/n)? y
 ![Configure alias settings](../images/console-create-alias-modal.png)
 
 ## Clean Up
-To clean up the infrastructure, simply run the `cdk destroy` command.
+To clean up the infrastructure, first manually delete the two new versions and aliases you created for confirmation and return-of-control.
+
+In the agent console, go to versions and select delete. Type `delete` when prompted.
+![Delete versions](../images/console-delete-version.png)
+
+Right below the versions, remove the new aliases.
+![Delete aliases](../images/console-delete-alias.png)
+
+When you have just the original version and alias left, run the `cdk destroy` command.
+![!Original state](../images/console-original-state.png)
 ```
-(.venv) bedrock-hr-assistant-roc/cdk $ cdk destroy
+cdk destroy
+```
+
+When prompted, indicate yes and the stack should delete.
+```
 Are you sure you want to delete: BedrockAgentStack (y/n)? y
 ```
