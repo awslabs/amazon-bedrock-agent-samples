@@ -9,7 +9,6 @@ Metadata:
           - TavilyApiKey
 
 Parameters:
-  
   TavilyApiKey:
     Type: String
     NoEcho: true
@@ -17,7 +16,7 @@ Parameters:
     MinLength: 1
 
 Conditions:
-  HasTavilyApiKey: !Not [!Equals [!Ref TavilyApiKey, '']]
+  HasTavilyApiKey: !Not [!Equals [!Ref TavilyApiKey, ""]]
 
 Resources:
   #####################
@@ -25,14 +24,14 @@ Resources:
   ###################
 
   TavilyApiKeySecret:
-    Type: 'AWS::SecretsManager::Secret'
+    Type: "AWS::SecretsManager::Secret"
     Condition: HasTavilyApiKey
     DeletionPolicy: Retain
     Properties:
-      Name: !Sub 
-              - "TAVILY_API_KEY_${StackId}"
-              - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-      Description: 'API Key for Tavily service'
+      Name: !Sub
+        - "TAVILY_API_KEY_${StackId}"
+        - StackId: !Select [2, !Split ["/", !Ref AWS::StackId]]
+      Description: "API Key for Tavily service"
       SecretString: !Ref TavilyApiKey
 
   ########################
@@ -51,9 +50,9 @@ Resources:
         Variables:
           LOG_LEVEL: "DEBUG"
           ACTION_GROUP: "WebSearchActionGroup"
-          TAVILY_API_KEY_NAME: !Sub 
-          - "TAVILY_API_KEY_${StackId}"
-          - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+          TAVILY_API_KEY_NAME: !Sub
+            - "TAVILY_API_KEY_${StackId}"
+            - StackId: !Select [2, !Split ["/", !Ref AWS::StackId]]
       Code:
         ZipFile: |
           # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -201,7 +200,6 @@ Resources:
 
               return function_response
 
-  
   AgentLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -248,3 +246,5 @@ Resources:
 Outputs:
   WebScrapeLambdaFunction:
     Value: !Ref AgentLambdaFunction
+  WebScrapeLambdaFunctionArn:
+    Value: !GetAtt AgentLambdaFunction.Arn

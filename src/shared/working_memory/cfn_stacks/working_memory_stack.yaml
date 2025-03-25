@@ -473,3 +473,5 @@ Resources:
 Outputs:
  FileStoreLambdaFunction:
     Value: !Ref AgentLambdaFunction
+ FileStoreLambdaFunction:
+    Value: !GetAtt AgentLambdaFunction.Arn
