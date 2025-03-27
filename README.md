@@ -113,7 +113,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [DevOps Agent](/examples/multi_agent_collaboration/devops_agent/)
 - [Energy Efficiency Management Agent](/examples/multi_agent_collaboration/energy_efficiency_management_agent/)
 - [Mortgage Assistant Agent](/examples/multi_agent_collaboration/mortgage_assistant/)
-- [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)
+- [Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)
 - [Real Estate Investment Agent](/examples/multi_agent_collaboration/real_estate_investment_agent/)
 - [Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)
 - [Support Agent](examples/multi_agent_collaboration/support_agent)
