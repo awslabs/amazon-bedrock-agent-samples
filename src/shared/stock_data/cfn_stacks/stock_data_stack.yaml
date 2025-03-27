@@ -171,13 +171,25 @@ Resources:
     Properties:
       ServiceToken: !GetAtt BuildCodeCustomResourceFunction.Arn
 
-  # Temporarily using "*" as the principal for debugging.
-  StockLambdaInvokePermission:
+
+  AgentAliasLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref StockLambdaFunction
       Action: lambda:InvokeFunction
-      Principal: "*"
+      FunctionName: !Ref StockLambdaFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*
+    DependsOn: StockLambdaFunction
+
+  AgentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref StockLambdaFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
     DependsOn: StockLambdaFunction
 
 Outputs:

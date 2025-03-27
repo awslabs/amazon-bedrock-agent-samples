@@ -14,6 +14,13 @@ Investment Research supervisor agent has three collaborators, a News agent, a Qu
 ```bash
 git clone https://github.com/awslabs/amazon-bedrock-agent-samples
 
+cd amazon-bedrock-agent-samples
+
+python3 -m venv .venv
+
+source .venv/bin/activate
+
+pip3 install -r src/requirements.txt
 ```
 
 2. Deploy Web Search tool
