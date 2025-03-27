@@ -96,3 +96,12 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 ## 03/17/2025
 
 [Human-in-the-loop Agent](/examples/agents/human_in_the_loop/)
+
+## 03/27/2025
+
+
+[Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)
+
+- Added an API path (portfolio_optimization) to the stock_data tool. Deployment is only supported with CloudFormation Stack:
+
+[Stock Data Tool](/src/shared/stock_data/)
