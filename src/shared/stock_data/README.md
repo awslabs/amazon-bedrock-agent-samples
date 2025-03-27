@@ -87,7 +87,7 @@ response1 = stock_data_agent.invoke(   #invoking stock_data_lookup
 print(response1)
 
 response2 = stock_data_agent.invoke(   #invoking portfolio_optimization
-    input_text= "Optimize a portfolio for the follwoing: {\"2025-03-01\": {\"FAKE1\": 100.0, \"FAKE2\": 200.0, \"FAKE3\": 300.0}, \"2025-03-02\": {\"FAKE1\": 101.0, \"FAKE2\": 201.0, \"FAKE3\": 301.0}, \"2025-03-03\": {\"FAKE1\": 102.0, \"FAKE2\": 202.0, \"FAKE3\": 302.0}}",
+    input_text= "Optimize a portfolio for the following: {\"2025-03-01\": {\"FAKE1\": 100.0, \"FAKE2\": 200.0, \"FAKE3\": 300.0}, \"2025-03-02\": {\"FAKE1\": 101.0, \"FAKE2\": 201.0, \"FAKE3\": 301.0}, \"2025-03-03\": {\"FAKE1\": 102.0, \"FAKE2\": 202.0, \"FAKE3\": 302.0}}",
     session_id: str = str(uuid.uuid1()),
     enable_trace: bool = False,
 )

@@ -9,7 +9,7 @@ Investment Research supervisor agent has three collaborators, a News agent, a Qu
 
 ## Prerequisites
 
-1. Clone and install repository
+1. Open a terminal then clone and install repository, setup environment
 
 ```bash
 git clone https://github.com/awslabs/amazon-bedrock-agent-samples
