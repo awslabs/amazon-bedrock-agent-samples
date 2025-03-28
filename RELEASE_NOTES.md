@@ -7,7 +7,7 @@
 1. **[Hello World Agent](/examples/multi_agent_collaboration/00_hello_world_agent/)**
 2. **[DevOps Agent](/examples/multi_agent_collaboration/devops_agent/)**
 3. **[Energy Efficiency Management Agent](/examples/multi_agent_collaboration/energy_efficiency_management_agent/)**
-4. **[Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/)**
+4. **[Portfolio Assistant Agent](/examples/multi_agent_collaboration/investment_research_agent/)**
 5. **[Startup Advisor Agent](/examples/multi_agent_collaboration/startup_advisor_agent/)**
 6. **[Sports Team Poet Agent](/examples/multi_agent_collaboration/team_poems_agent/)**
 7. **[Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)**
@@ -96,3 +96,12 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 ## 03/17/2025
 
 [Human-in-the-loop Agent](/examples/agents/human_in_the_loop/)
+
+## 03/27/2025
+
+
+[Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)
+
+- Added an API path (portfolio_optimization) to the stock_data tool. Deployment is only supported with CloudFormation Stack:
+
+[Stock Data Tool](/src/shared/stock_data/)

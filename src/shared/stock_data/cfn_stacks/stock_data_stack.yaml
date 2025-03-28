@@ -1,410 +1,200 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: This CloudFormation template deploy Stock Data functionality using AWS Lambda Function
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploy Docker-based stock data Lambda with Pandas layer (container image)
 
-Mappings:
-  AWSSDKPandasLayerMap:
-    us-east-1:
-      LayerArn: arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python311:18
-    us-east-2:
-      LayerArn: arn:aws:lambda:us-east-2:336392948345:layer:AWSSDKPandas-Python311:18
-    us-west-1:
-      LayerArn: arn:aws:lambda:us-west-1:336392948345:layer:AWSSDKPandas-Python311:18
-    us-west-2:
-      LayerArn: arn:aws:lambda:us-west-2:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-south-1:
-      LayerArn: arn:aws:lambda:ap-south-1:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-northeast-1:
-      LayerArn: arn:aws:lambda:ap-northeast-1:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-northeast-2:
-      LayerArn: arn:aws:lambda:ap-northeast-2:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-northeast-3:
-      LayerArn: arn:aws:lambda:ap-northeast-3:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-southeast-1:
-      LayerArn: arn:aws:lambda:ap-southeast-1:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-southeast-2:
-      LayerArn: arn:aws:lambda:ap-southeast-2:336392948345:layer:AWSSDKPandas-Python311:18
-    ca-central-1:
-      LayerArn: arn:aws:lambda:ca-central-1:336392948345:layer:AWSSDKPandas-Python311:18
-    eu-central-1:
-      LayerArn: arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python311:18
-    eu-west-1:
-      LayerArn: arn:aws:lambda:eu-west-1:336392948345:layer:AWSSDKPandas-Python311:18
-    eu-west-2:
-      LayerArn: arn:aws:lambda:eu-west-2:336392948345:layer:AWSSDKPandas-Python311:18
-    eu-west-3:
-      LayerArn: arn:aws:lambda:eu-west-3:336392948345:layer:AWSSDKPandas-Python311:18
-    eu-north-1:
-      LayerArn: arn:aws:lambda:eu-north-1:336392948345:layer:AWSSDKPandas-Python311:18
-    sa-east-1:
-      LayerArn: arn:aws:lambda:sa-east-1:336392948345:layer:AWSSDKPandas-Python311:18
-    af-south-1:
-      LayerArn: arn:aws:lambda:af-south-1:336392948345:layer:AWSSDKPandas-Python311:18
-    ap-east-1:
-      LayerArn: arn:aws:lambda:ap-east-1:839552336658:layer:AWSSDKPandas-Python311:20
-    ap-south-2:
-      LayerArn: arn:aws:lambda:ap-south-2:246107603503:layer:AWSSDKPandas-Python311:19
-    ap-southeast-3:
-      LayerArn: arn:aws:lambda:ap-southeast-3:258944054355:layer:AWSSDKPandas-Python311:20
-    ap-southeast-4:
-      LayerArn: arn:aws:lambda:ap-southeast-4:945386623051:layer:AWSSDKPandas-Python311:19
-    eu-central-2:
-      LayerArn: arn:aws:lambda:eu-central-2:956415814219:layer:AWSSDKPandas-Python311:19
-    eu-south-1:
-      LayerArn: arn:aws:lambda:eu-south-1:774444163449:layer:AWSSDKPandas-Python311:20
-    eu-south-2:
-      LayerArn: arn:aws:lambda:eu-south-2:982086096842:layer:AWSSDKPandas-Python311:19
-    il-central-1:
-      LayerArn: arn:aws:lambda:il-central-1:263840725265:layer:AWSSDKPandas-Python311:18
-    me-central-1:
-      LayerArn: arn:aws:lambda:me-central-1:593833071574:layer:AWSSDKPandas-Python311:18
-    me-south-1:
-      LayerArn: arn:aws:lambda:me-south-1:938046470361:layer:AWSSDKPandas-Python311:20
-    cn-north-1:
-      LayerArn: arn:aws-cn:lambda:cn-north-1:406640652441:layer:AWSSDKPandas-Python311:15
-    cn-northwest-1:
-      LayerArn: arn:aws-cn:lambda:cn-northwest-1:406640652441:layer:AWSSDKPandas-Python311:14
 Resources:
-  ######################
-  ##### StockData #####
-  ####################
 
-  AgentLambdaFunction:
-    DependsOn: CustomLayerResource
-    Type: AWS::Lambda::Function
+  StockLambdaECRRepo:
+    Type: AWS::ECR::Repository
     Properties:
-      Runtime: python3.11
-      FunctionName: stock_data_lookup
-      Layers: 
-        - !Sub 
-            - arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${LayerName}:1
-            - LayerName: !Sub 
-              - ${StackId}
-              - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-        - !FindInMap 
-          - AWSSDKPandasLayerMap
-          - !Ref AWS::Region
-          - LayerArn
-      Handler: index.lambda_handler
-      Role: !GetAtt AgentLambdaRole.Arn
-      Timeout: 300
-      Code:
-        ZipFile: |
-          # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-          # SPDX-License-Identifier: Apache-2.0
-          import json
-          import yfinance as yf
-          import logging
-          import os
+      RepositoryName: stock-data-tools
 
-          log_level = os.environ.get("LOG_LEVEL", "INFO").strip().upper()
-          logging.basicConfig(
-              format="[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s"
-          )
-          logger = logging.getLogger(__name__)
-          logger.setLevel(log_level)
-
-          FUNCTION_NAMES = ["stock_data_lookup"]
-
-
-          def get_named_parameter(event, name):
-              return next(item for item in event["parameters"] if item["name"] == name)["value"]
-
-
-          def stock_data_lookup(ticker):
-              # lookup stock price
-              stock = yf.Ticker(ticker)
-
-              # get the price history for past 1 month
-              hist = stock.history(period="1mo")
-
-              # convert the price history to JSON format. Make date and timestamps be human readable strings.
-              hist = hist.reset_index().to_json(orient="split", index=False, date_format="iso")
-              return hist
-
-
-          def lambda_handler(event, context):
-              logging.debug(f"{event=}")
-
-              agent = event["agent"]
-              actionGroup = event["actionGroup"]
-              function = event["function"]
-              parameters = event.get("parameters", [])
-              responseBody = {"TEXT": {"body": "Error, no function was called"}}
-
-              logger.info(f"{actionGroup=}, {function=}")
-
-              if function in FUNCTION_NAMES:
-                  if function == "stock_data_lookup":
-                      ticker = get_named_parameter(event, "ticker")
-                      if not ticker:
-                          responseBody = {
-                              "TEXT": {"body": f"Missing mandatory parameter: ticker"}
-                          }
-                      else:
-                          hist = stock_data_lookup(ticker)
-                          responseBody = {
-                              "TEXT": {
-                                  "body": f"Price history for last 1 month for ticker: {ticker} is as follows:\n{str(hist)}"
-                              }
-                          }
-                  else:
-                      responseBody = {"TEXT": {"body": f"Invalid Function passed."}}
-
-              action_response = {
-                  "actionGroup": actionGroup,
-                  "function": function,
-                  "functionResponse": {"responseBody": responseBody},
-              }
-
-              function_response = {
-                  "response": action_response,
-                  "messageVersion": event["messageVersion"],
-              }
-              print("Response: {}".format(function_response))
-
-              return function_response
-
-
-  AgentLambdaRole:
+  CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  
-  AgentAliasLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AgentLambdaFunction.Arn
-      Principal: bedrock.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*
-
-  AgentLambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt AgentLambdaFunction.Arn
-      Principal: bedrock.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
-
-  ###############################
-  ##### Lambda Layer Build #####
-  #############################
-
-  LambdaLayerCodeBuildExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codebuild.amazonaws.com
-            Action:
-              - sts:AssumeRole
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
       Policies:
-        - PolicyName: LogsPolicy
+        - PolicyName: CodeBuildECRPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:CompleteLayerUpload
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: "*"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                  - logs:PutRetentionPolicy
-                Resource:
-                  - '*'
-        - PolicyName: LayerPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:PublishLayerVersion
-                  - lambda:DeleteLayerVersion
-                  - lambda:GetLayerVersion
-                  - lambda:ListLayers
-                  - lambda:ListLayerVersions
-                Resource:
-                  - !Sub 
-                      - arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${LayerName}:*
-                      - LayerName: !Sub 
-                        - ${StackId}
-                        - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-                  - !Sub 
-                      - arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${LayerName}
-                      - LayerName: !Sub 
-                        - ${StackId}
-                        - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-  LayerCodeBuild:
+                Resource: "*"
+
+  CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Description: CodeBuild for building image
-      Cache:
-        Location: LOCAL
-        Modes:
-          - LOCAL_SOURCE_CACHE
-          - LOCAL_DOCKER_LAYER_CACHE
-        Type: LOCAL
+      Name: stock-lambda-docker-build
       Source:
         Type: GITHUB
-        Location: https://github.com/awsdocs/aws-lambda-developer-guide.git
-        BuildSpec: !Sub
-          - |
-            version: 0.2
-            phases:
-              pre_build:
-                commands:
-                  - pip3 install awscli
-                  - cd sample-apps/layer-python/layer
-                  - chmod 744 1-install.sh && chmod 744 2-package.sh
-              build:
-                commands:
-                  - echo Build started on `date`
-                  - echo "yfinance" > requirements.txt
-                  - python3.11 -m venv create_layer
-                  - source create_layer/bin/activate
-                  - pip install -r requirements.txt
-                  - pip uninstall numpy -y
-                  - pip uninstall pandas -y
-                  - ./2-package.sh
-              post_build:
-                commands:
-                  - echo Build completed on `date`
-                  - aws lambda publish-layer-version --layer-name ${LAYER_NAME} --zip-file fileb://layer_content.zip --compatible-runtimes python3.11 --compatible-architectures "x86_64"
-          - LAYER_NAME: !Sub 
-            - ${StackId}
-            - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+        Location: https://github.com/LucaiB/amazon-bedrock-agent-samples.git
+        GitCloneDepth: 1
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo Logging into ECR...
+                - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+                - cd src/shared/stock_data/docker_files
+            build:
+              commands:
+                - docker build -t $IMAGE_REPO_NAME .
+                - docker tag $IMAGE_REPO_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:latest
+            post_build:
+              commands:
+                - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:latest
       Environment:
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        Image: aws/codebuild/standard:5.0
         ComputeType: BUILD_GENERAL1_SMALL
-      ServiceRole: !GetAtt LambdaLayerCodeBuildExecutionRole.Arn
-      TimeoutInMinutes: 10
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: IMAGE_REPO_NAME
+            Value: !Ref StockLambdaECRRepo
+          - Name: IMAGE_TAG
+            Value: latest
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+      ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
-  
-  ##################################
-  ##### Custom Layer Resource #####
-  ################################
 
-  CustomLayerResourceRole:
+  StockLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "stock-lambda-execution-role-${AWS::Region}"
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # Updated function name to match the expected "stock_data_tools"
+  StockLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: stock_data_tools
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/stock-data-tools:latest"
+      Role: !GetAtt StockLambdaExecutionRole.Arn
+      Timeout: 600
+      MemorySize: 512
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+    DependsOn: BuildCodeCustomResource
+
+  BuildCodeCustomResourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
       Policies:
-        - PolicyName: CodeBuildPolicy
+        - PolicyName: TriggerCodeBuild
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - codebuild:StartBuild
                   - codebuild:BatchGetBuilds
-                Resource:
-                  - !GetAtt LayerCodeBuild.Arn
-        - PolicyName: LayerPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
+                Resource: "*"
               - Effect: Allow
                 Action:
-                  - lambda:PublishLayerVersion
-                  - lambda:DeleteLayerVersion
-                  - lambda:GetLayerVersion
-                  - lambda:ListLayers
-                  - lambda:ListLayerVersions
-                Resource:
-                  - !Sub 
-                      - arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${LayerName}:*
-                      - LayerName: !Sub 
-                        - ${StackId}
-                        - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-                  - !Sub 
-                      - arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${LayerName}
-                      - LayerName: !Sub 
-                        - ${StackId}
-                        - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
 
-  CustomLayerResourceFunction:
+  BuildCodeCustomResourceFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Role: !GetAtt CustomLayerResourceRole.Arn
-      Timeout: 600
+      Role: !GetAtt BuildCodeCustomResourceRole.Arn
+      Timeout: 300
       Runtime: python3.12
       Code:
         ZipFile: |
           import boto3
-          from time import sleep
+          import os
+          import time
           import cfnresponse
-          from botocore.exceptions import ClientError
 
-          codebuild = boto3.client("codebuild")
-          lambda_client = boto3.client('lambda')
-
-          def start_codebuild(build_id):
-            status = 'STARTING'
-            while status not in ['SUCCEEDED', 'FAILED', 'STOPPED', 'FAULT', 'TIMED_OUT']:
-              status = codebuild.batch_get_builds(ids=[build_id])['builds'][0]['buildStatus']
-              sleep(15)
-            if status in ['FAILED', 'STOPPED', 'FAULT', 'TIMED_OUT']:
-              raise Exception("Build failed")
-            return
-          
           def handler(event, context):
-            try:
-              layer_name = event['ResourceProperties']['LAYERNAME']
-              request_type = event['RequestType']
-              if request_type == 'Create':
-                
-                start_codebuild(codebuild.start_build(projectName=event['ResourceProperties']['LAYERPROJECT'])['build']['id'])
-              
-              elif request_type == 'Delete':
-                lambda_client.delete_layer_version(
-                    LayerName=layer_name,
-                    VersionNumber=1
-                )
-            except Exception as ex:
-              print(ex)
-              cfnresponse.send(event, context, cfnresponse.FAILED, {})
-            else:
+              client = boto3.client("codebuild")
+              if event['RequestType'] == 'Create':
+                  build = client.start_build(projectName=os.environ['PROJECT'])
+                  build_id = build['build']['id']
+                  while True:
+                      status = client.batch_get_builds(ids=[build_id])['builds'][0]['buildStatus']
+                      if status in ['SUCCEEDED', 'FAILED', 'FAULT', 'TIMED_OUT', 'STOPPED']:
+                          break
+                      time.sleep(10)
               cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+      Environment:
+        Variables:
+          PROJECT: !Ref CodeBuildProject
 
-  CustomLayerResource:
+  BuildCodeCustomResource:
     Type: Custom::BuildCode
     Properties:
-      ServiceToken: !GetAtt CustomLayerResourceFunction.Arn
-      LAYERNAME: !Sub 
-            - ${StackId}
-            - StackId: !Select [2, !Split ['/', !Ref AWS::StackId]]
-      LAYERPROJECT: !Ref LayerCodeBuild
+      ServiceToken: !GetAtt BuildCodeCustomResourceFunction.Arn
 
+
+  AgentAliasLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref StockLambdaFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*
+    DependsOn: StockLambdaFunction
+
+  AgentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref StockLambdaFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
+    DependsOn: StockLambdaFunction
 
 Outputs:
- StockDataLambdaFunction:
-    Value: !Ref AgentLambdaFunction
+  LambdaFunctionName:
+    Value: !Ref StockLambdaFunction
+
+  ECRRepositoryURI:
+    Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/stock-data-tools"
