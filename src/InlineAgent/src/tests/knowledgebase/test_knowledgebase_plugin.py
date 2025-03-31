@@ -1,6 +1,6 @@
 import unittest
 
-from InlineAgent.knowledge_base import KnowledgeBase
+from InlineAgent.knowledge_base import KnowledgeBasePlugin as KnowledgeBase
 
 
 class TestKnowledgeBase(unittest.TestCase):

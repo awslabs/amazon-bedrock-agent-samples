@@ -1,4 +1,4 @@
-from .knowledgebase import KnowledgeBase
+from .knowledgebase_plugin import KnowledgeBasePlugin
 
 
-__all__ = ["KnowledgeBase"]
+__all__ = ["KnowledgeBasePlugin"]

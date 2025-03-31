@@ -1,14 +1,22 @@
 
 <h1 align="center">Amazon Bedrock Inline Agent SDK&nbsp;</h1>
 
+<p align="center">
+  <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-green" /></a>
+  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-green" /></a>
+  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-green" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-green" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-green" /></a>
+</p>
+
 > [!NOTE]  
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
-- <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-green" /></a> Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
-- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-green" /></a> [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/) <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-green" /></a>.
+- Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
+- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/).
 - Ability to use local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
-- Take advantage of <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-green" /></a> [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-green" /></a> [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
+- Take advantage of [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
 - Easy implementation with [Amazon Bedrock Knowledge](https://aws.amazon.com/bedrock/knowledge-bases/) for Retrieval Augmented Generation (RAG) and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/).
 - Give your agents capability to write and execute code using [code interpreter](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-code-interpretation.html).
 - Automate UI related tasks using computer use [1](https://docs.aws.amazon.com/bedrock/latest/userguide/computer-use.html) [2](https://aws.amazon.com/blogs/machine-learning/getting-started-with-computer-use-in-amazon-bedrock-agents/).
@@ -163,7 +171,7 @@ if __name__ == "__main__":
 <summary>
 <h2>Example Response<h2>
 </summary>
-![mcp_output](./images/mcp_output.png)
+  <img src="./images/mcp_output.png">
 </details>
 
 ## Observability for Amazon Bedrock Agents
@@ -268,6 +276,8 @@ if __name__ == "__main__":
 - Better console traces for `InvokeInlineAgent` and `InvokeAgent` API.
 - MCP catalog and ability to dynamically choose MCP servers at runtime.
 - Replace HTTP+SSE with new "Streamable HTTP" transport for MCP compatibility, see information [here](https://github.com/modelcontextprotocol/specification/pull/206).
+- Ready to use Amazon Bedrock Guardrails.
+- Script to manage creation of Amazon Bedrock Knowledge Bases and Amazon Bedrock Guardrails.
 - Documentation for InlineAgent SDK.
 - Publish to PyPI.
 

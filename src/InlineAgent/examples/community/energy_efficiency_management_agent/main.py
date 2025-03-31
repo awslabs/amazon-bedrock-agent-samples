@@ -1,13 +1,22 @@
+################################################
+# This example is currently under construction #
+###############################################
+
 import asyncio
 
 from InlineAgent.agent import CollaboratorAgent, InlineAgent
-from InlineAgent.knowledge_base import KnowledgeBase
+from InlineAgent.knowledge_base import KnowledgeBasePlugin
 from InlineAgent.types import InlineCollaboratorAgentConfig
+from InlineAgent import AgentAppConfig
+
 from tools import forecast_functions, peak_functions
 from prompt import forecast_agent_instruction, peak_agent_instruction
 
-forecast_kb = KnowledgeBase(
-    name="forecast-us-east-1-484-kb",
+
+config = AgentAppConfig()
+
+forecast_kb = KnowledgeBasePlugin(
+    name=config.FORECAST_KNOWLEDGE_BASE_NAME,
     description="Access this knowledge base when needing to explain specific forecast generation methodology.",
     profile="default",
 )
@@ -22,7 +31,7 @@ forecast_agent = InlineAgent(
         },
         {
             "name": "ForecastConsumption",
-            "lambda_name": "fn-forecast-agent-us-east-1-484",
+            "lambda_name": config.FORECAST_LAMNDA_NAME,
             "function_schema": forecast_functions,
         },
     ],
@@ -39,8 +48,8 @@ forecast_agent = InlineAgent(
 # forecast_agent.invoke(inputText="can you give me my past energy consumption? What is my average spending on summer months? My customer id is 1")
 
 solar_agent = CollaboratorAgent(
-    agent_name="solar-p-us-east-1-484",
-    agent_alias_id="KXF9CZLRBS",
+    agent_name=config.SOLAR_AGENT_NAME,
+    agent_alias_id=config.SOLAR_AGENT_ALIAS_ID,
     routing_instruction="""Assign solar panel-related inquiries and issues to the Solar Panel Agent, respecting its scope and support ticket protocol.""",
     relay_conversationHistory="TO_COLLABORATOR",
 )
@@ -52,7 +61,7 @@ peak_agent = InlineAgent(
     action_groups=[
         {
             "name": "PeakLoad",
-            "lambda_name": "fn-peak-agent-669",
+            "lambda_name": config.PEAK_AGENT_LAMBDA_NAME,
             "function_schema": peak_functions,
         }
     ],
@@ -82,3 +91,7 @@ asyncio.run(
 # asyncio.run(supervisor_agent.invoke(
 #     inputText="Can you update my forecast for month 03/2025? I will be travelling and my estimate will be 90. My id is 1. Then tell me how can I check if my Sunpower double-X solar panel eletrical consumption is compliant with energy rules?"
 # ))
+
+################################################
+# This example is currently under construction #
+###############################################

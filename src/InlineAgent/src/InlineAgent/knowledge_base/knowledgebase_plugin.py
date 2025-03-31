@@ -6,7 +6,7 @@ import boto3
 from pydantic import BaseModel, Field, computed_field, model_validator, validate_call
 
 
-class KnowledgeBase(BaseModel):
+class KnowledgeBasePlugin(BaseModel):
     name: str
     description: str
     additional_props: Dict[str, Any] = Field(default_factory=dict)
@@ -26,7 +26,7 @@ class KnowledgeBase(BaseModel):
 
         # Adding for unittest
         if self.name != "SKaEdphpZh":
-            knowledgeBaseId = KnowledgeBase.get_knowledge_base_id_by_name(
+            knowledgeBaseId = KnowledgeBasePlugin.get_knowledge_base_id_by_name(
                 self.name, self.session
             )
             if knowledgeBaseId is None:

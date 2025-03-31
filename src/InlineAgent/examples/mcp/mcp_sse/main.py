@@ -9,21 +9,10 @@ from InlineAgent.agent import InlineAgent
 
 load_dotenv()
 
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", None)
-AWS_REGION = os.getenv("AWS_REGION", None)
-BEDROCK_LOG_GROUP_NAME = os.getenv("BEDROCK_LOG_GROUP_NAME", None)
 MCP_SSE_URL = os.getenv("MCP_SSE_URL", None)
 
-if (
-    not AWS_ACCESS_KEY_ID
-    or not AWS_SECRET_ACCESS_KEY
-    or not AWS_REGION
-    or not BEDROCK_LOG_GROUP_NAME
-    or not MCP_SSE_URL
-):
+if not MCP_SSE_URL:
     raise RuntimeError("environment variable not set")
-
 
 async def main():
 

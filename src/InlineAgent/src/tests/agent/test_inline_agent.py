@@ -391,6 +391,7 @@ class TestInlineAgent(unittest.TestCase):
             description="This is action group to get weather",
             tools=[get_current_weather, get_lat_long],
             argument_key="Args:",
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -408,6 +409,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather_confirm, get_lat_long],
             argument_key="Args:",
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -424,6 +426,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather_confirm, get_lat_long_confirm],
             argument_key="Args:",
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -442,6 +445,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather, get_lat_long],
             argument_key="Args:",
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -490,6 +494,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             lambda_name="legal-doc-actions-xaqwa",
             function_schema=functions,
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -525,6 +530,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             lambda_name="legal-doc-actions-xaqwa",
             function_schema=functions,
+            test=True
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",

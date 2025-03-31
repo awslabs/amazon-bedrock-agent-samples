@@ -22,7 +22,7 @@ from InlineAgent.constants import (
 )
 from InlineAgent.agent.process_roc import ProcessROC
 from InlineAgent.observability import Trace
-from InlineAgent.knowledge_base import KnowledgeBase
+from InlineAgent.knowledge_base import KnowledgeBasePlugin
 from InlineAgent.tools.mcp import MCPServer
 from InlineAgent.types import (
     InlineCollaboratorAgentConfig,
@@ -44,7 +44,7 @@ class InlineAgent:
     customer_encryption_key_arn: Optional[str] = None
     guardrail_configuration: Dict = field(default_factory=dict)
     idle_session_ttl_in_seconds: Optional[int] = None
-    knowledge_bases: List[KnowledgeBase] = field(default_factory=list)
+    knowledge_bases: List[KnowledgeBasePlugin] = field(default_factory=list)
     prompt_override_configuration: Dict = field(default_factory=dict)
 
     profile: str = field(default="default")
@@ -71,9 +71,9 @@ class InlineAgent:
         if self.knowledge_bases:
             knowledge_bases_list = list()
             for knowledge_base in self.knowledge_bases:
-                if not isinstance(knowledge_base, KnowledgeBase):
+                if not isinstance(knowledge_base, KnowledgeBasePlugin):
                     knowledge_bases_list.append(
-                        KnowledgeBase.model_validate(knowledge_base).to_dict()
+                        KnowledgeBasePlugin.model_validate(knowledge_base).to_dict()
                     )
                 else:
                     knowledge_bases_list.append(knowledge_base.to_dict())
