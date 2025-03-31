@@ -86,7 +86,7 @@ Run through the cells in the notebook, attach appropriate permissions as needed.
 }
 
 ```
-This IAM policy is highly permissive and grants full access (Action: "*" and Resource: "*") to multiple critical AWS services including IAM, S3, Lambda, DynamoDB, and Bedrock. It should only be used for quick prototyping or development in isolated, non-production environments.
+This IAM policy is highly permissive and grants full access to multiple critical AWS services including IAM, S3, Lambda, DynamoDB, and Bedrock. It should only be used for quick prototyping or development in isolated, non-production environments.
 
 ## License
 
