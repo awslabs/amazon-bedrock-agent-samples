@@ -21,5 +21,5 @@ docker build -t aws-cost-explorer-mcp .
 ## Output
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=sLCcbyCZoHU"><img src="https://markdown-videos-api.jorgenkh.no/youtube/sLCcbyCZoHUwidth=640&height=360&filetype=jpeg" /></a>
+  <a href="https://www.youtube.com/watch?v=sLCcbyCZoHU"><img src="https://markdown-videos-api.jorgenkh.no/youtube/sLCcbyCZoHU?width=640&height=360&filetype=jpeg" /></a>
 </p>
