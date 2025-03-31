@@ -1,4 +1,8 @@
 
+## 3/31/2025
+
+Added example for contract assistant
+- [Contract Assistant Agent](/examples/multi_agent_collaboration/contract_assistant_agent/)
 
 ## 12/1/2024
 

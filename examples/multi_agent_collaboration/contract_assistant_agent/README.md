@@ -7,9 +7,9 @@ This example demonstrates the use of Amazon Bedrock Agents multi-agent collabora
 
 Try sample prompts:
 
-- "what's my current purchase agreement's terms?"
-- "Draft a contract?"
-- "Which type of agreement would this be"
+
+- "I need help with a purchase agreement."
+- "Can you show me the status of contract #12345?"
 
 Each of these gets routed quickly to the right sub-agent for subsequent processing.
 Conversation switching is seamless.
