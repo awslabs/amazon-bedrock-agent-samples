@@ -120,6 +120,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Team Poems Agent](/examples/multi_agent_collaboration/team_poems_agent/)
 - [Trip Planner Agent](/examples/multi_agent_collaboration/trip_planner_agent/)
 - [Voyage Virtuso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)
+- [Contract Assistant Agent](/examples/multi_agent_collaboration/contract_assistant_agent/)
 
 ## UX Demos
 
