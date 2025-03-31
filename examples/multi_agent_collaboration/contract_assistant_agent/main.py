@@ -173,6 +173,46 @@ def attach_layer(function_name: str, layer_name: str, zip_file_path: str) -> boo
         print(f"Error: {str(e)}")
         return False
 
+def find_and_delete_bucket():
+    try:
+        # Create S3 client and resource
+        s3 = boto3.client('s3')
+        s3_resource = boto3.resource('s3')
+        
+        # List all buckets and find those with the prefix
+        response = s3.list_buckets()
+        matching_buckets = [bucket['Name'] for bucket in response['Buckets'] 
+                            if bucket['Name'].startswith('contract-templates-kb-')]
+        
+        if not matching_buckets:
+            print("No buckets found with prefix 'contract-templates-kb-'")
+            return
+            
+        print(f"Found {len(matching_buckets)} matching bucket(s)")
+        
+        for bucket_name in matching_buckets:
+            print(f"\nProcessing bucket: {bucket_name}")
+            bucket = s3_resource.Bucket(bucket_name)
+            
+            # Delete all objects in the bucket
+            print(f"Emptying bucket {bucket_name}...")
+            bucket.objects.all().delete()
+            
+            # Delete all object versions if versioning is enabled
+            versions = bucket.object_versions.all()
+            for version in versions:
+                version.delete()
+                
+            # Delete the bucket
+            print(f"Deleting bucket {bucket_name}...")
+            bucket.delete()
+            
+            print(f"Bucket {bucket_name} has been successfully deleted")
+        
+        print("\nAll matching buckets have been deleted")
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
 
 def delete_lambda_function(function_name):
     """
@@ -216,6 +256,7 @@ def main(args):
         kb_helper.delete_kb("contract-templates-kb", delete_s3_bucket=False)
         delete_lambda_function("existing_contract_assistant_ag")
         delete_lambda_function("contract_drafting_agent_ag")
+        find_and_delete_bucket()
         return
 
     if args.recreate_agents == "false":

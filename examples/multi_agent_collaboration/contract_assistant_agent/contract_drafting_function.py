@@ -22,7 +22,7 @@ def get_template_from_s3(contract_type):
         docx.Document: Document object if successful, None if failed
     """
     s3 = boto3.client("s3")
-    template_key = f"templates/{contract_type}_agreement.docx"
+    template_key = f"contract_templates/{contract_type}_agreement.docx"
 
     try:
         # Get the template file from S3
