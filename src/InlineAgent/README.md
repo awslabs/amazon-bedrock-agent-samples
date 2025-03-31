@@ -1,15 +1,14 @@
 
-<h2 align="center">Amazon Bedrock Inline Agent SDK&nbsp;</h2>
+<h1 align="center">Amazon Bedrock Inline Agent SDK&nbsp;</h1>
 
 > [!NOTE]  
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
-
-- <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP" /></a> Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
-- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on [langfuse](https://github.com/langfuse/langfuse) and [Phoeniz](https://phoenix.arize.com/).
+- <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-green" /></a> Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
+- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-green" /></a> [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/) <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-green" /></a>.
 - Ability to use local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
-- Take advantage of [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
+- Take advantage of <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-green" /></a> [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-green" /></a> [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
 - Easy implementation with [Amazon Bedrock Knowledge](https://aws.amazon.com/bedrock/knowledge-bases/) for Retrieval Augmented Generation (RAG) and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/).
 - Give your agents capability to write and execute code using [code interpreter](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-code-interpretation.html).
 - Automate UI related tasks using computer use [1](https://docs.aws.amazon.com/bedrock/latest/userguide/computer-use.html) [2](https://aws.amazon.com/blogs/machine-learning/getting-started-with-computer-use-in-amazon-bedrock-agents/).
@@ -93,57 +92,79 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 
 ## Getting started with Model Context Protocol
 
-```python
-import os
+### Using MCP servers
 
+```python
+InlineAgent(
+    # 1: Provide the model
+    foundation_model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    # 2: Concise instruction
+    instruction="""You are a friendly assistant that is responsible for resolving user queries. """,
+    # Step 3: Provide the agent name and action group
+    agent_name="SampleAgent",
+    action_groups=[
+        ActionGroup(
+            name="SampleActionGroup",
+            mcp_clients=[mcp_client_1, mcp_client_2],
+        )
+    ],
+)
+```
+
+### Example
+
+```python
 from mcp import StdioServerParameters
 
-from InlineAgent.tools import MCPClient
+from InlineAgent.tools import MCPStdio
 from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
 
-load_dotenv()
-from dotenv import load_dotenv
-
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", None)
-
-if not PERPLEXITY_API_KEY:
-    raise RuntimeError("PERPLEXITY_API_KEY environment variable not set")
-
+# Step 1: Define MCP stdio parameters
+server_params = StdioServerParameters(
+    command="docker",
+    args=["run", "-i", "--rm", "mcp/time"],
+)
 
 async def main():
-    server_params = StdioServerParameters(
-        command="/usr/local/bin/docker",
-        args=["run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
-        env={"PERPLEXITY_API_KEY": PERPLEXITY_API_KEY},
-    )
-
-    preplexity_mcp_client = await MCPClient.create(server_params=server_params)
+    # Step 2: Create MCP Client
+    time_mcp_client = await MCPStdio.create(server_params=server_params)
     
     try:
-        preplexity_action_group = ActionGroup(
-            name="SearchActionGroup",
-            description="SearchActionGroup",
-            mcp_client=[preplexity_mcp_client],
+        # Step 3: Define an action group
+        time_action_group = ActionGroup(
+            name="TimeActionGroup",
+            description="Helps user get current time and convert time.",
+            mcp_clients=[time_mcp_client],
         )
+        
+        # Step 4: Invoke agent 
         await InlineAgent(
+            # Step 4.1: Provide the model
             foundation_model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            # Step 4.2: Concise instruction
             instruction="""You are a friendly assistant that is responsible for resolving user queries. """,
-            agent_name="search_agent",
-            action_groups=[preplexity_action_group],
-        ).invoke(input_text="What is the capital of france?")
+            # Step 4.3: Provide the agent name and action group
+            agent_name="time_agent",
+            action_groups=[time_action_group],
+        ).invoke(input_text="Convert 12:30pm to Europe/London timezone? My timezone is America/New_York")
     
     finally:
         
-        await preplexity_mcp_client.cleanup()
-
+        await time_mcp_client.cleanup()
 
 if __name__ == "__main__":
     import asyncio
 
     asyncio.run(main())
-
 ```
+
+<details>
+<summary>
+<h2>Example Response<h2>
+</summary>
+![mcp_output](./images/mcp_output.png)
+</details>
 
 ## Observability for Amazon Bedrock Agents
 

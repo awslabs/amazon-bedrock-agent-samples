@@ -1,9 +1,10 @@
-import asyncio
 import copy
-import time
 import inspect
 import json
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, Union
+from termcolor import colored
+
+from InlineAgent.constants import TraceColor
 
 
 class ProcessROC:
@@ -198,14 +199,16 @@ class ProcessROC:
 
         # TODO: responseState
         try:
-            print(tool_to_invoke.__name__, parameters)
-
+            
             if inspect.iscoroutinefunction(tool_to_invoke):
                 result = await tool_to_invoke(**parameters)
             else:
                 result = tool_to_invoke(**parameters)
+            
+            print(colored(
+                f"Tool output: {result}", TraceColor.invocation_input,
+            ))
 
-            print(result)
 
             functionResult = {
                 "actionGroup": functionInvocationInput["actionGroup"],

@@ -6,7 +6,6 @@ from rich.console import Console
 from rich.markdown import Markdown
 
 import json
-import os
 
 
 AGENT = {}

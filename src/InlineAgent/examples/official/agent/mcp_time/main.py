@@ -1,42 +1,44 @@
-from dotenv import load_dotenv
-import os
-
 from mcp import StdioServerParameters
 
-from InlineAgent.tools import MCPClient
+from InlineAgent.tools import MCPStdio
 from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
 
-load_dotenv()
-
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", None)
-
-if not PERPLEXITY_API_KEY:
-    raise RuntimeError("PERPLEXITY_API_KEY environment variable not set")
+# Step 1: Define MCP stdio parameters
+server_params = StdioServerParameters(
+    command="docker",
+    args=["run", "-i", "--rm", "mcp/time"],
+)
 
 
 async def main():
-    server_params = StdioServerParameters(
-        command="/usr/local/bin/docker",
-        args=["run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
-        env={"PERPLEXITY_API_KEY": PERPLEXITY_API_KEY},
-    )
+    # Step 2: Create MCP Client
+    time_mcp_client = await MCPStdio.create(server_params=server_params)
 
-    preplexity_mcp_client = await MCPClient.create(server_params=server_params)
     try:
-        preplexity_action_group = ActionGroup(
-            name="SearchActionGroup",
-            description="SearchActionGroup",
-            mcp_clients=[preplexity_mcp_client],
+        # Step 3: Define an action group
+        time_action_group = ActionGroup(
+            name="TimeActionGroup",
+            description="Helps user get current time and convert time.",
+            mcp_clients=[time_mcp_client],
         )
+
+        # Step 4: Invoke agent
         await InlineAgent(
+            # Step 4.1: Provide the model
             foundation_model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            # Step 4.2: Concise instruction
             instruction="""You are a friendly assistant that is responsible for resolving user queries. """,
-            agent_name="search_agent",
-            action_groups=[preplexity_action_group],
-        ).invoke(input_text="What is the capital of france?")
+            # Step 4.3: Provide the agent name and action group
+            agent_name="time_agent",
+            action_groups=[time_action_group],
+        ).invoke(
+            input_text="Convert 12:30pm to Europe/London timezone? My timezone is America/New_York"
+        )
+
     finally:
-        await preplexity_mcp_client.cleanup()
+
+        await time_mcp_client.cleanup()
 
 
 if __name__ == "__main__":

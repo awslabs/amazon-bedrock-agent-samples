@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack
-import copy
-from dataclasses import Field
 
-from pydantic import BaseModel, HttpUrl, validate_call
+from termcolor import colored
+
+from pydantic import validate_call
 from mcp import ClientSession, ListToolsResult, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 from InlineAgent.types.action_group import FunctionDefination
+from InlineAgent.constants import TraceColor
 
 
 class MCPServer(ABC):
@@ -27,9 +28,7 @@ class MCPServer(ABC):
 
         function = {}
         for tool in tools_list:
-            print(tools_to_use)
             if len(tools_to_use) != 0:
-                print("Hello")
                 if tool.name in tools_to_use:
                     function = {
                         "description": tool.description,
@@ -105,7 +104,7 @@ class MCPServer(ABC):
         tools_list = tools.tools
 
         for tool in tools_list:
-            if len(tools_to_use):
+            if len(tools_to_use) != 0:
                 if tool.name in tools_to_use:
 
                     async def callable(*args, **kwargs):
@@ -159,7 +158,7 @@ class MCPStdio(MCPServer):
         # List available tools
         response = await self.session.list_tools()
         tools = response.tools
-        print("\nConnected to server with tools:", [tool.name for tool in tools])
+        print(colored(f"\nConnected to server with tools:{[tool.name for tool in tools]}", TraceColor.invocation_output))
 
         await self.set_available_tools(tools_to_use=tools_to_use)
         await self.set_callable_tool(tools_to_use=tools_to_use)
@@ -204,7 +203,7 @@ class MCPHttp(MCPServer):
         # List available tools
         response = await self.session.list_tools()
         tools = response.tools
-        print("\nConnected to server with tools:", [tool.name for tool in tools])
+        print(colored(f"\nConnected to server with tools:{[tool.name for tool in tools]}", TraceColor.invocation_output))
 
         await self.set_available_tools(tools_to_use=tools_to_use)
         await self.set_callable_tool(tools_to_use=tools_to_use)
