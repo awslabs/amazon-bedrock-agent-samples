@@ -391,7 +391,7 @@ class TestInlineAgent(unittest.TestCase):
             description="This is action group to get weather",
             tools=[get_current_weather, get_lat_long],
             argument_key="Args:",
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -409,7 +409,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather_confirm, get_lat_long],
             argument_key="Args:",
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -426,7 +426,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather_confirm, get_lat_long_confirm],
             argument_key="Args:",
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -445,7 +445,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             tools=[get_current_weather, get_lat_long],
             argument_key="Args:",
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -494,7 +494,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             lambda_name="legal-doc-actions-xaqwa",
             function_schema=functions,
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -530,7 +530,7 @@ class TestInlineAgent(unittest.TestCase):
             name="WeatherActionGroup",
             lambda_name="legal-doc-actions-xaqwa",
             function_schema=functions,
-            test=True
+            test=True,
         )
         agent = InlineAgent(
             foundation_model="MOCK_ID",
@@ -549,41 +549,35 @@ class TestInlineAgent(unittest.TestCase):
             name="ComputerActionGroup",
             argument_key="Args:",
             builtin_tools={
-
-                    "parentActionGroupSignature": "ANTHROPIC.Computer",
-                    "parentActionGroupSignatureParams": {
-                        "type": "computer_20241022",
-                        "displayHeightPx": "768",
-                        "displayWidthPx": "1024",
-                        "displayNumber": "1",
-                    },
+                "parentActionGroupSignature": "ANTHROPIC.Computer",
+                "parentActionGroupSignatureParams": {
+                    "type": "computer_20241022",
+                    "displayHeightPx": "768",
+                    "displayWidthPx": "1024",
+                    "displayNumber": "1",
+                },
             },
         )
         bash_action_group = ActionGroup(
             name="BashActionGroup",
-            builtin_tools=
-                {
-                    "parentActionGroupSignature": "ANTHROPIC.Bash",
-                    "parentActionGroupSignatureParams": {
-                        "type": "bash_20241022",
-                    },
+            builtin_tools={
+                "parentActionGroupSignature": "ANTHROPIC.Bash",
+                "parentActionGroupSignatureParams": {
+                    "type": "bash_20241022",
                 },
+            },
         )
         code_action_group = ActionGroup(
             name="CodeInterpreter",
             argument_key="Args:",
             builtin_tools={
-                
-                    "parentActionGroupSignature": "AMAZON.CodeInterpreter",
-                
+                "parentActionGroupSignature": "AMAZON.CodeInterpreter",
             },
         )
         agent = InlineAgent(
             foundation_model="MOCK",
             instruction="You are an agent that helps draft and reviews legal documents, and provides document summaries.",
-            action_groups=[
-                 code_action_group,computer_action_group, bash_action_group
-            ],
+            action_groups=[code_action_group, computer_action_group, bash_action_group],
             user_input=True,
             agent_name="MockAgent",
         )

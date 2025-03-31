@@ -10,6 +10,7 @@ from InlineAgent import AgentAppConfig
 
 config = AgentAppConfig()
 
+
 async def main():
 
     kb_mcp_client = await MCPStdio.create(

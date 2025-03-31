@@ -88,7 +88,7 @@ You can configure and invoke an inline Amazon Bedrock agent dynamically at runti
 
 ```bash
 git clone https://github.com/awslabs/amazon-bedrock-agent-samples.git
-cd src/InlineAgnet
+cd amazon-bedrock-agent-samples/src/InlineAgent
 
 python -m venv .venv
 source .venv/bin/activate
@@ -250,12 +250,12 @@ if __name__ == "__main__":
 > The examples provided in this repository are for experimental and educational purposes only. They demonstrate concepts and techniques but are not intended for direct use in production environments. Make sure to have Amazon Bedrock Guardrails in place to protect against [prompt injection](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-injection.html).
 
 - Features
-    1. KnowledgeBase plugin
-    2. User confirmation before invoking tools
-    3. Guardrails
-    4. Multi-Agent collaboration
-    5. Code interpreter
-    6. Computer use
+    1. [Generate response with citations - Amazon Bedrock Knowledgebase](./examples/feature_examples/knowledgebase/)
+    2. [User confirmation before invoking tools](./examples/feature_examples/user_confirmation/)
+    3. Guardrails `Coming Soon`
+    4. Multi-Agent collaboration `Coming Soon`
+    5. Code interpreter `Coming Soon`
+    6. Computer use `Coming Soon`
 
 - MCP
     1. [Time MCP Server](./examples/mcp/mcp_time/)
@@ -265,11 +265,11 @@ if __name__ == "__main__":
     5. [Cost explorer agent](./examples/mcp/cost_explorer_agent/) - Integrate Perplexity MCP server, AWS Cost explorer MCP server, and code interpreter.
 
 - Langchain Tools
-    1. GitHub Toolkit
+    1. [GitHub Agent](./examples/langchain_tools/github_agent/)
 
 - Crew Ai Tools
-    1. Spider Tool
-    2. Chroma database
+    1. [Web Scrapper Agent](./examples/crewai_toolkit/web_scraper_spider/)
+    2. [PDF RAG using Chroma](./examples/crewai_toolkit/pdf_rag_chroma_db/)
 
 ## Roadmap Features
 

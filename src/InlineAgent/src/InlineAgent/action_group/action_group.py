@@ -112,7 +112,9 @@ class ActionGroup(BaseModel):
                     "function_schema is not supported when tools is present..."
                 )
             if self.mcp_clients:
-                raise ValueError("mcp_clients is not supported when tools is present...")
+                raise ValueError(
+                    "mcp_clients is not supported when tools is present..."
+                )
 
             if self.builtin_tools:
                 raise ValueError(
@@ -198,7 +200,9 @@ class ActionGroup(BaseModel):
 
         if self.mcp_clients:
             if self.tools:
-                raise ValueError("tools is not supported when mcp_clients is present...")
+                raise ValueError(
+                    "tools is not supported when mcp_clients is present..."
+                )
             if self.function_schema:
                 raise ValueError(
                     "function_schema is not supported when mcp_clients is present..."
@@ -320,7 +324,6 @@ class ActionGroups(BaseModel):
 
             actionGroups.append({**actionGroup})
 
-        # print(actionGroups)
         return actionGroups
 
     def __repr__(self):

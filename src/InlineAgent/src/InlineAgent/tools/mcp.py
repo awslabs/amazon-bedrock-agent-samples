@@ -158,7 +158,12 @@ class MCPStdio(MCPServer):
         # List available tools
         response = await self.session.list_tools()
         tools = response.tools
-        print(colored(f"\nConnected to server with tools:{[tool.name for tool in tools]}", TraceColor.invocation_output))
+        print(
+            colored(
+                f"\nConnected to server with tools:{[tool.name for tool in tools]}",
+                TraceColor.invocation_output,
+            )
+        )
 
         await self.set_available_tools(tools_to_use=tools_to_use)
         await self.set_callable_tool(tools_to_use=tools_to_use)
@@ -203,7 +208,12 @@ class MCPHttp(MCPServer):
         # List available tools
         response = await self.session.list_tools()
         tools = response.tools
-        print(colored(f"\nConnected to server with tools:{[tool.name for tool in tools]}", TraceColor.invocation_output))
+        print(
+            colored(
+                f"\nConnected to server with tools:{[tool.name for tool in tools]}",
+                TraceColor.invocation_output,
+            )
+        )
 
         await self.set_available_tools(tools_to_use=tools_to_use)
         await self.set_callable_tool(tools_to_use=tools_to_use)

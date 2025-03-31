@@ -199,16 +199,18 @@ class ProcessROC:
 
         # TODO: responseState
         try:
-            
+
             if inspect.iscoroutinefunction(tool_to_invoke):
                 result = await tool_to_invoke(**parameters)
             else:
                 result = tool_to_invoke(**parameters)
-            
-            print(colored(
-                f"Tool output: {result}", TraceColor.invocation_input,
-            ))
 
+            print(
+                colored(
+                    f"Tool output: {result}",
+                    TraceColor.invocation_input,
+                )
+            )
 
             functionResult = {
                 "actionGroup": functionInvocationInput["actionGroup"],

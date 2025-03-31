@@ -1,4 +1,4 @@
-################################################
+#################################################
 # This example is currently under construction #
 ###############################################
 
@@ -92,6 +92,6 @@ asyncio.run(
 #     inputText="Can you update my forecast for month 03/2025? I will be travelling and my estimate will be 90. My id is 1. Then tell me how can I check if my Sunpower double-X solar panel eletrical consumption is compliant with energy rules?"
 # ))
 
-################################################
+#################################################
 # This example is currently under construction #
 ###############################################

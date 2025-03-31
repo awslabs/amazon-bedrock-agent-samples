@@ -3,7 +3,9 @@ from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent, require_confirmation
 from InlineAgent.knowledge_base import KnowledgeBase
 
-
+#################################################
+# This example is currently under construction #
+###############################################
 @require_confirmation
 def get_current_weather(location: str, state: str, unit: str = "fahrenheit") -> dict:
     """
@@ -57,3 +59,7 @@ supervisor_agent = InlineAgent(
 )
 
 asyncio.run(supervisor_agent.invoke(input_text="What is the weather in nyc?"))
+
+#################################################
+# This example is currently under construction #
+###############################################

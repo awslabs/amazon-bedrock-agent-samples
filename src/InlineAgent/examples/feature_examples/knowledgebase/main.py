@@ -1,8 +1,8 @@
 import asyncio
-from InlineAgent.knowledge_base import KnowledgeBase
+from InlineAgent.knowledge_base import KnowledgeBasePlugin
 from InlineAgent.agent import InlineAgent
 
-restaurant_kb = KnowledgeBase(
+restaurant_kb = KnowledgeBasePlugin(
     name="restaurant-kb",
     description="Use this knowledgebase to get information about restaurants menu.",
     additional_props={

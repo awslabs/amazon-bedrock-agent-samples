@@ -55,7 +55,7 @@ def add_citation(citations: List, cite=1) -> str:
                         f"[{idx + 1}] "
                         + " ".join(
                             [
-                                f"column: {row["columnName"]} value: {row["columnValue"]}"
+                                f"column: {row['columnName']} value: {row['columnValue']}"
                                 for row in retrievedReference["content"]["row"]
                             ]
                         )

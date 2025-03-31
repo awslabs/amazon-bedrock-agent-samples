@@ -1019,7 +1019,7 @@ class ProcessL5InvocationInputTrace:
                             console = Console()
                             console.print(
                                 Markdown(
-                                    f"**Generated code**\n```python\n{code_interpreter_invocation_input["code"]}\n```"
+                                    f"**Generated code**\n```python\n{code_interpreter_invocation_input['code']}\n```"
                                 )
                             )
 

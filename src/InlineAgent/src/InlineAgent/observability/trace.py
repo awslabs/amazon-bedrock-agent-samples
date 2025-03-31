@@ -106,7 +106,7 @@ class Trace:
                             f"[{idx + 1}] "
                             + " ".join(
                                 [
-                                    f"column: {row["columnName"]} value: {row["columnValue"]}"
+                                    f"column: {row['columnName']} value: {row['columnValue']}"
                                     for row in retrievedReference["content"]["row"]
                                 ]
                             )
@@ -140,7 +140,7 @@ class HighLevelTrace:
         if "customOrchestrationTrace" in trace:
             print(
                 colored(
-                    f"Agent error: {trace['customOrchestrationTrace']['event']["text"]}",
+                    f"Agent error: {trace['customOrchestrationTrace']['event']['text']}",
                     TraceColor.custom_orchestraction_trace,
                 )
             )
@@ -341,9 +341,16 @@ class RoutingAndOrchestrationTrace:
                 else:
                     tool = "undefined"
 
+                params_info = []
+                for parameter in trace["invocationInput"]["actionGroupInvocationInput"][
+                    "parameters"
+                ]:
+                    param_str = f"{parameter['name']}[{parameter['value']}] ({parameter['type']})"
+                    params_info.append(param_str)
+
                 print(
                     colored(
-                        f"Tool use: {tool} with these inputs: {" ".join([f"{parameter["name"]}[{parameter["value"]} ({parameter["type"]})]" for parameter in trace["invocationInput"]['actionGroupInvocationInput']['parameters']])}",
+                        f"Tool use: {tool} with these inputs: {' '.join(params_info)}",
                         TraceColor.invocation_input,
                     )
                 )
@@ -373,7 +380,7 @@ class RoutingAndOrchestrationTrace:
                     if text:
                         print(
                             colored(
-                                f"Agent collaborator:  {trace["invocationInput"]["agentCollaboratorInvocationInput"]["agentCollaboratorName"]} invoked with {text}",
+                                f"Agent collaborator: {trace['invocationInput']['agentCollaboratorInvocationInput']['agentCollaboratorName']} invoked with {text}",
                                 TraceColor.invocation_input,
                             )
                         )
@@ -388,7 +395,7 @@ class RoutingAndOrchestrationTrace:
                         ]["input"]["text"]
                         print(
                             colored(
-                                f"Agent collaborator:  {trace["invocationInput"]["agentCollaboratorInvocationInput"]["agentCollaboratorName"]} invoked with {text}",
+                                f"Agent collaborator: {trace['invocationInput']['agentCollaboratorInvocationInput']['agentCollaboratorName']} invoked with {text}",
                                 TraceColor.invocation_input,
                             )
                         )
@@ -401,7 +408,7 @@ class RoutingAndOrchestrationTrace:
                     console = Console()
                     console.print(
                         Markdown(
-                            f"**Generated code**\n```python\n{trace["invocationInput"]["codeInterpreterInvocationInput"]["code"]}\n```"
+                            f"**Generated code**\n```python\n{trace['invocationInput']['codeInterpreterInvocationInput']['code']}\n```"
                         )
                     )
 
@@ -419,7 +426,7 @@ class RoutingAndOrchestrationTrace:
             if "knowledgeBaseLookupInput" in trace["invocationInput"]:
                 print(
                     colored(
-                        f"Knowledgebase retrieval: Knowledgebase Id ({trace["invocationInput"]["knowledgeBaseLookupInput"]["knowledgeBaseId"]}) query ({trace["invocationInput"]["knowledgeBaseLookupInput"]["text"]})",
+                        f"Knowledgebase retrieval: Knowledgebase Id ({trace['invocationInput']['knowledgeBaseLookupInput']['knowledgeBaseId']}) query ({trace['invocationInput']['knowledgeBaseLookupInput']['text']})",
                         TraceColor.invocation_input,
                     )
                 )
@@ -469,7 +476,7 @@ class RoutingAndOrchestrationTrace:
             if "actionGroupInvocationOutput" in trace["observation"]:
                 print(
                     colored(
-                        f"Tool use output: {trace["observation"]["actionGroupInvocationOutput"]["text"]}",
+                        f"Tool use output: {trace['observation']['actionGroupInvocationOutput']['text']}",
                         TraceColor.invocation_output,
                     )
                 )
@@ -525,7 +532,7 @@ class RoutingAndOrchestrationTrace:
                 ):
                     print(
                         colored(
-                            f"Code interpreter output: {trace["observation"]["codeInterpreterInvocationOutput"]["executionOutput"]}",
+                            f"Code interpreter output: {trace['observation']['codeInterpreterInvocationOutput']['executionOutput']}",
                             TraceColor.invocation_output,
                         )
                     )
@@ -536,7 +543,7 @@ class RoutingAndOrchestrationTrace:
                 ):
                     print(
                         colored(
-                            f"Code interpreter output error: {trace["observation"]["codeInterpreterInvocationOutput"]["executionError"]}",
+                            f"Code interpreter output error: {trace['observation']['codeInterpreterInvocationOutput']['executionError']}",
                             TraceColor.error,
                         )
                     )
@@ -595,7 +602,7 @@ class RoutingAndOrchestrationTrace:
                             #             "Row retrieved: "
                             #             + " ".join(
                             #                 [
-                            #                     f"column: {row["columnName"]} value: {row["columnValue"]}"
+                            #                     f"column: {row['columnName']} value: {row['columnValue']}"
                             #                     for row in retrievedReference[
                             #                         "content"
                             #                     ]["row"]
@@ -608,7 +615,7 @@ class RoutingAndOrchestrationTrace:
                         if "location" in retrievedReference:
                             print(
                                 colored(
-                                    f"Location: {json.dumps(retrievedReference["location"], indent=2, default=str)}",
+                                    f"Location: {json.dumps(retrievedReference['location'], indent=2, default=str)}",
                                     TraceColor.invocation_output,
                                 )
                             )
@@ -616,7 +623,7 @@ class RoutingAndOrchestrationTrace:
             if "repromptResponse" in trace["observation"]:
                 print(
                     colored(
-                        f"Reprompting {trace["observation"]["repromptResponse"]["source"]} with query {trace["orchestrationTrace"]["observation"]["repromptResponse"]["text"]}",
+                        f"Reprompting {trace['observation']['repromptResponse']['source']} with query {trace['orchestrationTrace']['observation']['repromptResponse']['text']}",
                         TraceColor.invocation_output,
                     )
                 )

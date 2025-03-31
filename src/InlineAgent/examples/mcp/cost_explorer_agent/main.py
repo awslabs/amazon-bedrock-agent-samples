@@ -4,6 +4,7 @@ from InlineAgent.agent import InlineAgent
 
 from config import cost_server_params, perplexity_server_params
 
+
 async def main():
 
     cost_explorer_mcp_client = await MCPStdio.create(server_params=cost_server_params)

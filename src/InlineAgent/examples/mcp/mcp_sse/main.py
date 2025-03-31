@@ -11,6 +11,7 @@ from InlineAgent import AgentAppConfig
 
 config = AgentAppConfig()
 
+
 async def main():
 
     cost_explorer_mcp_client = await MCPHttp.create(url=config.MCP_SSE_URL)
