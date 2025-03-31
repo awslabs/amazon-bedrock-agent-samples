@@ -20,8 +20,6 @@ docker build -t aws-cost-explorer-mcp .
 
 ## Output
 
-![demo](demo.mov)
-
-<!-- <p align="center">
-  <a href=""><img src="https://markdown-videos-api.jorgenkh.no/youtube/7pvEYLW1yZw?width=640&height=360&filetype=jpeg" /></a>
-</p> -->
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=sLCcbyCZoHU"><img src="https://markdown-videos-api.jorgenkh.no/youtube/7pvEYLW1yZw?width=640&height=360&filetype=jpeg" /></a>
+</p>
