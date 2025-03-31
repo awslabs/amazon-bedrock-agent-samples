@@ -253,10 +253,10 @@ def main(args):
         agents_helper.delete_agent("general_contract_assistant", verbose=True)
         agents_helper.delete_agent("existing_contract_assistant", verbose=True)
         agents_helper.delete_agent("contract_drafting_agent", verbose=True)
-        kb_helper.delete_kb("contract-templates-kb", delete_s3_bucket=False)
+        kb_helper.delete_kb("contract-templates-kb", delete_s3_bucket=True)
         delete_lambda_function("existing_contract_assistant_ag")
         delete_lambda_function("contract_drafting_agent_ag")
-        find_and_delete_bucket()
+        #find_and_delete_bucket()
         return
 
     if args.recreate_agents == "false":
