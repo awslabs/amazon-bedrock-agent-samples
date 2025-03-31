@@ -11,7 +11,7 @@ __pycache__
 boto3/
 aws-lambda-developer-guide/
 samples/
-tests/
+
 # local copies
 agent-old.py
 knowledge_bases-old.py

@@ -2,11 +2,11 @@
 <h1 align="center">Amazon Bedrock Inline Agent SDK&nbsp;</h1>
 
 <p align="center">
-  <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-green" /></a>
-  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-green" /></a>
-  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-green" /></a>
-  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-green" /></a>
-  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-green" /></a>
+  <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-blue" /></a>
+  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-blue" /></a>
+  <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-blue" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-blue" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-blue" /></a>
 </p>
 
 > [!NOTE]  
@@ -258,9 +258,11 @@ if __name__ == "__main__":
     6. Computer use
 
 - MCP
-    1. Cost explorer MCP server and code interpreter
-    2. Perplexity MCP server
-    3. KnowledgeBase Retrieve MCP Server
+    1. [Time MCP Server](./examples/mcp/mcp_time/)
+    2. [Perplexity MCP server](./examples/mcp/mcp_perplexity/)
+    3. [Amazon Bedrock KnowledgeBase MCP Server](./examples/mcp/mcp_aws_kb/)
+    4. [Connect MCP Server via SSE](./examples/mcp/mcp_aws_kb/)
+    5. [Cost explorer agent](./examples/mcp/cost_explorer_agent/) - Integrate Perplexity MCP server, AWS Cost explorer MCP server, and code interpreter.
 
 - Langchain Tools
     1. GitHub Toolkit

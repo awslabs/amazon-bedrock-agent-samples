@@ -6,21 +6,18 @@ from mcp import StdioServerParameters
 
 from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
+from InlineAgent import AgentAppConfig
 
-load_dotenv()
 
-MCP_SSE_URL = os.getenv("MCP_SSE_URL", None)
-
-if not MCP_SSE_URL:
-    raise RuntimeError("environment variable not set")
+config = AgentAppConfig()
 
 async def main():
 
-    cost_explorer_mcp_client = await MCPHttp.create(url=MCP_SSE_URL)
+    cost_explorer_mcp_client = await MCPHttp.create(url=config.MCP_SSE_URL)
     try:
         cost_action_group = ActionGroup(
             name="CostActionGroup",
-            mcp_client=[cost_explorer_mcp_client],
+            mcp_clients=[cost_explorer_mcp_client],
         )
         await InlineAgent(
             foundation_model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",

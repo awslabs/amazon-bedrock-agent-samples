@@ -2,7 +2,7 @@ import os
 
 from mcp import StdioServerParameters
 
-from InlineAgent.tools import MCPClient
+from InlineAgent.tools import MCPStdio
 from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
 from InlineAgent import AgentAppConfig
@@ -16,13 +16,13 @@ server_params = StdioServerParameters(
 )
 
 async def main():
-    preplexity_mcp_client = await MCPClient.create(server_params=server_params)
+    preplexity_mcp_client = await MCPStdio.create(server_params=server_params)
     
     try:
         
         preplexity_action_group = ActionGroup(
             name="SearchActionGroup",
-            mcp_client=[preplexity_mcp_client],
+            mcp_clients=[preplexity_mcp_client],
         )
         
         await InlineAgent(

@@ -1,10 +1,12 @@
-# How to use Anthropic MCP Server with Amazon Bedrock Agents
+# Time MCP Server with InlineAgent
 
-```
-git clone git@ssh.gitlab.aws.dev:eashank/AgentInlineSDK.git
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -e . 
-pip install -r examples/official/agent/mcp_perplexity/requirements.txt
-python examples/official/agent/mcp_perplexity/main.py 
-```
+<p align="center">
+  <a href="https://github.com/modelcontextprotocol/servers/tree/main/src/time"><img src="https://img.shields.io/badge/Github-servers-blue" /></a>
+</p>
+
+1. Follow setup instructions [here](../../../README.md#getting-started)
+2. Run example `python main.py`
+
+## Output
+
+![output](output.png)

@@ -4,7 +4,6 @@ from InlineAgent.agent import InlineAgent
 
 from config import cost_server_params, perplexity_server_params
 
-
 async def main():
 
     cost_explorer_mcp_client = await MCPStdio.create(server_params=cost_server_params)
@@ -16,7 +15,7 @@ async def main():
     try:
         cost_action_group = ActionGroup(
             name="CostActionGroup",
-            mcp_client=[cost_explorer_mcp_client, perplexity_mcp_client],
+            mcp_clients=[cost_explorer_mcp_client, perplexity_mcp_client],
         )
         await InlineAgent(
             foundation_model="us.anthropic.claude-3-5-sonnet-20241022-v2:0",

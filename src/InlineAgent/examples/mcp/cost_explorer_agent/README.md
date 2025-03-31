@@ -1,0 +1,27 @@
+# Cost Explorer Agent
+
+<p align="center">
+  <a href="https://github.com/aarora79/aws-cost-explorer-mcp-server"><img src="https://img.shields.io/badge/Github-aws_cost_explorer_mcp_server-blue" /></a>
+  <a href="https://hub.docker.com/r/mcp/perplexity-ask"><img src="https://img.shields.io/badge/Docker-perplexity-ask-blue" /></a>
+  <a href="https://github.com/jsonallen/perplexity-mcp"><img src="https://img.shields.io/badge/Github-perplexity-mcp-blue" /></a>
+</p>
+
+1. Follow setup instructions [here](../../../README.md#getting-started)
+2. Create .env file with [.env.example](./.env.example)
+3. Setup `aws-cost-explorer-mcp-server` MCP server
+
+```python
+git clone https://github.com/aarora79/aws-cost-explorer-mcp-server.git
+cd aws-cost-explorer-mcp-server/
+docker build -t aws-cost-explorer-mcp .
+```
+
+4. Run example `python main.py`
+
+## Output
+
+![demo](demo.mov)
+
+<!-- <p align="center">
+  <a href=""><img src="https://markdown-videos-api.jorgenkh.no/youtube/7pvEYLW1yZw?width=640&height=360&filetype=jpeg" /></a>
+</p> -->
