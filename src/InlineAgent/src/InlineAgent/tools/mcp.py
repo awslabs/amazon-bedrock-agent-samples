@@ -178,38 +178,35 @@ class MCPHttp(MCPServer):
         sse_read_timeout: float = 60 * 5,
         tools_to_use: set = set(),
     ):
-        raise NotImplementedError
 
+        # Initialize session and client objects
+        self = cls()
+        self.session = None
+        self.exit_stack = AsyncExitStack()
+        self.function_schema = dict()
+        self.callable_tools = dict()
 
-#         # Initialize session and client objects
-#         self = cls()
-#         self.session = None
-#         self.exit_stack = AsyncExitStack()
-#         self.function_schema = dict()
-#         self.callable_tools = dict()
+        stdio_transport = await self.exit_stack.enter_async_context(
+            sse_client(
+                url=url,
+                headers=headers,
+                timeout=timeout,
+                sse_read_timeout=sse_read_timeout,
+            )
+        )
+        self.stdio, self.write = stdio_transport
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(self.stdio, self.write)
+        )
 
-#         stdio_transport = await self.exit_stack.enter_async_context(
-#             sse_client(url=url, headers=headers, timeout=timeout, sse_read_timeout=sse_read_timeout)
-#         )
-#         self.stdio, self.write = stdio_transport
-#         self.session = await self.exit_stack.enter_async_context(
-#             ClientSession(self.stdio, self.write)
-#         )
+        await self.session.initialize()
 
-#         await self.session.initialize()
+        # List available tools
+        response = await self.session.list_tools()
+        tools = response.tools
+        print("\nConnected to server with tools:", [tool.name for tool in tools])
 
-#         # List available tools
-#         response = await self.session.list_tools()
-#         tools = response.tools
-#         print("\nConnected to server with tools:", [tool.name for tool in tools])
+        await self.set_available_tools(tools_to_use=tools_to_use)
+        await self.set_callable_tool(tools_to_use=tools_to_use)
 
-#         await self.set_available_tools(tools_to_use=tools_to_use)
-#         await self.set_callable_tool(tools_to_use=tools_to_use)
-
-#         return self
-
-# class MCPTookit(BaseModel):
-#     exit_stack: AsyncExitStack = AsyncExitStack()
-#     servers: List[MCPServer] = []
-#     def __init__(self, servers: List[MCPServer]):
-#         self.exit_stack = AsyncExitStack()
+        return self

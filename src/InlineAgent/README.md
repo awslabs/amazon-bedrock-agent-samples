@@ -1,21 +1,26 @@
-# Amazon Bedrock Inline Agent SDK
+
+<h2 align="center">Amazon Bedrock Inline Agent SDK&nbsp;</h2>
 
 > [!NOTE]  
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
-You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API. Using an inline agent provides you with flexibility to specify your agent capabilities like foundation models, instructions, action groups, guardrails, and knowledge bases at the same time you invoke your agent.
 
-## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent?
-
-## Why Amazon Bedrock Inline Agent SDK?
+- <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP" /></a> Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
+- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on [langfuse](https://github.com/langfuse/langfuse) and [Phoeniz](https://phoenix.arize.com/).
+- Ability to use local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
+- Take advantage of [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
+- Easy implementation with [Amazon Bedrock Knowledge](https://aws.amazon.com/bedrock/knowledge-bases/) for Retrieval Augmented Generation (RAG) and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/).
+- Give your agents capability to write and execute code using [code interpreter](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-code-interpretation.html).
+- Automate UI related tasks using computer use [1](https://docs.aws.amazon.com/bedrock/latest/userguide/computer-use.html) [2](https://aws.amazon.com/blogs/machine-learning/getting-started-with-computer-use-in-amazon-bedrock-agents/).
 
 ```python
-import asyncio
-from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
+from InlineAgent.action_group import ActionGroup
 
+import asyncio
 
+# Step 1: Define tools with Docstring
 def get_current_weather(location: str, state: str, unit: str = "fahrenheit") -> dict:
     """
     Get the current weather in a given location.
@@ -27,13 +32,14 @@ def get_current_weather(location: str, state: str, unit: str = "fahrenheit") -> 
     """
     return "Weather is 70 fahrenheit"
 
-
+# Step 2: Logically group tools together
 weather_action_group = ActionGroup(
     name="WeatherActionGroup",
     description="This is action group to get weather",
     tools=[get_current_weather],
 )
 
+# Step 3: Define agent 
 agent = InlineAgent(
     foundation_model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
     instruction="You are a friendly assistant that is responsible for getting the current weather.",
@@ -41,10 +47,37 @@ agent = InlineAgent(
     agent_name="MockAgent",
 )
 
+# Step 4: Invoke agent
 asyncio.run(agent.invoke(input_text="What is the weather of New York City, NY?"))
 ```
 
-## Setup
+## �� Table of Contents ��
+
+- [Amazon Bedrock Inline Agent vs Amazon Bedrock Agent](#amazon-bedrock-inline-agent-vs-amazon-bedrock-agent)
+- [Why Amazon Bedrock Inline Agent SDK?](#why-amazon-bedrock-inline-agent-sdk)
+- [Getting Started](#getting-started)
+- [Getting started with Model Context Protocol](#getting-started-with-model-context-protocol)
+- [Observability for Amazon Bedrock Agents](#observability-for-amazon-bedrock-agents)
+- [Example Agents](#example-agents)
+- [Roadmap Features](#roadmap-features)
+- [License](#license)
+
+## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent
+
+You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API. Using an inline agent provides you with flexibility to specify your agent capabilities like foundation models, instructions, action groups, guardrails, and knowledge bases at the same time you invoke your agent.
+
+## Why Amazon Bedrock Inline Agent SDK?
+
+## Getting Started
+
+### Prerequisites
+
+1. AWS Command Line Interface (CLI), follow instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Make sure to setup credentials, follow instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
+2. Require [Python 3.11](https://www.python.org/downloads/) or later.
+3. AWS CDK CLI, follow instructions [here](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
+4. Enable [model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
+
+### Setup
 
 ```bash
 git clone https://github.com/awslabs/amazon-bedrock-agent-samples.git
@@ -54,12 +87,13 @@ python -m venv .venv
 source .venv/bin/activate
 
 python -m pip install -e .
+
+InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 ```
 
-## Getting started with Model Context Protocol (MCP)
+## Getting started with Model Context Protocol
 
 ```python
-from dotenv import load_dotenv
 import os
 
 from mcp import StdioServerParameters
@@ -69,6 +103,7 @@ from InlineAgent.action_group import ActionGroup
 from InlineAgent.agent import InlineAgent
 
 load_dotenv()
+from dotenv import load_dotenv
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", None)
 
@@ -182,6 +217,9 @@ if __name__ == "__main__":
 
 ## Example Agents
 
+> [!CAUTION]
+> The examples provided in this repository are for experimental and educational purposes only. They demonstrate concepts and techniques but are not intended for direct use in production environments. Make sure to have Amazon Bedrock Guardrails in place to protect against [prompt injection](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-injection.html).
+
 - Features
     1. KnowledgeBase plugin
     2. User confirmation before invoking tools
@@ -201,6 +239,16 @@ if __name__ == "__main__":
 - Crew Ai Tools
     1. Spider Tool
     2. Chroma database
+
+## Roadmap Features
+
+- [Multi Agent collaboration](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-announces-general-availability-of-multi-agent-collaboration/) compatibility of Supervisor and Supervisor with routing mode.
+- [langfuse](https://github.com/langfuse/langfuse) and [Phoeniz](https://phoenix.arize.com/) compatibility with `InvokeInlineAgent`API.
+- Better console traces for `InvokeInlineAgent` and `InvokeAgent` API.
+- MCP catalog and ability to dynamically choose MCP servers at runtime.
+- Replace HTTP+SSE with new "Streamable HTTP" transport for MCP compatibility, see information [here](https://github.com/modelcontextprotocol/specification/pull/206).
+- Documentation for InlineAgent SDK.
+- Publish to PyPI.
 
 ## Related Links
 

@@ -13,35 +13,21 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", None)
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", None)
 AWS_REGION = os.getenv("AWS_REGION", None)
 BEDROCK_LOG_GROUP_NAME = os.getenv("BEDROCK_LOG_GROUP_NAME", None)
-MCP_TRANSPORT = os.getenv("MCP_TRANSPORT", None)
+MCP_SSE_URL = os.getenv("MCP_SSE_URL", None)
 
 if (
     not AWS_ACCESS_KEY_ID
     or not AWS_SECRET_ACCESS_KEY
     or not AWS_REGION
     or not BEDROCK_LOG_GROUP_NAME
-    or not MCP_TRANSPORT
+    or not MCP_SSE_URL
 ):
     raise RuntimeError("environment variable not set")
 
 
 async def main():
 
-    
-
-    cost_explorer_mcp_client = await MCPStdio.create(server_params=StdioServerParameters(
-        command="uv",
-        args=["--directory",
-          "aws-cost-explorer-mcp-server",
-          "run",
-          "server.py"],
-        env={
-            "AWS_ACCESS_KEY_ID": AWS_ACCESS_KEY_ID,
-            "AWS_SECRET_ACCESS_KEY": AWS_SECRET_ACCESS_KEY,
-            "AWS_REGION": AWS_REGION,
-            "BEDROCK_LOG_GROUP_NAME": BEDROCK_LOG_GROUP_NAME,
-        }
-    ))
+    cost_explorer_mcp_client = await MCPHttp.create(url=MCP_SSE_URL)
     try:
         cost_action_group = ActionGroup(
             name="CostActionGroup",

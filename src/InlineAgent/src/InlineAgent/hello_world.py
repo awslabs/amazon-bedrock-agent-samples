@@ -1,16 +1,17 @@
+import asyncio
 from InlineAgent.agent import InlineAgent
 from rich.console import Console
 from rich.markdown import Markdown
 import argparse
 
 
-def invoke_agent(modelId):
+async def invoke_agent(modelId):
 
-    InlineAgent(
-        foundationModel=modelId,
+    await InlineAgent(
+        foundation_model=modelId,
         instruction="You are a friendly assistant that is supposed to say hello to everything.",
-        userInput=True,
-        agentName="hello-world-agent",
+        user_input=True,
+        agent_name="hello-world-agent",
     ).invoke("Hi how are you? What can you do for me?")
 
 
@@ -25,7 +26,7 @@ def main():
 from bedrock_agents.agent import InlineAgent
 
 InlineAgent(
-    foundationModel="MOCK_ID",
+    foundationModel="us.anthropic.claude-3-5-haiku-20241022-v1:0",
     instruction="You are a friendly assistant that is supposed to say hello to everything.",
     userInput=True,
     agentName="hello-world-agent",
@@ -33,4 +34,4 @@ InlineAgent(
 """
     console = Console()
     console.print(Markdown(f"**Running Hellow world agent:**\n```python{code}```"))
-    invoke_agent(modelId=args.modelId)
+    asyncio.run(invoke_agent(modelId=args.modelId))

@@ -28,7 +28,7 @@ class ActionGroup(BaseModel):
     lambda_name: str = None
     function_schema: List[FunctionDefination] = Field(default_factory=list)
     api_schema: Optional[APISchema] = None
-    mcp_client: Optional[List[MCPServer]] = Field(default_factory=list)
+    mcp_clients: Optional[List[MCPServer]] = Field(default_factory=list)
     profile: str = "default"
     builtin_tools: Dict[
         Literal["parentActionGroupSignature", "parentActionGroupSignatureParams"],
@@ -50,7 +50,7 @@ class ActionGroup(BaseModel):
         if self.lambda_name and (self.api_schema or self.function_schema):
             return Executor.LAMBDA
 
-        if self.mcp_client:
+        if self.mcp_clients:
             return Executor.RETURN_CONTROL
 
         if self.builtin_tools:
@@ -96,11 +96,11 @@ class ActionGroup(BaseModel):
             and not self.lambda_name
             and not self.function_schema
             and not self.api_schema
-            and not self.mcp_client
+            and not self.mcp_clients
             and not self.builtin_tools
         ):
             raise ValueError(
-                "Either tools or mcp_client or lambda_name & (function_schema or api_schema) or builtin_tools must be present..."
+                "Either tools or mcp_clients or lambda_name & (function_schema or api_schema) or builtin_tools must be present..."
             )
         if self.tools:
             if self.lambda_name:
@@ -111,8 +111,8 @@ class ActionGroup(BaseModel):
                 raise ValueError(
                     "function_schema is not supported when tools is present..."
                 )
-            if self.mcp_client:
-                raise ValueError("mcp_client is not supported when tools is present...")
+            if self.mcp_clients:
+                raise ValueError("mcp_clients is not supported when tools is present...")
 
             if self.builtin_tools:
                 raise ValueError(
@@ -134,9 +134,9 @@ class ActionGroup(BaseModel):
                     "Only one of function_schema or api_schema is allowed when lambda_name is present..."
                 )
 
-            if self.mcp_client:
+            if self.mcp_clients:
                 raise ValueError(
-                    "mcp_client is not supported when lambda_name is present..."
+                    "mcp_clients is not supported when lambda_name is present..."
                 )
 
             if self.builtin_tools:
@@ -160,9 +160,9 @@ class ActionGroup(BaseModel):
                     "api_schema is not supported when function_schema is present..."
                 )
 
-            if self.mcp_client:
+            if self.mcp_clients:
                 raise ValueError(
-                    "mcp_client is not supported when function_schema is present..."
+                    "mcp_clients is not supported when function_schema is present..."
                 )
 
             if self.builtin_tools:
@@ -186,9 +186,9 @@ class ActionGroup(BaseModel):
                     "function_schema is not supported when api_schema is present..."
                 )
 
-            if self.mcp_client:
+            if self.mcp_clients:
                 raise ValueError(
-                    "mcp_client is not supported when function_schema is present..."
+                    "mcp_clients is not supported when function_schema is present..."
                 )
 
             if self.builtin_tools:
@@ -196,21 +196,21 @@ class ActionGroup(BaseModel):
                     "builtin_tools is not supported when function_schema is present..."
                 )
 
-        if self.mcp_client:
+        if self.mcp_clients:
             if self.tools:
-                raise ValueError("tools is not supported when mcp_client is present...")
+                raise ValueError("tools is not supported when mcp_clients is present...")
             if self.function_schema:
                 raise ValueError(
-                    "function_schema is not supported when mcp_client is present..."
+                    "function_schema is not supported when mcp_clients is present..."
                 )
             if self.lambda_name:
                 raise ValueError(
-                    "lambda_name is not supported when mcp_client is present..."
+                    "lambda_name is not supported when mcp_clients is present..."
                 )
 
             if self.builtin_tools:
                 raise ValueError(
-                    "builtin_tools is not supported when mcp_client is present..."
+                    "builtin_tools is not supported when mcp_clients is present..."
                 )
 
         if self.builtin_tools:
@@ -227,9 +227,9 @@ class ActionGroup(BaseModel):
                     "lambda_name is not supported when builtin_tools is present..."
                 )
 
-            if self.mcp_client:
+            if self.mcp_clients:
                 raise ValueError(
-                    "mcp_client is not supported when builtin_tools is present..."
+                    "mcp_clients is not supported when builtin_tools is present..."
                 )
         return self
 
@@ -249,9 +249,9 @@ class ActionGroups(BaseModel):
                     for tool in action_group.tools:
                         tool_map[tool.__name__] = tool
 
-                if action_group.mcp_client:
+                if action_group.mcp_clients:
 
-                    for current_client in action_group.mcp_client:
+                    for current_client in action_group.mcp_clients:
                         tool_map.update(current_client.callable_tools)
 
         return tool_map
@@ -272,9 +272,9 @@ class ActionGroups(BaseModel):
                     "customControl": action_group.executor.value
                 }
 
-                if action_group.mcp_client:
+                if action_group.mcp_clients:
                     function_schema = {"functions": list()}
-                    for current_client in action_group.mcp_client:
+                    for current_client in action_group.mcp_clients:
                         function_schema["functions"].extend(
                             current_client.function_schema["functions"]
                         )

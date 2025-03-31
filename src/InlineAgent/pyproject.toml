@@ -29,7 +29,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
-keywords = ["bedrock", "agents", "SDK"]
+keywords = ["bedrock", "inline", "agents", "SDK"]
 classifiers = [
     "License :: Apache License 2.0",
     "Programming Language :: Python :: 3.11",
@@ -56,4 +56,4 @@ tag_prefix = ""
 Repository = "https://github.com/awslabs/amazon-bedrock-agent-samples"
 
 [project.scripts]
-bedrock_agents_hello = "s.hello_world:main"
+InlineAgent_hello = "InlineAgent.hello_world:main"
