@@ -67,6 +67,7 @@ asyncio.run(agent.invoke(input_text="What is the weather of New York City, NY?")
 - [Observability for Amazon Bedrock Agents](#observability-for-amazon-bedrock-agents)
 - [Example Agents](#example-agents)
 - [Roadmap Features](#roadmap-features)
+- [FAQ](#faq)
 - [License](#license)
 
 ## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent
@@ -97,6 +98,9 @@ python -m pip install -e .
 
 InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 ```
+
+> [!NOTE]  
+> If you are getting `accessDeniedException` checkout [FAQ](#faq)
 
 ## Getting started with Model Context Protocol
 
@@ -282,6 +286,27 @@ if __name__ == "__main__":
 - Script to manage creation of Amazon Bedrock Knowledge Bases and Amazon Bedrock Guardrails.
 - Documentation for InlineAgent SDK.
 - Publish to PyPI.
+
+## FAQ
+
+1. Q: I am getting the following error `Exception: ('Unexpected exception: ', EventStreamError('An error occurred (accessDeniedException) when calling the InvokeInlineAgent operation: Access denied when calling Bedrock. Check your request permissions and retry the request.'))`
+
+A: Make sure that these prerequisites are met:
+
+- Enable model that you are using, see [model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
+- Make sure you are passing the correct profile when invoking agent:
+
+```python
+agent = InlineAgent(
+    foundation_model="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    instruction="You are a friendly assistant that is responsible for getting the current weather.",
+    agent_name="MockAgent",
+    profile="Test" # By default the SDK uses `default` profile
+)
+```
+
+- Verify that your IAM role has correct permissions. See prerequisites [here](https://docs.aws.amazon.com/bedrock/latest/userguide/inline-agent-prereq.html).
+
 
 ## Related Links
 
