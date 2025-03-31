@@ -34,7 +34,7 @@ Follow instructions [here](/src/shared/stock_data/).
 
 ### For main.ipynb
 
-Run through the cells in the notebook, attach appropriate permissions as needed. For this notebook, you may attach the following IAM policy to the appropriate execution role:
+Run through the cells in the notebook, attach appropriate permissions as needed. For this notebook, you may attach the following IAM policy to the appropriate execution role to run through the notebook without issues:
 
 ```bash
 {
