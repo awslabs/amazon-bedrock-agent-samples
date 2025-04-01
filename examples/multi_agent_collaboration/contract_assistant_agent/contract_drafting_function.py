@@ -42,35 +42,6 @@ def get_template_from_s3(contract_type):
         return None
 
 
-# Example usage:
-def read_template_content(document):
-    """
-    Helper function to read content from the template
-    """
-    if document is None:
-        return None
-
-    content = {"paragraphs": [], "tables": []}
-
-    # Extract paragraphs
-    for paragraph in document.paragraphs:
-        if paragraph.text.strip():
-            content["paragraphs"].append(paragraph.text)
-
-    # Extract tables
-    for table in document.tables:
-        table_data = []
-        for row in table.rows:
-            row_data = []
-            for cell in row.cells:
-                cell_text = " ".join(paragraph.text for paragraph in cell.paragraphs)
-                row_data.append(cell_text)
-            table_data.append(row_data)
-        content["tables"].append(table_data)
-
-    return content
-
-
 def draft_contract(contract_type, contract_details):
     try:
         # Get the base template content from S3
@@ -137,7 +108,7 @@ def draft_contract(contract_type, contract_details):
         print(f"Error in draft_contract: {str(e)}")
         return {"error": f"Error creating contract: {str(e)}"}
 
-
+# draft_contract 1 is an option of drafting the contract without using LLM. The method works but if the payload is larger than the current lambda limit of 25kb, it throws exception. I just put in case customer want to try this with quota increase.
 def draft_contract1(contract_type, contract_details):
     """
     Draft a contract using template and user provided details
