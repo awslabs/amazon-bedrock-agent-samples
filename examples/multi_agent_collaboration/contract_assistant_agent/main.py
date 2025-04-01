@@ -454,7 +454,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    print("in main")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--recreate_agents",
