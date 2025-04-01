@@ -1,32 +1,13 @@
-*.whl
-*.mov
-.env
-.env_runtime
-.ipynb_checkpoints
-.vscode
-__pycache__
 .DS_Store
-.venv
-.web
-boto3/
-aws-lambda-developer-guide/
-samples/
-
-# local copies
-agent-old.py
-knowledge_bases-old.py
-lambda_mask_string.py
-*.pptx
-output/
-
+db/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.pem
 # C extensions
 *.so
-
+output/
 # Distribution / packaging
 .Python
 build/
@@ -46,6 +27,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+trace/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -115,6 +97,12 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
+# UV
+#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#uv.lock
+
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
@@ -181,7 +169,14 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-tmp-code-README.md
 
-# cdk files
-cdk.out*
+# Ruff stuff:
+.ruff_cache/
+
+# PyPI configuration file
+.pypirc
+.dev-venv
+.venv
+test.py
+perplexity-ask
+aws-cost-explorer-mcp-server

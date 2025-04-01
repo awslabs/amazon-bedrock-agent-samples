@@ -1,0 +1,3 @@
+crewai[tools]
+embedchain
+langchain_aws

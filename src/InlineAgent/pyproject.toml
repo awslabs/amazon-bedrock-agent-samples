@@ -1,0 +1,59 @@
+[build-system]
+requires = [
+    "setuptools >= 72.1",
+    "versioneer[toml]",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "InlineAgent"
+description = "Lightweight SDK for Amazon Bedrock Inline Agents"
+dependencies = [
+  "boto3 == 1.37.21",
+  "pydantic == 2.10.2",
+  "termcolor == 2.5.0",
+  "rich == 13.9.4",
+  "opentelemetry-api == 1.31.1",
+  "opentelemetry-sdk == 1.31.1",
+  "opentelemetry-exporter-otlp == 1.31.1",
+  "openinference-semantic-conventions == 0.1.16",
+  "pydantic-settings == 2.8.1",
+  "wrapt == 1.17.2",
+  "botocore == 1.37.23",
+  "mcp == 1.6.0"
+]
+requires-python = ">= 3.11"
+authors = [
+  {name = "Eashan Kaushik", email = "eashank@amazon.com"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+keywords = ["bedrock", "inline", "agents", "SDK"]
+classifiers = [
+    "License :: Apache License 2.0",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+]
+dynamic = ["version"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+license-files = ["LICENSES/*.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests*"]
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "src/InlineAgent/_version.py"
+versionfile_build = "InlineAgent/_version.py"
+tag_prefix = ""
+
+[project.urls]
+Repository = "https://github.com/awslabs/amazon-bedrock-agent-samples"
+
+[project.scripts]
+InlineAgent_hello = "InlineAgent.hello_world:main"
