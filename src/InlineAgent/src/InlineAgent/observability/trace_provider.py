@@ -15,7 +15,7 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry.sdk.resources import Resource
 
-from .settings_management import AppConfig
+from .settings_management import ObservabilityConfig
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_tracer_provider(config: AppConfig, timeout: int = 300):
+def create_tracer_provider(config: ObservabilityConfig, timeout: int = 300):
     """Create an OpenTelemetry TracerProvider configured for Langfuse."""
 
     # Create resource attributes

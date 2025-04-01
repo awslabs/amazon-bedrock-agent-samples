@@ -17,7 +17,7 @@ from openinference.semconv.trace import (
 from .utils import add_citation, get_agent_from_caller_chain
 from .semantics import SpanAttributes, SpanName
 from .process import ProcessL2Trace
-from .settings_management import AppConfig
+from .settings_management import ObservabilityConfig
 from .span_manager import SpanManager
 from .utils import json_safe
 
@@ -28,7 +28,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-config = AppConfig()
+config = ObservabilityConfig()
 
 tracer = otel_trace.get_tracer(config.BEDROCK_AGENT_TRACER_NAME)
 
@@ -61,8 +61,10 @@ def observe(show_traces: bool = True, save_traces: bool = False):
                 pass
 
             stream_final_response = kwargs.get(
-                "streamingConfigurations", {"streamFinalResponse", False}
-            )["streamFinalResponse"]
+                "streamingConfigurations", {"streamFinalResponse": False}
+            )
+            
+            stream_final_response= stream_final_response["streamFinalResponse"]
             span_manager = SpanManager()
 
             time_before_call = datetime.now(timezone.utc)

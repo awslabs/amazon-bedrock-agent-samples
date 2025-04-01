@@ -18,7 +18,7 @@ from .utils import (
     json_safe,
 )
 from .semantics import SpanAttributes, SpanName
-from .settings_management import AppConfig
+from .settings_management import ObservabilityConfig
 from .span_manager import SpanManager
 from .constants import (
     L2Traces,
@@ -31,7 +31,7 @@ from termcolor import colored
 from rich.console import Console
 from rich.markdown import Markdown
 
-config = AppConfig()
+config = ObservabilityConfig()
 
 tracer = otel_trace.get_tracer(config.BEDROCK_AGENT_TRACER_NAME)
 

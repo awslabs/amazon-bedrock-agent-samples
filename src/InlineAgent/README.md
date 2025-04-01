@@ -5,15 +5,15 @@
   <a href="./README.md/#getting-started-with-model-context-protocol"><img src="https://img.shields.io/badge/AWS-MCP-blue" /></a>
   <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Langfuse-blue" /></a>
   <a href="./README.md/#observability-for-amazon-bedrock-agents"><img src="https://img.shields.io/badge/AWS-Phoenix-blue" /></a>
-  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI-blue" /></a>
-  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain-blue" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-CrewAI_ToolKit-blue" /></a>
+  <a href="./README.md/#example-agents"><img src="https://img.shields.io/badge/AWS-Langchain_Tools-blue" /></a>
 </p>
 
 > [!NOTE]  
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
-- Use Model Context Protocol (MCP) servers [[1]](https://github.com/modelcontextprotocol/servers) [[2]](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
+- Use Amazon Bedrock Agents to orchestrate agentic workflows using tools from any MCP server [[1]](https://github.com/modelcontextprotocol/servers) [[2]](https://github.com/punkpeye/awesome-mcp-servers).
 - Monitor and evaluate your Amazon Bedrock Agent responses with the `@observe` decorator using [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/).
 - Utilize local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
 - Take advantage of the [CrewAI Toolkit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
@@ -142,6 +142,8 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 
 ### Using MCP servers
 
+<a href="./examples/mcp/"><img src="https://img.shields.io/badge/AWS-MCP_Examples-blue" /></a>
+
 ```python
 InlineAgent(
     # 1: Provide the model
@@ -216,17 +218,23 @@ if __name__ == "__main__":
 
 ## Observability for Amazon Bedrock Agents
 
+<a href="./examples/observability/"><img src="https://img.shields.io/badge/AWS-MCP_Observability-blue" /></a>
+
 ```python
-import os
-import uuid
-from InlineAgent.observability import observe
 import boto3
-from dotenv import load_dotenv
-
-from InlineAgent.observability import AppConfig
+import uuid
+from InlineAgent.observability import ObservabilityConfig, observe
 from InlineAgent.observability import create_tracer_provider
+from InlineAgent import AgentAppConfig
 
+# Step 1: Create configurations
+observe_config = ObservabilityConfig()
+agent_config = AgentAppConfig()
 
+# Step 2: Create tracer
+create_tracer_provider(config=observe_config, timeout=300)
+
+# Step 3: Use @observe
 @observe(show_traces=True, save_traces=False)
 def invoke_bedrock_agent(inputText: str, sessionId: str, **kwargs):
     """Invoke a Bedrock Agent with instrumentation"""
@@ -245,69 +253,58 @@ def invoke_bedrock_agent(inputText: str, sessionId: str, **kwargs):
 
     return response
 
-
-if __name__ == "__main__":
-
-    config = AppConfig()  # Load .env variables
-
-    create_tracer_provider(config=config, timeout=300)
-
-    load_dotenv()
-
-    agentId = os.environ.get("AGENT_ID")
-    agentAliasId = os.environ.get("AGENT_ALIAS_ID")
-
-    user_id = "multiagent-test"
-
-    question = "Can you give me my past energy consumption? What is my average spending on summer months? Use code interpreter to visulize the result. My customer id is 1"
-
-    sessionId = f"session-{str(uuid.uuid4())}"  # Dynamic session ID
-
-    # Tags for filtering in Langfuse
-    tags = ["bedrock-agent", "example", "development"]
-
-    stream_final_response = True
-
-    enable_trace = True  # Required for observability
-
-    # Single invocation that works for both streaming and non-streaming
-    agent_answer = invoke_bedrock_agent(
-        agentId=agentId,
-        agentAliasId=agentAliasId,
-        inputText=question,
-        sessionId=sessionId,
-        enableTrace=enable_trace,
-        streamingConfigurations={"streamFinalResponse": stream_final_response},
-        user_id=user_id,
-        tags=tags,
-    )
-
+# Step 4: Invoke the agent
+agent_answer = invoke_bedrock_agent(
+    agentId=agent_config.AGENT_ID,
+    agentAliasId=agent_config.AGENT_ALIAS_ID,
+    inputText="<Input Question>",
+    sessionId=f"session-{str(uuid.uuid4())}",
+    enableTrace=True,
+)
 ```
+
+<details>
+<summary>
+<h2>Langfuse<h2>
+</summary>
+  <img src="./images/langfuse.png">
+</details>
+
+<details>
+<summary>
+<h2>Phoenix<h2>
+</summary>
+  <img src="./images/phoenix.png">
+</details>
+
+For differences between Langfuse and Phoenix checkout this [blog post](https://langfuse.com/faq/all/best-phoenix-arize-alternatives).
 
 ## Example Agents
 
 > [!CAUTION]
 > The examples provided in this repository are for experimental and educational purposes only. They demonstrate concepts and techniques but are not intended for direct use in production environments. Make sure to have Amazon Bedrock Guardrails in place to protect against [prompt injection](https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-injection.html).
 
-- Features
-    1. [Generate response with citations - Amazon Bedrock Knowledgebase](./examples/feature_examples/knowledgebase/)
-    2. [User confirmation before invoking tools](./examples/feature_examples/user_confirmation/)
-    3. Guardrails `Coming Soon`
-    4. Multi-Agent collaboration `Coming Soon`
-    5. Code interpreter `Coming Soon`
-    6. Computer use `Coming Soon`
+### Feature Examples
 
-- MCP
-    1. [Time MCP Server](./examples/mcp/mcp_time/)
-    2. [Perplexity MCP server](./examples/mcp/mcp_perplexity/)
-    3. [Amazon Bedrock KnowledgeBase MCP Server](./examples/mcp/mcp_aws_kb/)
-    4. [Connect MCP Server via SSE](./examples/mcp/mcp_aws_kb/)
-    5. [Cost explorer agent](./examples/mcp/cost_explorer_agent/) - Integrate Perplexity MCP server, AWS Cost explorer MCP server, and code interpreter.
+1. [Generate response with citations - Amazon Bedrock Knowledgebase](./examples/feature_examples/knowledgebase/)
+2. [User confirmation before invoking tools](./examples/feature_examples/user_confirmation/)
+3. Guardrails `Coming Soon`
+4. Multi-Agent collaboration `Coming Soon`
+5. Code interpreter `Coming Soon`
+6. Computer use `Coming Soon`
 
-- Langchain Tools
+### MCP Examples
+
+1. [Time MCP Server](./examples/mcp/mcp_time/)
+2. [Perplexity MCP server](./examples/mcp/mcp_perplexity/)
+3. [Amazon Bedrock KnowledgeBase MCP Server](./examples/mcp/mcp_aws_kb/)
+4. [Connect MCP Server via SSE](./examples/mcp/mcp_aws_kb/)
+5. [Cost explorer agent](./examples/mcp/cost_explorer_agent/) - Integrate Perplexity MCP server, AWS Cost explorer MCP server, and code interpreter.
+
+### Langchain Tools Examples
     1. [GitHub Agent](./examples/langchain_tools/github_agent/)
 
-- Crew Ai Tools
+### Crew AI Tools Examples
     1. [Web Scrapper Agent](./examples/crewai_toolkit/web_scraper_spider/)
     2. [PDF RAG using Chroma](./examples/crewai_toolkit/pdf_rag_chroma_db/)
 

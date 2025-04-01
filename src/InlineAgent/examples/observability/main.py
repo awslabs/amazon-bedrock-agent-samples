@@ -1,12 +1,14 @@
-import os
 import uuid
-from InlineAgent.observability import observe
 import boto3
-from dotenv import load_dotenv
 
-from InlineAgent.observability import AppConfig
+from InlineAgent.observability import ObservabilityConfig, observe
 from InlineAgent.observability import create_tracer_provider
+from InlineAgent import AgentAppConfig
 
+observe_config = ObservabilityConfig()
+agent_config = AgentAppConfig()
+
+create_tracer_provider(config=observe_config, timeout=300)
 
 @observe(show_traces=True, save_traces=False)
 def invoke_bedrock_agent(inputText: str, sessionId: str, **kwargs):
@@ -29,32 +31,22 @@ def invoke_bedrock_agent(inputText: str, sessionId: str, **kwargs):
 
 if __name__ == "__main__":
 
-    config = AppConfig()  # Load .env variables
-
-    create_tracer_provider(config=config, timeout=1200)
-
-    load_dotenv()
-
-    agentId = os.environ.get("AGENT_ID")
-    agentAliasId = os.environ.get("AGENT_ALIAS_ID")
-
     user_id = "multiagent-test"
 
-    question = "Can you update my forecast for month 03/2025? I will be travelling and my estimate will be 90. My id is 1. Also tell me how can I check if my Sunpower double-X solar panel eletrical consumption is compliant with energy rules?"
+    question = "<user-question>"
 
-    sessionId = f"session-{str(uuid.uuid4())}"  # Dynamic session ID
+    sessionId = f"session-{str(uuid.uuid4())}"
 
-    # Tags for filtering in Langfuse
+    # Tags for filtering
     tags = ["bedrock-agent", "example", "development"]
 
     stream_final_response = True
 
     enable_trace = True  # Required for observability
 
-    # Single invocation that works for both streaming and non-streaming
     agent_answer = invoke_bedrock_agent(
-        agentId=agentId,
-        agentAliasId=agentAliasId,
+        agentId=agent_config.AGENT_ID,
+        agentAliasId=agent_config.AGENT_ALIAS_ID,
         inputText=question,
         sessionId=sessionId,
         enableTrace=enable_trace,
