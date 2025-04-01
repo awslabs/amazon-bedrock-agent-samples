@@ -151,7 +151,7 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 ## Getting started with Model Context Protocol
 
 <p align="center">
-    <a href="url"><img src="./images/mcp.jpg" height="500" width="800" ></a>
+    <a href="url"><img src="./images/mcp.png" ></a>
 </p>
 
 ### Using MCP servers
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 <h2>Example Response<h2>
 </summary>
 <p align="center">
-    <a href="url"><img src="./images/mcp.png" ></a>
+    <a href="url"><img src="./images/mcp_output.png" ></a>
 </p>
 </details>
 
