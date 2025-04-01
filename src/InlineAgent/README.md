@@ -13,13 +13,13 @@
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
-- Use Model Context Protocol (MCP) servers [1](https://github.com/modelcontextprotocol/servers) [2](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
-- Monitor and evaluate your Amazon Bedrock Agent response with `@observe` decorater on [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/).
-- Ability to use local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
-- Take advantage of [CrewAI Tookit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
-- Easy implementation with [Amazon Bedrock Knowledge](https://aws.amazon.com/bedrock/knowledge-bases/) for Retrieval Augmented Generation (RAG) and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/).
-- Give your agents capability to write and execute code using [code interpreter](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-code-interpretation.html).
-- Automate UI related tasks using computer use [1](https://docs.aws.amazon.com/bedrock/latest/userguide/computer-use.html) [2](https://aws.amazon.com/blogs/machine-learning/getting-started-with-computer-use-in-amazon-bedrock-agents/).
+- Use Model Context Protocol (MCP) servers [[1]](https://github.com/modelcontextprotocol/servers) [[2]](https://github.com/punkpeye/awesome-mcp-servers) to orchestrate agentic workflows on Amazon Bedrock.
+- Monitor and evaluate your Amazon Bedrock Agent responses with the `@observe` decorator using [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/).
+- Utilize local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
+- Take advantage of the [CrewAI Toolkit](https://github.com/crewAIInc/crewAI-tools) and [Langchain Tools](https://python.langchain.com/docs/integrations/tools/) with Amazon Bedrock Agents.
+- Implement easily with [Amazon Bedrock Knowledge](https://aws.amazon.com/bedrock/knowledge-bases/) for Retrieval Augmented Generation (RAG) and [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/).
+- Give your agents the capability to write and execute code using [code interpreter](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-code-interpretation.html).
+- Automate UI-related tasks using computer use [[1]](https://docs.aws.amazon.com/bedrock/latest/userguide/computer-use.html) [[2]](https://aws.amazon.com/blogs/machine-learning/getting-started-with-computer-use-in-amazon-bedrock-agents/).
 
 ```python
 from InlineAgent.agent import InlineAgent
@@ -72,9 +72,43 @@ asyncio.run(agent.invoke(input_text="What is the weather of New York City, NY?")
 
 ## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent
 
-You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API. Using an inline agent provides you with flexibility to specify your agent capabilities like foundation models, instructions, action groups, guardrails, and knowledge bases at the same time you invoke your agent.
+![AmazonBedrockAgents](./images/bedrock.jpg)
+
+Amazon Bedrock Agents are deployed to the AWS Cloud, which means that every time you need to modify an agent, you must invoke the [CreateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateAgent.html) or [UpdateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_UpdateAgent.html) APIs. Before new Agent Configurations can replace existing configurations on the AWS Cloud, you must also invoke the [PrepareAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_PrepareAgent.html) API.
+
+Note: "Agent Configurations" refer to the parameters that define the agent, including foundation models, instructions, action groups, guardrails, and knowledge bases.
+
+![AmazonBedrockInlineAgents](./images/inline.jpg)
+
+On the other hand, using an inline agent provides you with the flexibility to specify agent capabilities—such as foundation models, instructions, action groups, guardrails, and knowledge bases—at the time of invocation. You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using the [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API.
+
+This capability allows you to share Agent Configurations with other developers or users, enabling them to invoke your agent with the specified parameters.
+
+![AmazonBedrockInlineAgentsDeploy](./images/deploy_inline.jpg)
+
+To deploy inline agents effectively, consider placing the `Agent Configurations` in a shared environment. In this setup:
+
+- Developers will have write access to the configurations
+- Users will have read-only access to these configurations when calling the `InvokeInlineAgent` API
+
+This permission structure enables centralized management while maintaining appropriate access control for your technical implementation.
 
 ## Why Amazon Bedrock Inline Agent SDK?
+
+Amazon Bedrock Inline Agent SDK allows your to orchestracte the required flow to invoke inline agents.
+
+![SDK](./images/sdk.jpg)
+
+The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline agents by managing complex workflow orchestration. Without this SDK, developers must write and maintain custom code for:
+
+1. Parsing response streams
+2. Handling Return of Control (RoC) flows
+3. Managing state between agent interactions
+4. Coordinating API calls
+
+![inlinetools](./images/tools.jpg)
+
+![inlinetoolslambda](./images/tools-lamnda.jpg)
 
 ## Getting Started
 
@@ -103,6 +137,8 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 > If you are getting `accessDeniedException` checkout [FAQ](#faq)
 
 ## Getting started with Model Context Protocol
+
+![mcp](./images/mcp.jpg)
 
 ### Using MCP servers
 
