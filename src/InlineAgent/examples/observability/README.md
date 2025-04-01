@@ -10,3 +10,21 @@
 
 - Setting `save_traces` to True saves the agent trace in `trace` directory.
 - Setting `show_traces` to True prints the agent trace in `console`.
+
+<details>
+<summary>
+<h2>Langfuse<h2>
+</summary>
+<p align="center">
+    <a href="url"><img src="./images/langfuse.png" height="500" width="800" ></a>
+</p>
+</details>
+
+<details>
+<summary>
+<h2>Phoenix<h2>
+</summary>
+<p align="center">
+    <a href="url"><img src="./images/phoenix.png" height="500" width="800" ></a>
+</p>
+</details>

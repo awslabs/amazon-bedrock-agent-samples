@@ -72,19 +72,25 @@ asyncio.run(agent.invoke(input_text="What is the weather of New York City, NY?")
 
 ## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent
 
-![AmazonBedrockAgents](./images/bedrock.jpg)
+<p align="center">
+    <a href="url"><img src="./images/bedrock.jpg" height="350" width="800" ></a>
+</p>
 
 Amazon Bedrock Agents are deployed to the AWS Cloud, which means that every time you need to modify an agent, you must invoke the [CreateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateAgent.html) or [UpdateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_UpdateAgent.html) APIs. Before new Agent Configurations can replace existing configurations on the AWS Cloud, you must also invoke the [PrepareAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_PrepareAgent.html) API.
 
 Note: "Agent Configurations" refer to the parameters that define the agent, including foundation models, instructions, action groups, guardrails, and knowledge bases.
 
-![AmazonBedrockInlineAgents](./images/inline.jpg)
+<p align="center">
+    <a href="url"><img src="./images/inline.jpg" height="350" width="800" ></a>
+</p>
 
 On the other hand, using an inline agent provides you with the flexibility to specify agent capabilities—such as foundation models, instructions, action groups, guardrails, and knowledge bases—at the time of invocation. You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using the [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API.
 
 This capability allows you to share Agent Configurations with other developers or users, enabling them to invoke your agent with the specified parameters.
 
-![AmazonBedrockInlineAgentsDeploy](./images/deploy_inline.jpg)
+<p align="center">
+    <a href="url"><img src="./images/deploy_inline.jpg" height="350" width="800" ></a>
+</p>
 
 To deploy inline agents effectively, consider placing the `Agent Configurations` in a shared environment. In this setup:
 
@@ -97,7 +103,9 @@ This permission structure enables centralized management while maintaining appro
 
 Amazon Bedrock Inline Agent SDK allows your to orchestracte the required flow to invoke inline agents.
 
-![SDK](./images/sdk.jpg)
+<p align="center">
+    <a href="url"><img src="./images/sdk.jpg" height="350" width="800" ></a>
+</p>
 
 The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline agents by managing complex workflow orchestration. Without this SDK, developers must write and maintain custom code for:
 
@@ -106,9 +114,13 @@ The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline a
 3. Managing state between agent interactions
 4. Coordinating API calls
 
-![inlinetools](./images/tools.jpg)
+<p align="center">
+    <a href="url"><img src="./images/tools.jpg" height="350" width="800" ></a>
+</p>
 
-![inlinetoolslambda](./images/tools-lamnda.jpg)
+<p align="center">
+    <a href="url"><img src="./images/tools-lamnda.jpg" height="350" width="800" ></a>
+</p>
 
 ## Getting Started
 
@@ -138,7 +150,9 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 
 ## Getting started with Model Context Protocol
 
-![mcp](./images/mcp.jpg)
+<p align="center">
+    <a href="url"><img src="./images/mcp.jpg" height="500" width="800" ></a>
+</p>
 
 ### Using MCP servers
 
@@ -213,7 +227,9 @@ if __name__ == "__main__":
 <summary>
 <h2>Example Response<h2>
 </summary>
-  <img src="./images/mcp_output.png">
+<p align="center">
+    <a href="url"><img src="./images/mcp_output.png" height="500" width="800" ></a>
+</p>
 </details>
 
 ## Observability for Amazon Bedrock Agents
@@ -267,14 +283,18 @@ agent_answer = invoke_bedrock_agent(
 <summary>
 <h2>Langfuse<h2>
 </summary>
-  <img src="./images/langfuse.png">
+<p align="center">
+    <a href="url"><img src="./images/langfuse.png" height="500" width="800" ></a>
+</p>
 </details>
 
 <details>
 <summary>
 <h2>Phoenix<h2>
 </summary>
-  <img src="./images/phoenix.png">
+<p align="center">
+    <a href="url"><img src="./images/phoenix.png" height="500" width="800" ></a>
+</p>
 </details>
 
 For differences between Langfuse and Phoenix checkout this [blog post](https://langfuse.com/faq/all/best-phoenix-arize-alternatives).

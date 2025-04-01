@@ -45,8 +45,8 @@ if __name__ == "__main__":
     enable_trace = True  # Required for observability
 
     agent_answer = invoke_bedrock_agent(
-        agentId=agent_config.AGENT_ID,
-        agentAliasId=agent_config.AGENT_ALIAS_ID,
+        agentId="ALTVU4CTCM",
+        agentAliasId="BMQPPRT7X5",
         inputText=question,
         sessionId=sessionId,
         enableTrace=enable_trace,
