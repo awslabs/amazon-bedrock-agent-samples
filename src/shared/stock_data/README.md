@@ -11,7 +11,7 @@ The [Investment Research Agent](/examples/multi_agent_collaboration/investment_r
 
 
 
-- **AgentLambdaFunction**: The AWS Lambda function implements both the "stock_data_lookup" and "portfolio_optimization" functionalities. It uses the Python 3.11 runtime and attaches two layers: a custom layer and the AWSSDKPandas layer managed by AWS.
+- **AgentLambdaFunction**: This AWS Lambda function implements the stock_data_lookup and portfolio_optimization functionalities. It uses a Python 3.12 container image with all dependencies packaged at build time.
 - **AgentLambdaRole**: This is an AWS Identity and Access Management (IAM) role that grants the Lambda function the necessary permissions to execute.
 - **AgentAliasLambdaPermission** and **AgentLambdaPermission**: These resources grant permissions for Amazon Bedrock Agents to invoke the Lambda function.
 
