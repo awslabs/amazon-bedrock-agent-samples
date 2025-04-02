@@ -13,6 +13,9 @@
 > Configuring and invoking an inline agent feature is in preview release for Amazon Bedrock and is subject to change.
 > Amazon Bedrock Inline Agent SDK is currently in beta.
 
+> [!IMPORTANT]
+> Never expose AWS keys publicly, use least privilege IAM roles, and rotate credentials every 90 days. Utilize AWS Secrets Manager, implement MFA, avoid hard-coding credentials, and continuously monitor access.
+
 - Use Amazon Bedrock Agents to orchestrate agentic workflows using tools from any MCP server [[1]](https://github.com/modelcontextprotocol/servers) [[2]](https://github.com/punkpeye/awesome-mcp-servers).
 - Monitor and evaluate your Amazon Bedrock Agent responses with the `@observe` decorator using [langfuse](https://github.com/langfuse/langfuse) and [phoenix](https://phoenix.arize.com/).
 - Utilize local implementations of tools with Amazon Bedrock Agents - no AWS Lambda required.
@@ -73,15 +76,15 @@ asyncio.run(agent.invoke(input_text="What is the weather of New York City, NY?")
 ## Amazon Bedrock Inline Agent vs Amazon Bedrock Agent
 
 <p align="center">
-    <a href="url"><img src="./images/bedrock.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/bedrock.png"></a>
 </p>
 
 Amazon Bedrock Agents are deployed to the AWS Cloud, which means that every time you need to modify an agent, you must invoke the [CreateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_CreateAgent.html) or [UpdateAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_UpdateAgent.html) APIs. Before new Agent Configurations can replace existing configurations on the AWS Cloud, you must also invoke the [PrepareAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_PrepareAgent.html) API.
 
-Note: "Agent Configurations" refer to the parameters that define the agent, including foundation models, instructions, action groups, guardrails, and knowledge bases.
+Note: "Agent Configurations" refers to the parameters that define the agent, including foundation models, instructions, action groups, guardrails, and knowledge bases.
 
 <p align="center">
-    <a href="url"><img src="./images/inline.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/inline.png" ></a>
 </p>
 
 On the other hand, using an inline agent provides you with the flexibility to specify agent capabilities—such as foundation models, instructions, action groups, guardrails, and knowledge bases—at the time of invocation. You can configure and invoke an inline Amazon Bedrock agent dynamically at runtime using the [InvokeInlineAgent](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent-runtime_InvokeInlineAgent.html) API.
@@ -89,7 +92,7 @@ On the other hand, using an inline agent provides you with the flexibility to sp
 This capability allows you to share Agent Configurations with other developers or users, enabling them to invoke your agent with the specified parameters.
 
 <p align="center">
-    <a href="url"><img src="./images/deploy_inline.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/deploy_inline.png" ></a>
 </p>
 
 To deploy inline agents effectively, consider placing the `Agent Configurations` in a shared environment. In this setup:
@@ -104,7 +107,7 @@ This permission structure enables centralized management while maintaining appro
 Amazon Bedrock Inline Agent SDK allows your to orchestracte the required flow to invoke inline agents.
 
 <p align="center">
-    <a href="url"><img src="./images/sdk.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/sdk.png"  ></a>
 </p>
 
 The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline agents by managing complex workflow orchestration. Without this SDK, developers must write and maintain custom code for:
@@ -115,11 +118,11 @@ The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline a
 4. Coordinating API calls
 
 <p align="center">
-    <a href="url"><img src="./images/tools.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/tools.png" ></a>
 </p>
 
 <p align="center">
-    <a href="url"><img src="./images/tools-lamnda.jpg" height="350" width="800" ></a>
+    <a href="url"><img src="./images/tools_lambda.png"  ></a>
 </p>
 
 ## Getting Started
@@ -127,7 +130,7 @@ The Amazon Bedrock Inline Agent SDK streamlines the process of invoking inline a
 ### Prerequisites
 
 1. AWS Command Line Interface (CLI), follow instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Make sure to setup credentials, follow instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html).
-2. Require [Python 3.11](https://www.python.org/downloads/) or later.
+2. Requires [Python 3.11](https://www.python.org/downloads/) or later.
 3. AWS CDK CLI, follow instructions [here](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
 4. Enable [model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html).
 
@@ -151,7 +154,7 @@ InlineAgent_hello us.anthropic.claude-3-5-haiku-20241022-v1:0
 ## Getting started with Model Context Protocol
 
 <p align="center">
-    <a href="url"><img src="./images/mcp.jpg" height="500" width="800" ></a>
+    <a href="url"><img src="./images/mcp.png" ></a>
 </p>
 
 ### Using MCP servers
@@ -228,7 +231,7 @@ if __name__ == "__main__":
 <h2>Example Response<h2>
 </summary>
 <p align="center">
-    <a href="url"><img src="./images/mcp_output.png" height="500" width="800" ></a>
+    <a href="url"><img src="./images/mcp_output.png" ></a>
 </p>
 </details>
 
@@ -284,7 +287,7 @@ agent_answer = invoke_bedrock_agent(
 <h2>Langfuse<h2>
 </summary>
 <p align="center">
-    <a href="url"><img src="./images/langfuse.png" height="500" width="800" ></a>
+    <a href="url"><img src="./images/langfuse.png" ></a>
 </p>
 </details>
 
@@ -293,7 +296,7 @@ agent_answer = invoke_bedrock_agent(
 <h2>Phoenix<h2>
 </summary>
 <p align="center">
-    <a href="url"><img src="./images/phoenix.png" height="500" width="800" ></a>
+    <a href="url"><img src="./images/phoenix.png" ></a>
 </p>
 </details>
 
@@ -331,7 +334,7 @@ For differences between Langfuse and Phoenix checkout this [blog post](https://l
 ## Roadmap Features
 
 - [Multi Agent collaboration](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-announces-general-availability-of-multi-agent-collaboration/) compatibility of Supervisor and Supervisor with routing mode.
-- [langfuse](https://github.com/langfuse/langfuse) and [Phoeniz](https://phoenix.arize.com/) compatibility with `InvokeInlineAgent`API.
+- [langfuse](https://github.com/langfuse/langfuse) and [Phoenix](https://phoenix.arize.com/) compatibility with `InvokeInlineAgent`API.
 - Better console traces for `InvokeInlineAgent` and `InvokeAgent` API.
 - MCP catalog and ability to dynamically choose MCP servers at runtime.
 - Replace HTTP+SSE with new "Streamable HTTP" transport for MCP compatibility, see information [here](https://github.com/modelcontextprotocol/specification/pull/206).
@@ -359,7 +362,6 @@ agent = InlineAgent(
 ```
 
 - Verify that your IAM role has correct permissions. See prerequisites [here](https://docs.aws.amazon.com/bedrock/latest/userguide/inline-agent-prereq.html).
-
 
 ## Related Links
 

@@ -14,3 +14,6 @@
 - [Ryan Sachs](https://github.com/sachsry)
 - [SaiJeevan Devireddy](https://github.com/devireds)
 - [Neelam Koshiya](https://github.com/neelamkoshiya)
+- [Alex Thewsey](https://github.com/athewsey)
+- [Kaustav Dey](https://github.com/kaustavbecs)
+- [Tony Santiago](https://github.com/tsanti)

@@ -101,6 +101,11 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 
 [Human-in-the-loop Agent](/examples/agents/human_in_the_loop/)
 
+
 ## 03/31/2025
 
 [Inline Agent SDK](./src/InlineAgent/)
+
+## 04/02/2025
+
+[Langfuse self deployment](/examples/agent_observability/deploy-langfuse-on-ecs-fargate-with-typescript-cdk/)

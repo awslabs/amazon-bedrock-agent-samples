@@ -5,20 +5,16 @@
 </p>
 
 1. Follow setup instructions [here](../../../README.md#getting-started)
-2. Create .env file with [.env.example](./.env.example)
-
-![env](./images/env.png)
-
-3. Install requirements
+2. Install requirements
 
 ```bash
 pip install -r requirements
 ```
 
-4. Ingest pdf in Chroma database
+3. Ingest pdf in Chroma database
 
 ```python
 python ingest.py
 ```
 
-5. Run example `python main.py`
+4. Run example `python main.py`
