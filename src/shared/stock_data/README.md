@@ -1,8 +1,13 @@
-# Stock Data Lookup Tool
+# Financial Data Tools: Stock Data Lookup & Portfolio Optimization
 
-To demonstrate use of a Bedrock Agents Action Group as a reusable tool across multiple Bedrock Agents, here we have created a lightweight StockData tool. It is able to take a stock ticker and return stock price history data by leveraging Yahoo Finance (hyperlink here). It can be easily extended to cover many other functions as well. The [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/) supervisor example demonstrates reusing this StockData tool. Note the implementation of the Lambda function currently ignores which Agent was used to call the Action Group and is not tightly coupled to any single Agent.
 
-This tool consists of an AWS Lambda function named "stock_data_lookup" to retrieve stock data using the yfinance Python library. The "stock_data_lookup" Lambda function can then be invoked to retrieve stock data for a given ticker symbol. Here's a breakdown:
+This project demonstrates the use of a Bedrock Agents Action Group as a reusable tool across multiple Bedrock Agents. It now provides two key functionalities:
+
+- Stock Data Lookup: Retrieves a 1-month stock price history for a given ticker by leveraging the Yahoo Finance (yfinance) library.
+
+- Portfolio Optimization: Uses historical price data and a list of ticker symbols to compute an optimal portfolio. This function leverages portfolio optimization techniques from the pypfopt library, including the Efficient Frontier approach and discrete allocation based on latest prices.
+
+The [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/) supervisor example demonstrates reusing this StockData tool. Note the implementation of the Lambda function currently ignores which Agent was used to call the Action Group and is not tightly coupled to any single Agent.
 
 - **AgentLambdaFunction**: This AWS Lambda function implements the stock_data_lookup and portfolio_optimization functionalities. It uses a Python 3.12 container image with all dependencies packaged at build time.
 - **AgentLambdaRole**: This is an AWS Identity and Access Management (IAM) role that grants the Lambda function the necessary permissions to execute.
