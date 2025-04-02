@@ -88,7 +88,7 @@ Run through the cells in the notebook, attach appropriate permissions as needed.
 
 ```
 
-For more information on attaching a policy to a role, check out our [documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-console.html)
+For more information on creating IAM policies, check out our [documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-console.html)
 
 ## License
 
