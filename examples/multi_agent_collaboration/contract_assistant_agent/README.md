@@ -15,9 +15,10 @@ Each of these gets routed quickly to the right sub-agent for subsequent processi
 Conversation switching is seamless.
 
 Routing also reverts automatically to full Supervisor mode if the request is truly
-not mapping cleanly to a single collaborator. For example:
+not mapping cleanly to a single collaborator. 
 
-- "what interest rate do i have on my existing Contract, and how does it compare to rates for new Contracts"
+> [!CAUTION]  
+> The sample contract templates are not legal advice, are for illustrative purposes only, and should not be relied upon without consulting the user's own attorney.
 
 ## Prerequisites
 
@@ -59,3 +60,5 @@ python3 main.py --clean_up "true"
 ## License
 
 This project is licensed under the Apache-2.0 License.
+
+The sample contract template is licensed under CC-0.
