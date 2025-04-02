@@ -1,5 +1,0 @@
-Rule ID,Resource ID,Compliance,Exception Reason,Rule Level,Rule Info
-"AwsSolutions-SMG4","cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/TavilyApiKeySecret","Non-Compliant","N/A","Error","The secret does not have automatic rotation scheduled."
-"AwsSolutions-IAM4","cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaRole","Non-Compliant","N/A","Error","The IAM user, role, or group uses AWS managed policies."
-"AwsSolutions-IAM5","cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaRole","Non-Compliant","N/A","Error","The IAM entity contains wildcard permissions and does not have a cdk-nag rule suppression with evidence for those permission."
-"AwsSolutions-L1","cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaFunction","Non-Compliant","N/A","Error","The non-container Lambda function is not configured to use the latest runtime version."

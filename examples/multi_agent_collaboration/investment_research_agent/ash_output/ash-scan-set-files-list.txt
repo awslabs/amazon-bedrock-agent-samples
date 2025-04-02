@@ -1,3 +1,0 @@
-/src/README.md
-/src/architecture.jpg
-/src/main.ipynb

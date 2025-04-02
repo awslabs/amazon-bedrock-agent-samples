@@ -1,6 +1,0 @@
-/src/README.md
-/src/architecture.png
-/src/cfn_stacks/stock_data_stack.yaml
-/src/docker_files/Dockerfile
-/src/docker_files/lambda_function.py
-/src/docker_files/requirements.txt
