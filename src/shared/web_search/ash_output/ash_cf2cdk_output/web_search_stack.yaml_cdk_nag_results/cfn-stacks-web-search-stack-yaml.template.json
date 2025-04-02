@@ -1,0 +1,509 @@
+{
+ "Description": "This CloudFormation template deploy Web Search functionality using AWS Lambda Function",
+ "AWSTemplateFormatVersion": "2010-09-09",
+ "Metadata": {
+  "AWS::CloudFormation::Interface": {
+   "ParameterGroups": [
+    {
+     "Label": {
+      "default": "Web Search API keys"
+     },
+     "Parameters": [
+      "TavilyApiKey"
+     ]
+    }
+   ]
+  }
+ },
+ "Parameters": {
+  "TavilyApiKey": {
+   "Type": "String",
+   "Description": "Provide TavilyApiKey API Key to utilize /web_search path",
+   "MinLength": 1,
+   "NoEcho": true
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Conditions": {
+  "HasTavilyApiKey": {
+   "Fn::Not": [
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "TavilyApiKey"
+      },
+      ""
+     ]
+    }
+   ]
+  },
+  "CDKMetadataAvailable": {
+   "Fn::Or": [
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "af-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-northeast-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-south-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-3"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ap-southeast-4"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "ca-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "cn-northwest-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-central-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-north-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-south-2"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Or": [
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "eu-west-3"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "il-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-central-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "me-south-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "sa-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-1"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-east-2"
+       ]
+      },
+      {
+       "Fn::Equals": [
+        {
+         "Ref": "AWS::Region"
+        },
+        "us-west-1"
+       ]
+      }
+     ]
+    },
+    {
+     "Fn::Equals": [
+      {
+       "Ref": "AWS::Region"
+      },
+      "us-west-2"
+     ]
+    }
+   ]
+  }
+ },
+ "Resources": {
+  "TavilyApiKeySecret": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "API Key for Tavily service",
+    "Name": {
+     "Fn::Sub": [
+      "TAVILY_API_KEY_${StackId}",
+      {
+       "StackId": {
+        "Fn::Select": [
+         2,
+         {
+          "Fn::Split": [
+           "/",
+           {
+            "Ref": "AWS::StackId"
+           }
+          ]
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "SecretString": {
+     "Ref": "TavilyApiKey"
+    }
+   },
+   "DeletionPolicy": "Retain",
+   "Condition": "HasTavilyApiKey"
+  },
+  "AgentLambdaRole": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Effect": "Allow",
+       "Principal": {
+        "Service": [
+         "lambda.amazonaws.com"
+        ]
+       },
+       "Action": [
+        "sts:AssumeRole"
+       ]
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    ],
+    "Policies": [
+     {
+      "PolicyDocument": {
+       "Version": "2012-10-17",
+       "Statement": [
+        {
+         "Effect": "Allow",
+         "Action": [
+          "secretsmanager:GetSecretValue"
+         ],
+         "Resource": [
+          {
+           "Fn::Sub": "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:TAVILY_API_KEY_*"
+          }
+         ]
+        }
+       ]
+      },
+      "PolicyName": "GetSecretsManagerSecret"
+     }
+    ]
+   }
+  },
+  "AgentLambdaFunction": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.\n# SPDX-License-Identifier: Apache-2.0\nimport http.client\nimport json\nimport logging\nimport os\nimport urllib.parse\nimport urllib.request\n\nimport boto3\n\nsession = boto3.session.Session()\nsecrets_manager = session.client(service_name=\"secretsmanager\")\n\nlog_level = os.environ.get(\"LOG_LEVEL\", \"INFO\").strip().upper()\nlogging.basicConfig(\n    format=\"[%(asctime)s] p%(process)s {%(filename)s:%(lineno)d} %(levelname)s - %(message)s\"\n)\nlogger = logging.getLogger(__name__)\nlogger.setLevel(log_level)\n\nFUNCTION_NAMES = []\n\n\ndef get_from_secretstore_or_env(SecretId: str) -> str:\n    try:\n        secret_value = secrets_manager.get_secret_value(SecretId=SecretId)\n    except Exception as e:\n        logger.error(f\"could not get secret {SecretId} from secrets manager: {e}\")\n        raise e\n\n    SecretString: str = secret_value[\"SecretString\"]\n\n    return SecretString\n\n\ntry:\n    TAVILY_API_KEY_NAME = os.environ.get(\"TAVILY_API_KEY_NAME\", \"\")\n    TAVILY_API_KEY = get_from_secretstore_or_env(SecretId=TAVILY_API_KEY_NAME)\n    FUNCTION_NAMES.append(\"web_search\")\nexcept Exception as e:\n    TAVILY_API_KEY = None\n\n\ndef web_search(\n    search_query: str, target_website: str = \"\", topic: str = None, days: int = None\n) -> str:\n    logger.info(f\"executing Tavily AI search with {search_query=}\")\n\n    base_url = \"https://api.tavily.com/search\"\n    headers = {\"Content-Type\": \"application/json\", \"Accept\": \"application/json\"}\n    payload = {\n        \"api_key\": TAVILY_API_KEY,\n        \"query\": search_query,\n        \"search_depth\": \"advanced\",\n        \"include_images\": False,\n        \"include_answer\": False,\n        \"include_raw_content\": False,\n        \"max_results\": 3,\n        \"topic\": \"general\" if topic is None else topic,\n        \"days\": 30 if days is None else days,\n        \"include_domains\": [target_website] if target_website else [],\n        \"exclude_domains\": [],\n    }\n\n    data = json.dumps(payload).encode(\"utf-8\")\n    request = urllib.request.Request(\n        base_url, data=data, headers=headers\n    )  # nosec: B310 fixed url we want to open\n\n    try:\n        response = urllib.request.urlopen(\n            request\n        )  # nosec: B310 fixed url we want to open\n        response_data: str = response.read().decode(\"utf-8\")\n        logger.debug(f\"response from Tavily AI search {response_data=}\")\n        return response_data\n    except urllib.error.HTTPError as e:\n        logger.error(\n            f\"failed to retrieve search results from Tavily AI Search, error: {e.code}\"\n        )\n\n    return \"\"\n\n\ndef lambda_handler(event, context):\n    logging.debug(f\"{event=}\")\n\n    agent = event[\"agent\"]\n    actionGroup = event[\"actionGroup\"]\n    function = event[\"function\"]\n    parameters = event.get(\"parameters\", [])\n    responseBody = {\"TEXT\": {\"body\": \"Error, no function was called\"}}\n\n    logger.info(f\"{actionGroup=}, {function=}\")\n\n    if function in FUNCTION_NAMES:\n        if function == \"web_search\":\n            search_query = None\n            target_website = None\n            topic = None\n            days = None\n\n            for param in parameters:\n                if param[\"name\"] == \"search_query\":\n                    search_query = param[\"value\"]\n                if param[\"name\"] == \"target_website\":\n                    target_website = param[\"value\"]\n                if param[\"name\"] == \"topic\":\n                    topic = param[\"value\"]\n                if param[\"name\"] == \"days\":\n                    days = param[\"value\"]\n\n            if not search_query:\n                responseBody = {\n                    \"TEXT\": {\"body\": \"Missing mandatory parameter: search_query\"}\n                }\n            else:\n                search_results = web_search(search_query, target_website, topic, days)\n                responseBody = {\n                    \"TEXT\": {\n                        \"body\": f\"Here are the top search results for the query '{search_query}': {search_results} \"\n                    }\n                }\n\n                logger.debug(f\"query results {search_results=}\")\n    else:\n        TAVILY_API_KEY_NAME = os.environ.get(\"TAVILY_API_KEY_NAME\", \"\")\n        responseBody = {\"TEXT\": {\"body\": f\"Unable to get {TAVILY_API_KEY_NAME} Secret Key\"}}\n\n    action_response = {\n        \"actionGroup\": actionGroup,\n        \"function\": function,\n        \"functionResponse\": {\"responseBody\": responseBody},\n    }\n\n    function_response = {\n        \"response\": action_response,\n        \"messageVersion\": event[\"messageVersion\"],\n    }\n\n    logger.debug(f\"lambda_handler: {function_response=}\")\n\n    return function_response\n"
+    },
+    "Environment": {
+     "Variables": {
+      "LOG_LEVEL": "DEBUG",
+      "ACTION_GROUP": "WebSearchActionGroup",
+      "TAVILY_API_KEY_NAME": {
+       "Fn::Sub": [
+        "TAVILY_API_KEY_${StackId}",
+        {
+         "StackId": {
+          "Fn::Select": [
+           2,
+           {
+            "Fn::Split": [
+             "/",
+             {
+              "Ref": "AWS::StackId"
+             }
+            ]
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    },
+    "FunctionName": "web_search",
+    "Handler": "index.lambda_handler",
+    "Role": {
+     "Fn::GetAtt": "AgentLambdaRole.Arn"
+    },
+    "Runtime": "python3.12",
+    "Timeout": 300
+   }
+  },
+  "AgentAliasLambdaPermission": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": "AgentLambdaFunction.Arn"
+    },
+    "Principal": "bedrock.amazonaws.com",
+    "SourceAccount": {
+     "Ref": "AWS::AccountId"
+    },
+    "SourceArn": {
+     "Fn::Sub": "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent-alias/*"
+    }
+   }
+  },
+  "AgentLambdaPermission": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": "AgentLambdaFunction.Arn"
+    },
+    "Principal": "bedrock.amazonaws.com",
+    "SourceAccount": {
+     "Ref": "AWS::AccountId"
+    },
+    "SourceArn": {
+     "Fn::Sub": "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*"
+    }
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/yWMOw7CMBBEz0LvLJ+G9JaQqEDhANHGXqMFe438IUWUuyOHauaNZuYEx/4Mhx3OuTP23XmeYHkUNG9lfKzWxRSwcJSRxfhqCbST698q7eSOCQMVSg10FMutrHDO45LJJCo5oOCTUhs+tkQxhkZD9KQ8hskiLNrJpYrZ1u2XUuCcOcq6Nr7V8qllVRItwSvvv8ceTgfod6/M3KUqhQPB8NcfT3anAtUAAAA="
+   },
+   "Metadata": {
+    "aws:cdk:path": "cfn-stacks-web-search-stack-yaml/CDKMetadata/Default"
+   },
+   "Condition": "CDKMetadataAvailable"
+  }
+ },
+ "Outputs": {
+  "WebScrapeLambdaFunction": {
+   "Value": {
+    "Ref": "AgentLambdaFunction"
+   }
+  },
+  "WebScrapeLambdaFunctionArn": {
+   "Value": {
+    "Fn::GetAtt": "AgentLambdaFunction.Arn"
+   }
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

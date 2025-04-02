@@ -1,0 +1,193 @@
+#############################################
+Start of  /src/ash_output/work/grype_report_result.txt
+#############################################
+
+>>>>>> Begin Grype output for /src >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No vulnerabilities found
+
+<<<<<< End Grype output for /src <<<<<<
+
+
+>>>>>> Begin Grype output for /src/ash_output/work >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No vulnerabilities found
+
+<<<<<< End Grype output for /src/ash_output/work <<<<<<
+
+
+>>>>>> Begin Syft output for /src >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No packages discovered
+
+<<<<<< End Syft output for /src <<<<<<
+
+
+>>>>>> Begin Syft output for /src/ash_output/work >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No packages discovered
+
+<<<<<< End Syft output for /src/ash_output/work <<<<<<
+
+
+>>>>>> Begin Semgrep output for /src >>>>>>
+
+METRICS: Using configs from the Registry (like --config=p/ci) reports pseudonymous rule metrics to semgrep.dev.
+To disable Registry rule metrics, use "--metrics=off".
+Using configs only from local files (like --config=xyz.yml) does not enable metrics.
+
+More information: https://semgrep.dev/docs/metrics
+
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 8 files tracked by git with 1062 Code rules:
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  <multilang>      48       8          Community    1062                                                                
+  python          243       1                                                                                           
+  json              4       1                                                                                           
+                                                                                                                        
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Semgrep's file targeting is getting a revamp! This scan wouldn't see any changes. To learn about what will be different after version 1.116.0, visit https://semgrep.dev/docs/kb/semgrep-code/semgrepignore-ignored for the new specification.
+
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 294
+ • Targets scanned: 8
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 294 rules on 8 files: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+
+<<<<<< End Semgrep output for /src <<<<<<
+
+
+>>>>>> Begin Semgrep output for /src/ash_output/work >>>>>>
+
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 3 files tracked by git with 1062 Code rules:
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  <multilang>      48       3          Community    1062                                                                
+  python          243       1                                                                                           
+                                                                                                                        
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Semgrep's file targeting is getting a revamp! This scan wouldn't see any changes. To learn about what will be different after version 1.116.0, visit https://semgrep.dev/docs/kb/semgrep-code/semgrepignore-ignored for the new specification.
+
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 291
+ • Targets scanned: 3
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 291 rules on 3 files: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+
+<<<<<< End Semgrep output for /src/ash_output/work <<<<<<
+
+#############################################
+End of  /src/ash_output/work/grype_report_result.txt
+#############################################
+
+
+#############################################
+Start of  /src/ash_output/work/py_report_result.txt
+#############################################
+>>>>>> begin identifyipynb output for Jupyter notebook conversion >>>>>>
+Looking for Jupyter notebook files
+Found ./main.ipynb
+
+
+<<<<<< end identifyipynb output for Jupyter notebook conversion <<<<<<
+>>>>>> begin bandit result for /src >>>>>>
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.10.16
+Run started:2025-04-02 17:04:25.169671
+
+Test results:
+	No issues identified.
+
+Code scanned:
+	Total lines of code: 406
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+Files skipped (0):
+
+<<<<<< end bandit result for /src <<<<<<
+>>>>>> begin bandit result for /src/ash_output/work >>>>>>
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.10.16
+Run started:2025-04-02 17:04:25.368226
+
+Test results:
+	No issues identified.
+
+Code scanned:
+	Total lines of code: 406
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 0
+Files skipped (0):
+
+<<<<<< end bandit result for /src/ash_output/work <<<<<<
+#############################################
+End of  /src/ash_output/work/py_report_result.txt
+#############################################
+
+

@@ -27,7 +27,7 @@ pip3 install -r src/requirements.txt
 
 Follow instructions [here](/src/shared/web_search/).
 
-3. Deploy Stock Data Lookup and Portfolio Optimization tool.
+3. Deploy Stock Data Lookup and Portfolio Optimization tool. This stack may take ~5 minutes to deploy.
 
 Follow instructions [here](/src/shared/stock_data/).
 
@@ -87,6 +87,8 @@ Run through the cells in the notebook, attach appropriate permissions as needed.
 }
 
 ```
+
+For more information on attaching a policy to a role, check out our [documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create-console.html)
 
 ## License
 

@@ -1,0 +1,318 @@
+#############################################
+Start of  /src/ash_output/work/cdk_report_result.txt
+#############################################
+
+starting to investigate ...
+found 1 files to scan.  Starting scans ...
+>>>>>> begin cdk-nag result for web_search_stack.yaml >>>>>>
+[Error at /cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/TavilyApiKeySecret] AwsSolutions-SMG4: The secret does not have automatic rotation scheduled. AWS Secrets Manager can be configured to automatically rotate the secret for a secured service or database.
+
+[Error at /cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaRole] AwsSolutions-IAM4[Policy::arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole]: The IAM user, role, or group uses AWS managed policies. An AWS managed policy is a standalone policy that is created and administered by AWS. Currently, many AWS managed policies do not restrict resource scope. Replace AWS managed policies with system specific (customer) managed policies.This is a granular rule that returns individual findings that can be suppressed with 'appliesTo'. The findings are in the format 'Policy::<policy>' for AWS managed policies. Example: appliesTo: ['Policy::arn:<AWS::Partition>:iam::aws:policy/foo'].
+
+[Error at /cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaRole] AwsSolutions-IAM5[Resource::arn:aws:secretsmanager:<AWS::Region>:<AWS::AccountId>:secret:TAVILY_API_KEY_*]: The IAM entity contains wildcard permissions and does not have a cdk-nag rule suppression with evidence for those permission. Metadata explaining the evidence (e.g. via supporting links) for wildcard permissions allows for transparency to operators. This is a granular rule that returns individual findings that can be suppressed with 'appliesTo'. The findings are in the format 'Action::<action>' for policy actions and 'Resource::<resource>' for resources. Example: appliesTo: ['Action::s3:*'].
+
+[Error at /cfn-stacks-web-search-stack-yaml/--src--cfn_stacks--web_search_stack.yaml/AgentLambdaFunction] AwsSolutions-L1: The non-container Lambda function is not configured to use the latest runtime version. Use the latest available runtime for the targeted language to avoid technical debt. Runtimes specific to a language or framework version are deprecated when the version reaches end of life. This rule only applies to non-container Lambda functions.
+
+Found errors
+Writing CDK-NAG reports for web_search_stack.yaml
+<<<<<< end cdk-nag result for web_search_stack.yaml <<<<<<
+#############################################
+End of  /src/ash_output/work/cdk_report_result.txt
+#############################################
+
+
+#############################################
+Start of  /src/ash_output/work/grype_report_result.txt
+#############################################
+
+>>>>>> Begin Grype output for /src >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No vulnerabilities found
+
+<<<<<< End Grype output for /src <<<<<<
+
+
+>>>>>> Begin Grype output for /src/ash_output/work >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No vulnerabilities found
+
+<<<<<< End Grype output for /src/ash_output/work <<<<<<
+
+
+>>>>>> Begin Syft output for /src >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No packages discovered
+
+<<<<<< End Syft output for /src <<<<<<
+
+
+>>>>>> Begin Syft output for /src/ash_output/work >>>>>>
+
+[0000]  WARN no explicit name and version provided for directory source, deriving artifact ID from the given path (which is not ideal)
+No packages discovered
+
+<<<<<< End Syft output for /src/ash_output/work <<<<<<
+
+
+>>>>>> Begin Semgrep output for /src >>>>>>
+
+METRICS: Using configs from the Registry (like --config=p/ci) reports pseudonymous rule metrics to semgrep.dev.
+To disable Registry rule metrics, use "--metrics=off".
+Using configs only from local files (like --config=xyz.yml) does not enable metrics.
+
+More information: https://semgrep.dev/docs/metrics
+
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 12 files tracked by git with 1062 Code rules:
+                                                                                                                        
+  Language      Rules   Files          Origin      Rules                                                                
+ ─────────────────────────────        ───────────────────                                                               
+  <multilang>      48      12          Community    1062                                                                
+  json              4       2                                                                                           
+  yaml             31       1                                                                                           
+                                                                                                                        
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Semgrep's file targeting is getting a revamp! This scan wouldn't see any changes. To learn about what will be different after version 1.116.0, visit https://semgrep.dev/docs/kb/semgrep-code/semgrepignore-ignored for the new specification.
+
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 82
+ • Targets scanned: 12
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 82 rules on 12 files: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+
+<<<<<< End Semgrep output for /src <<<<<<
+
+
+>>>>>> Begin Semgrep output for /src/ash_output/work >>>>>>
+
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 4 files tracked by git with 1062 Code rules:
+  Scanning 4 files with 48 <multilang> rules.
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+Semgrep's file targeting is getting a revamp! This scan wouldn't see any changes. To learn about what will be different after version 1.116.0, visit https://semgrep.dev/docs/kb/semgrep-code/semgrepignore-ignored for the new specification.
+
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 48
+ • Targets scanned: 4
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 48 rules on 4 files: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+
+<<<<<< End Semgrep output for /src/ash_output/work <<<<<<
+
+#############################################
+End of  /src/ash_output/work/grype_report_result.txt
+#############################################
+
+
+#############################################
+Start of  /src/ash_output/work/js_report_result.txt
+#############################################
+#############################################
+End of  /src/ash_output/work/js_report_result.txt
+#############################################
+
+
+#############################################
+Start of  /src/ash_output/work/yaml_report_result.txt
+#############################################
+
+>>>>>> Begin yaml scan output for /src >>>>>>
+
+starting to investigate ...
+found 1 files to scan.  Starting checkov scans ...
+>>>>>> begin checkov result for web_search_stack.yaml >>>>>>
+
+       _               _
+   ___| |__   ___  ___| | _______   __
+  / __| '_ \ / _ \/ __| |/ / _ \ \ / /
+ | (__| | | |  __/ (__|   < (_) \ V /
+  \___|_| |_|\___|\___|_|\_\___/ \_/
+
+By Prisma Cloud | version: 3.2.396 
+
+cloudformation scan results:
+
+Passed checks: 13, Failed checks: 5, Skipped checks: 0
+
+Check: CKV_AWS_363: "Ensure Lambda Runtime is not deprecated"
+	PASSED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/bc-aws-363
+Check: CKV_AWS_45: "Ensure no hard-coded secrets exist in Lambda environment"
+	PASSED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/secrets-policies/bc-aws-secrets-3
+Check: CKV_AWS_108: "Ensure IAM policies does not allow data exfiltration"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/ensure-iam-policies-do-not-allow-data-exfiltration
+Check: CKV_AWS_60: "Ensure IAM role allows only specific services or principals to assume it"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-iam-44
+Check: CKV_AWS_61: "Ensure AWS IAM policy does not allow assume role permission across all services"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-iam-45
+Check: CKV_AWS_62: "Ensure no IAM policies that allow full "*-*" administrative privileges are not created"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-iam-45
+Check: CKV_AWS_63: "Ensure no IAM policies documents allow "*" as a statement's actions"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/iam-48
+Check: CKV_AWS_110: "Ensure IAM policies does not allow privilege escalation"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/ensure-iam-policies-does-not-allow-privilege-escalation
+Check: CKV_AWS_111: "Ensure IAM policies does not allow write access without constraints"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/ensure-iam-policies-do-not-allow-write-access-without-constraint
+Check: CKV_AWS_107: "Ensure IAM policies does not allow credentials exposure"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/ensure-iam-policies-do-not-allow-credentials-exposure
+Check: CKV_AWS_109: "Ensure IAM policies does not allow permissions management without constraints"
+	PASSED for resource: AWS::IAM::Role.AgentLambdaRole
+	File: /cfn_stacks/web_search_stack.yaml:203-226
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/ensure-iam-policies-do-not-allow-permissions-management-resource-exposure-without-constraint
+Check: CKV_AWS_364: "Ensure that AWS Lambda function permissions delegated to AWS services are limited by SourceArn or SourceAccount"
+	PASSED for resource: AWS::Lambda::Permission.AgentAliasLambdaPermission
+	File: /cfn_stacks/web_search_stack.yaml:228-235
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-364
+Check: CKV_AWS_364: "Ensure that AWS Lambda function permissions delegated to AWS services are limited by SourceArn or SourceAccount"
+	PASSED for resource: AWS::Lambda::Permission.AgentLambdaPermission
+	File: /cfn_stacks/web_search_stack.yaml:237-244
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-364
+Check: CKV_AWS_149: "Ensure that Secrets Manager secret is encrypted using KMS CMK"
+	FAILED for resource: AWS::SecretsManager::Secret.TavilyApiKeySecret
+	File: /cfn_stacks/web_search_stack.yaml:26-35
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-secrets-manager-secret-is-encrypted-using-kms
+
+		26 |   TavilyApiKeySecret:
+		27 |     Type: "AWS::SecretsManager::Secret"
+		28 |     Condition: HasTavilyApiKey
+		29 |     DeletionPolicy: Retain
+		30 |     Properties:
+		31 |       Name: !Sub
+		32 |         - "TAVILY_API_KEY_${StackId}"
+		33 |         - StackId: !Select [2, !Split ["/", !Ref AWS::StackId]]
+		34 |       Description: "API Key for Tavily service"
+		35 |       SecretString: !Ref TavilyApiKey
+
+Check: CKV_AWS_117: "Ensure that AWS Lambda function is configured inside a VPC"
+	FAILED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-aws-lambda-function-is-configured-inside-a-vpc-1
+
+		Code lines for this resource are too many. Please use IDE of your choice to review the file.
+Check: CKV_AWS_116: "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+	FAILED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-aws-lambda-function-is-configured-for-a-dead-letter-queue-dlq
+
+		Code lines for this resource are too many. Please use IDE of your choice to review the file.
+Check: CKV_AWS_173: "Check encryption settings for Lambda environment variable"
+	FAILED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-serverless-policies/bc-aws-serverless-5
+
+		Code lines for this resource are too many. Please use IDE of your choice to review the file.
+Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+	FAILED for resource: AWS::Lambda::Function.AgentLambdaFunction
+	File: /cfn_stacks/web_search_stack.yaml:41-201
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-aws-lambda-function-is-configured-for-function-level-concurrent-execution-limit
+
+		Code lines for this resource are too many. Please use IDE of your choice to review the file.
+secrets scan results:
+
+Passed checks: 0, Failed checks: 1, Skipped checks: 0
+
+Check: CKV_SECRET_6: "Base64 High Entropy String"
+	FAILED for resource: f9eeaf7fde1bdf57ddd6bafa735cea386cd3e36e
+	File: /cfn_stacks/web_search_stack.yaml:70-71
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/secrets-policies/secrets-policy-index/git-secrets-6
+
+		70 |           secrets_manager = session.client(service_name="sec**********")
+
+
+<<<<<< end checkov result for web_search_stack.yaml <<<<<<
+found 1 files to scan.  Starting cfn_nag scans ...
+>>>>>> begin cfn_nag_scan result for web_search_stack.yaml >>>>>>
+------------------------------------------------------------
+/src/cfn_stacks/web_search_stack.yaml
+------------------------------------------------------------------------------------------------------------------------
+[33m| WARN W89[0m
+[33m|[0m
+[33m| Resource: ["AgentLambdaFunction"][0m
+[33m| Line Numbers: [42][0m
+[33m|[0m
+[33m| Lambda functions should be deployed inside a VPC[0m
+------------------------------------------------------------
+[33m| WARN W92[0m
+[33m|[0m
+[33m| Resource: ["AgentLambdaFunction"][0m
+[33m| Line Numbers: [42][0m
+[33m|[0m
+[33m| Lambda functions should define ReservedConcurrentExecutions to reserve simultaneous executions[0m
+------------------------------------------------------------
+[33m| WARN W77[0m
+[33m|[0m
+[33m| Resource: ["TavilyApiKeySecret"][0m
+[33m| Line Numbers: [27][0m
+[33m|[0m
+[33m| Secrets Manager Secret should explicitly specify KmsKeyId. Besides control of the key this will allow the secret to be shared cross-account[0m
+
+Failures count: 0
+Warnings count: 3
+<<<<<< end cfn_nag_scan result for web_search_stack.yaml <<<<<<
+
+<<<<<< End yaml scan output for /src <<<<<<
+
+
+>>>>>> Begin yaml scan output for /src/ash_output/work >>>>>>
+
+starting to investigate ...
+found 0 files to scan.  Skipping checkov scans.
+found 0 files to scan.  Skipping cfn_nag scans.
+
+<<<<<< End yaml scan output for /src/ash_output/work <<<<<<
+
+#############################################
+End of  /src/ash_output/work/yaml_report_result.txt
+#############################################
+
+

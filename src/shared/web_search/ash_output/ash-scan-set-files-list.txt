@@ -1,0 +1,4 @@
+/src/README.md
+/src/architecture.png
+/src/cfn_stacks/web_search_stack.yaml
+/src/web_search_definition.json
