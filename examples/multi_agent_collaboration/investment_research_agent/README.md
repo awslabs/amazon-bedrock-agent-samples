@@ -23,7 +23,7 @@ source .venv/bin/activate
 pip3 install -r src/requirements.txt
 ```
 
-2. Deploy Web Search tool. You will be required to make a Tavilly API key.
+2. Deploy Web Search tool. You will be required to make a [Tavilly API](https://docs.tavily.com/docs/gpt-researcher/getting-started) key.
 
 Follow instructions [here](/src/shared/web_search/).
 
