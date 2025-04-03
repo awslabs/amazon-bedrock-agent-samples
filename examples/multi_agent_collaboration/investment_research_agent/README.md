@@ -39,51 +39,63 @@ Run through the cells in the notebook, attach appropriate permissions as needed.
 
 ```bash
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowAllBedrockActions",
-      "Effect": "Allow",
-      "Action": "bedrock:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowAllS3Actions",
-      "Effect": "Allow",
-      "Action": "s3:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowAllAOSSActions",
-      "Effect": "Allow",
-      "Action": "aoss:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowAllIAMActions",
-      "Effect": "Allow",
-      "Action": "iam:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowAllDynamoDBActions",
-      "Effect": "Allow",
-      "Action": "dynamodb:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowAllLambdaActions",
-      "Effect": "Allow",
-      "Action": "lambda:*",
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowSTSCallerIdentity",
-      "Effect": "Allow",
-      "Action": "sts:GetCallerIdentity",
-      "Resource": "*"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowBedrockScopedAccess",
+            "Effect": "Allow",
+            "Action": [
+                "bedrock:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowS3ReadWriteLimited",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:CreateBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::multimodal-fsi-data*",
+                "arn:aws:s3:::bda-processing*/*"
+            ]
+        },
+        {
+            "Sid": "AllowAOSSReadWrite",
+            "Effect": "Allow",
+            "Action": [
+                "aoss:BatchGet*",
+                "aoss:List*",
+                "aoss:Get*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowIAMMinimal",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:ListRoles",
+                "iam:PassRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/*AmazonBedrock*"
+            ]
+        },
+        {
+            "Sid": "AllowLambdaInvokeOnly",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:InvokeFunction",
+                "lambda:GetFunction",
+                "lambda:ListFunctions"
+            ],
+            "Resource": "arn:aws:lambda:*::function:*"
+        }
+    ]
 }
 
 ```
