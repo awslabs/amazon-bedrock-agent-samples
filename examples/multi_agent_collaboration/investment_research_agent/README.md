@@ -34,8 +34,10 @@ Follow instructions [here](/src/shared/stock_data/).
 
 ### For [main.ipynb](./main.ipynb)
 
-Run through the cells in the notebook, attach appropriate permissions as needed. For this notebook, you may attach the following IAM policy to the appropriate execution role to run through the notebook. This IAM policy is highly permissive and grants full access to multiple critical AWS services including IAM, S3, Lambda, DynamoDB, and Bedrock. It should only be used for quick prototyping or development in isolated, non-production environments:
-
+Run through the cells in the notebook, attach appropriate permissions as needed. For this notebook, you may attach the following IAM policy to the appropriate execution role to run through the notebook:
+> [!IMPORTANT]
+> This IAM policy is highly permissive and grants access to multiple critical AWS services including IAM, S3, Lambda and Bedrock.
+>  It should only be used for quick prototyping or development in isolated, non-production environments
 
 ```bash
 {
