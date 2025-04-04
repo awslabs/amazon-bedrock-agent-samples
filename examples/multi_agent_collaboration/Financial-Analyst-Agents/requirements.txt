@@ -1,0 +1,8 @@
+boto3>=1.35.74
+awscli>=1.36.15
+botocore>=1.35.74 
+opensearch-py
+retrying
+termcolor
+rich
+events
