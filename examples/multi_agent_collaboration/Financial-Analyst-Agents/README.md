@@ -23,7 +23,7 @@ The supervisor agent coordinates the activities of two specialized sub-agents,
 routing customer queries and requests to the appropriate agent while maintaining context and 
 ensuring seamless interactions. The architecture looks as following:
 
-![multi-agents](img/multi-agents.drawio.png)
+![multi-agents](./img/multi-agents.png)
 
 
 ### Sub-Agents
