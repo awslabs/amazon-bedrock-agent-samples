@@ -33,3 +33,5 @@ collaborator.
 - **[Trip Planner](./trip_planner_agent/)** The Trip Planner uses three sub-agents to help you build a robust itinerary. It leverages a Restaurant Scout and an Activity Finder to get great ideas, and an Itinerary Compiler to finish the job. Try it out for your next trip.
 
 - **[Voyage Virtuoso Agent](./voyage_virtuoso_agent/)** Dream big with the Voyage Virtuoso, a supervisor agent that is built for high net worth individuals that need help picking the most expensive and elaborate destinations given a theme ("I want to ski on expert slopes, and I need a ski-on/ski-off resort with great night life. Don't disappoint!").
+
+- **[Financial Assistant Agent](./Financial-Analyst-Agents/)** A simple Financial Assistant Agent that helps in creating a portfolio for data and sending email over to the required individual. You can abstract and pick your own data and also use the similar agent as [Portfolio Assistant](./portfolio_assistant_agent/) to get real time data ticker insights. Try it out.
