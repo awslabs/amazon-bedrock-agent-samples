@@ -17,3 +17,4 @@
 - [Alex Thewsey](https://github.com/athewsey)
 - [Kaustav Dey](https://github.com/kaustavbecs)
 - [Tony Santiago](https://github.com/tsanti)
+- [Lucas Banerji](https://github.com/LucaiB)

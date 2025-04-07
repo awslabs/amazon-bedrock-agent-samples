@@ -33,3 +33,5 @@ collaborator.
 - **[Trip Planner](./trip_planner_agent/)** The Trip Planner uses three sub-agents to help you build a robust itinerary. It leverages a Restaurant Scout and an Activity Finder to get great ideas, and an Itinerary Compiler to finish the job. Try it out for your next trip.
 
 - **[Voyage Virtuoso Agent](./voyage_virtuoso_agent/)** Dream big with the Voyage Virtuoso, a supervisor agent that is built for high net worth individuals that need help picking the most expensive and elaborate destinations given a theme ("I want to ski on expert slopes, and I need a ski-on/ski-off resort with great night life. Don't disappoint!").
+
+- **[Investment Research Agent](./investment_research_agent/)** The Investment Research Agent has three collaborators: the Smart Summarizer, the Quantitative Analysis Agent, and the News Agent. These specialists are orchestrated to perform investment analysis for a given stock ticker using multimodal financial data, including fetching news from financial documents and the web, analyzing recent stock price movements, and using portfolio optimiation logic.
