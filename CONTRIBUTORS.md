@@ -17,3 +17,5 @@
 - [Alex Thewsey](https://github.com/athewsey)
 - [Kaustav Dey](https://github.com/kaustavbecs)
 - [Tony Santiago](https://github.com/tsanti)
+- [Rishiraj Chandra](https://github.com/rchandra20)
+- [Blake Shin](https://github.com/ShinBlake)

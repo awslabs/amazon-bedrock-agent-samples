@@ -1,6 +1,6 @@
-[submodule "examples/amazon-bedrock-agents-healthcare-lifesciences"]
-	path = examples/amazon-bedrock-agents-healthcare-lifesciences
-	url = https://github.com/aws-samples/amazon-bedrock-agents-healthcare-lifesciences
-[submodule "examples/amazon-bedrock-agent-evaluation-framework"]
-	path = examples/amazon-bedrock-agent-evaluation-framework
+[submodule "examples/agent_evaluation/amazon-bedrock-agent-evaluation-framework"]
+	path = examples/agent_evaluation/amazon-bedrock-agent-evaluation-framework
 	url = https://github.com/aws-samples/amazon-bedrock-agent-evaluation-framework
+[submodule "examples/multi_agent_collaboration/amazon-bedrock-agents-healthcare-lifesciences"]
+	path = examples/multi_agent_collaboration/amazon-bedrock-agents-healthcare-lifesciences
+	url = https://github.com/aws-samples/amazon-bedrock-agents-healthcare-lifesciences
