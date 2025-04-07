@@ -1,10 +1,10 @@
 ## 4/7/2025
 
 Added example in multi_agent_collaboration for HCLS use case
-- [Healthcare Lifesciences Agents](/examples/multi_agent_collaboration/amazon-bedrock-agents-healthcare-lifesciences/)
+- [Healthcare Lifesciences Agents](/examples/multi_agent_collaboration/healthcare_lifesciences_agent/)
 
 Added Bedrock Agent Evaluation Framework
-- [Bedrock Agent Evaluation Framework](/examples/agent_evaluation/amazon-bedrock-agent-evaluation-framework/)
+- [Bedrock Agent Evaluation Framework](/examples/agent_evaluation/)
 
 ## 4/3/2025
 
