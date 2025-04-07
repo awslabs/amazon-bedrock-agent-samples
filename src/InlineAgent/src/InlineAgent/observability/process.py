@@ -543,11 +543,15 @@ class ProcessL4Trace:
                         caller_chain=caller_chain, index=-1
                     )
 
-                    model = (
-                        json.loads(raw_response)["model"]
-                        if "model" in json.loads(raw_response)
-                        else None
-                    )
+                    try:
+                        json_model = json.loads(raw_response)
+                        model = (
+                            json.loads(raw_response)["model"]
+                            if "model" in json.loads(raw_response)
+                            else None
+                        )
+                    except Exception as e:
+                        model = None
 
                     if config.PRODUCE_BEDROCK_OTEL_TRACES:
                         span_manager.spans[session_id].l3_span[
