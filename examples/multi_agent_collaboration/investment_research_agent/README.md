@@ -3,7 +3,7 @@
 Investment Research supervisor agent has three collaborators, a News agent, a Quantitative Analysis Data agent, and a Smart Summarizer agent. These specialists are orchestrated to perform investment analysis for a given stock ticker based on the latest news and recent stock price movements. 
 
 > [!NOTE]
-> Results from the agents should not be taken as financial advice.
+> **Results from the agents should not be taken as financial advice.**
 
 ## Architecture Diagram
 
