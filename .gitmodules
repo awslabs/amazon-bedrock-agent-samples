@@ -1,0 +1,3 @@
+[submodule "examples/agent_evaluation/amazon-bedrock-agent-evaluation-framework"]
+	path = examples/agent_evaluation/amazon-bedrock-agent-evaluation-framework
+	url = https://github.com/aws-samples/amazon-bedrock-agent-evaluation-framework
