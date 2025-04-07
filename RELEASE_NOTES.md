@@ -1,3 +1,8 @@
+## 4/7/2025
+
+Added example for healthcare lifescience agent
+- [Healthcare Lifescience Agent](/examples/multi_agent_collaboration/healthcare_lifescience_agent/)
+
 ## 4/3/2025
 
 Added examples for agents not yet optimized with Bedrock Agents 
