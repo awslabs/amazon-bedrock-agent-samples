@@ -1,0 +1,3 @@
+[submodule "examples/multi_agent_collaboration/healthcare_lifescience_agent/amazon-bedrock-agents-healthcare-lifesciences"]
+	path = examples/multi_agent_collaboration/healthcare_lifescience_agent/amazon-bedrock-agents-healthcare-lifesciences
+	url = https://github.com/aws-samples/amazon-bedrock-agents-healthcare-lifesciences
