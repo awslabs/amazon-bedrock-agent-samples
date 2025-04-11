@@ -18,3 +18,4 @@
 - [Kaustav Dey](https://github.com/kaustavbecs)
 - [Tony Santiago](https://github.com/tsanti)
 - [Lucas Banerji](https://github.com/LucaiB)
+- [Banjo Obayomi](https://github.com/aws-banjo)

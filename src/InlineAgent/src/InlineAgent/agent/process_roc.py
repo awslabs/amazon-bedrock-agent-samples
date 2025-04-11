@@ -2,6 +2,7 @@ import copy
 import inspect
 import json
 from typing import Any, Callable, Dict, Union
+
 from termcolor import colored
 
 from InlineAgent.constants import TraceColor
@@ -44,20 +45,18 @@ class ProcessROC:
             parameters = dict()
             for param in functionInvocationInput["parameters"]:
                 if param["type"] == "array":
-                    result = None
                     try:
-                        result = json.loads(param["value"])
-                    except Exception:
-                        json_str = (
-                            param["value"]
-                            .replace("=", ":")
-                            .replace("[{", '[{"')
-                            .replace("}]", '"}]')
-                        )
-                        json_str = json_str.replace(", ", '", "').replace(":", '":"')
-                        result = json.loads(json_str)
-                    finally:
-                        parameters[param["name"]] = result
+                        # First try direct JSON parsing
+                        parameters[param["name"]] = json.loads(param["value"])
+                    except json.JSONDecodeError:
+                        # If that fails, try to clean up the string to make it valid JSON
+                        value = param["value"]
+                        # Remove square brackets if they exist at start/end
+                        if value.startswith("[") and value.endswith("]"):
+                            value = value[1:-1]
+                        # Split by comma and clean up each item
+                        items = [item.strip() for item in value.split(",")]
+                        parameters[param["name"]] = items
                 elif param["type"] == "string":
                     parameters[param["name"]] = param["value"]
                 elif param["type"] == "number":
