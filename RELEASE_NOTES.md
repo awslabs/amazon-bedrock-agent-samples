@@ -1,3 +1,8 @@
+## 4/7/2025
+
+Added Bedrock Agent Evaluation Framework
+- [Bedrock Agent Evaluation Framework](/examples/agent_evaluation/)
+
 ## 4/3/2025
 
 Added examples for agents not yet optimized with Bedrock Agents 
