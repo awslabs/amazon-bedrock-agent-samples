@@ -109,7 +109,37 @@ class MCPServer(ABC):
                 response = await self.session.call_tool(
                     tool_name, arguments=kwargs
                 )
-                return response.content[0].text
+                #return response.content[0].text
+                # Process all content items based on their type
+                result_parts = []
+                for item in response.content:
+                    # Handle different types of content
+                    if hasattr(item, 'text'):
+                        result_parts.append(item.text)
+                    elif hasattr(item, 'value'):
+                        result_parts.append(item.value)
+                    elif hasattr(item, 'data'):
+                        result_parts.append(item.data)
+                    else:
+                        # Try to convert the item to a string representation
+                        try:
+                            result_parts.append(str(item))
+                        except:
+                            result_parts.append(f"[Content of type {type(item).__name__}]")
+                
+                # Join all collected parts
+                all_content = "\n".join(result_parts)
+
+                # Try to parse the result as JSON first to see if it's properly formatted
+                import json
+                try:
+                    json_parsed = json.loads(all_content)
+                    # If it's valid JSON, convert it back to a nicely formatted string
+                    return json.dumps(json_parsed, indent=2)
+                except json.JSONDecodeError:
+                    # If not valid JSON, return the combined text as is
+                    return all_content
+
             return callable
 
         for tool in tools_list:
