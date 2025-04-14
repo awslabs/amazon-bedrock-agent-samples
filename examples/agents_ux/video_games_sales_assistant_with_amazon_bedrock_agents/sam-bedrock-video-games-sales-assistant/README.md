@@ -1,4 +1,4 @@
-# Getting Started with SAM Video Games Sales Assistant and Amazon Bedrock Agents
+# Generative AI Application - Data Source and Amazon Bedrock Agent Deployment
 
 This tutorial guides you through the process of setting up the back-end using AWS Serverless Application Model (SAM) and the Amazon Bedrock Agent. The services to be deployed are: Virtual Private Cloud (VPC), Lambda Function, Aurora Serverless PostgreSQL Cluster Database, AWS Secrets Manager, and Amazon DynamoDB Table within the SAM Project. Using Python scripts, you will create an Amazon S3 Bucket to upload the sales data source and create the Amazon Bedrock Agent.
 
@@ -15,6 +15,10 @@ By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the
 * [Python 3.9 or a later major version installed](https://www.python.org/downloads/) 
 * [Boto3 1.36 or a later major version installed](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
 * Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock
+* Run the following command to make sure a service-linked role exists and to set up RDS for the first time:
+```bash
+aws iam create-service-linked-role --aws-service-name rds.amazonaws.com
+```
 
 **Before proceeding further, verify that you have successfully installed and configured all the listed prerequisites in your development environment.**
 
@@ -27,7 +31,7 @@ sam build
 ```
 
 > [!NOTE]
-> If you receive a **Build Failed error**, then you might need to change the Python version in the **template.yaml** file. By default, the Lambda Function uses Python 3.9. You can modify this setting on **line 56** of the **template.yaml** file to use a Python version that is higher than 3.9 that you have installed.
+> If you receive a **Build Failed error**, then you might need to change the Python version in the **template.yaml** file. By default, the Lambda Function uses Python 3.9. You can modify this setting on **line 72** of the **template.yaml** file to use a Python version that is higher than 3.9 that you have installed.
 
 Now execute the following command to perform a first SAM deployment:
 
@@ -127,7 +131,7 @@ The Amazon Bedrock Agent was created and configured with the following informati
 
 Now you can go back to your Amazon Bedrock Agent called **video-games-sales-assistant**, click on **Edit Agent Builder**, in the **Agent builder** section click on **Save**, **Prepare** and **Test**, use the **Test Agent** with the following sample questions:
 
-- Hello
+- Hello!
 - How can you help me?
 - What is the structure of the data?
 - Which developers tend to get the best reviews?
@@ -146,7 +150,7 @@ To use the agent in the front-end application, you need to **create an Alias of 
 
 You can now follow the tutorial [Getting Started with Amplify Video Games Sales Assistant](../amplify-video-games-sales-assistant-sample/) to deploy the front-end application. The tutorial will ask you for your your alias along with the other services that you have created so far.
 
-## Cleaning-up Resources (optional)
+## Cleaning-up Resources (Optional)
 
 The next steps are optional and demonstrate how to delete the resources that we've created.
 Update the following exports with the values of the services you created before, and then execute.

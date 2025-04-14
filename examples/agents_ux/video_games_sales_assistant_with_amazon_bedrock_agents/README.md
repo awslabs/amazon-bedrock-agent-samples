@@ -20,8 +20,8 @@ The assistant generates appropriate SQL queries to retrieve the requested data, 
 
 To deploy the application, please follow these two steps:
 
-1. **Generative AI Application and Data Source**: [Getting Started with SAM Video Games Sales Assistant and Amazon Bedrock Agents](./sam-bedrock-video-games-sales-assistant/)
-2. **Front-End Application**: [Getting Started with Amplify Video Games Sales Assistant](./amplify-video-games-sales-assistant-sample/)
+1. **Generative AI Application** - [Data Source and Amazon Bedrock Agent Deployment](./sam-bedrock-video-games-sales-assistant/)
+2. **Front-End Application** - [React UI Amazon Bedrock Agent Configuration](./amplify-video-games-sales-assistant-sample/)
 
 > [!NOTE]
 > *It is recommended to use the Oregon (us-west-2) or N. Virginia (us-east-1) regions to deploy the application.*

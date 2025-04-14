@@ -1,0 +1,6 @@
+#answer-details-dialog-table table {
+    width: 100%;
+    border: 1px solid #F4FFF0;
+}
+
+#answer-details-dialog-table tr:nth-child(even) {background-color: #F4FFF0;}
