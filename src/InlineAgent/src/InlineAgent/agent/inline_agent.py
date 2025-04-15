@@ -11,7 +11,7 @@ from pydantic import Field
 from termcolor import colored
 from rich.console import Console
 from rich.markdown import Markdown
-
+from dotenv import load_dotenv
 
 from InlineAgent.action_group import ActionGroups
 from InlineAgent.action_group.action_group import ActionGroup
@@ -30,6 +30,7 @@ from InlineAgent.types import (
 )
 
 
+load_dotenv()
 @dataclass
 class InlineAgent:
     foundation_model: str
@@ -47,7 +48,7 @@ class InlineAgent:
     knowledge_bases: List[KnowledgeBasePlugin] = field(default_factory=list)
     prompt_override_configuration: Dict = field(default_factory=dict)
 
-    profile: str = field(default="default")
+    profile: str = field(default=os.environ.get('AWS_PROFILE', 'default'))
     user_input: bool = False
     tool_map: Dict[str, Callable] = None
 
