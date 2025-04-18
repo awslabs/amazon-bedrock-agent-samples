@@ -119,5 +119,5 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 
 **[Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)**
 
-## 18/07/2025
+## 18/04/2025
 **[Metadata filtering](/examples/multi_agent_collaboration/metadata_filtering)**
