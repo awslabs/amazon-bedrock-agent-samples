@@ -10,14 +10,70 @@ class BedrockAgentCleanup:
     def __init__(self, bucket_name, account_id):
         boto3_session = boto3.session.Session()
         self.region = boto3_session.region_name
+        print(f"the region we're working in is {self.region}")
         self.bucket_name = bucket_name
         self.account_id = account_id 
         self.bedrock = boto3.client('bedrock')
-        self.bedrock_agent = boto3.client('bedrock-agent')
-        self.bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
-        self.lambda_client = boto3.client('lambda')
-        self.iam = boto3.client('iam')
+        self.bedrock_agent = boto3.client('bedrock-agent',self.region)
+        self.bedrock_agent_runtime = boto3.client('bedrock-agent-runtime',self.region)
+        self.lambda_client = boto3.client('lambda',self.region)
+        self.iam = boto3.client('iam',self.region)
         self.kb_helper = KnowledgeBasesForAmazonBedrock()
+    
+    def find_any_orchestrator_agent(self):
+        """Find any agent that's using Agent1 or Agent2 as collaborators"""
+        print("Looking for any agent using Agent1 or Agent2 as collaborators...")
+        try:
+            # Get a list of all agents
+            response = self.bedrock_agent.list_agents(maxResults=1000)
+        
+            
+            # Look for agents that might be orchestrators
+            for agent in response.get('agentSummaries', []):
+                agent_id = agent['agentId']
+                agent_name = agent['agentName']
+                print(f"Agent name is {agent_name}")
+                print(f"Agent ID is {agent_id}")
+                print("*******************")
+                
+                # Skip our known sub-agents
+                if agent_name == 'Agent1' or agent_name == 'Agent2':
+                    continue
+                    
+                print(f"Checking agent: {agent_name} ({agent_id})...")
+                
+                # Check all versions
+                versions = self.find_all_versions(agent_id)
+                
+                has_collaborators = False
+                
+                # Check each version for collaborators
+                for version in versions:
+                    try:
+                        collab_response = self.bedrock_agent.list_agent_collaborators(
+                            agentId=agent_id,
+                            agentVersion=version
+                        )
+                        
+                        for collab in collab_response.get('collaboratorSummaries', []):
+                            if collab['collaboratorName'] == 'Agent1' or collab['collaboratorName'] == 'Agent2':
+                                has_collaborators = True
+                                print(f"Found orchestrator: {agent_name} ({agent_id}) - using {collab['collaboratorName']} as collaborator")
+                    except Exception as e:
+                        print(f"Error checking collaborators for {agent_name}: {str(e)}")
+                
+                if has_collaborators:
+                    return {
+                        'id': agent_id,
+                        'name': agent_name
+                    }
+                    
+            print("No orchestrator agents found using Agent1 or Agent2 as collaborators.")
+            return None
+        
+        except Exception as e:
+            print(f"Error finding orchestrator agent: {str(e)}")
+            return None
     
     def find_specific_agents(self):
         """Find the three specific agents we want to delete"""
@@ -30,6 +86,7 @@ class BedrockAgentCleanup:
             
             # Identify our specific agents by name
             for agent in response.get('agentSummaries', []):
+                print(f"Checking agent: {agent['agentName']} ({agent['agentId']})")
                 if agent['agentName'] == 'OrchestratorAgent2':
                     # This is our orchestrator
                     orchestrator_agent = {
@@ -316,10 +373,13 @@ class BedrockAgentCleanup:
         """Clean up only the three specific agents and related resources"""
         # Find our specific agents
         orchestrator_agent, sub_agents = self.find_specific_agents()
+        if not orchestrator_agent:
+            print("Orchestrator 'OrchestratorAgent2' not found. Looking for any orchestrator...")
+            orchestrator_agent = self.find_any_orchestrator_agent()
         
-        # Process the orchestrator agent first if found
+       
         if orchestrator_agent:
-            # Find all collaborations for this orchestrator across all versions
+        # Find all collaborations for this orchestrator across all versions
             all_collaborations = self.find_all_collaborations(orchestrator_agent['id'])
             
             if all_collaborations:
@@ -369,6 +429,7 @@ def main():
     
     cleanup = BedrockAgentCleanup(args.bucket, args.account_id)
     cleanup.cleanup_specific_agents()
+    print("Making sure that the sub agents are deleted")
     cleanup.cleanup_specific_agents()
 
 if __name__ == '__main__':

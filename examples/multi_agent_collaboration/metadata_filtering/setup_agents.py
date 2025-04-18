@@ -362,7 +362,7 @@ class BedrockAgentSetup:
             # Prepare Agent 1
             print(f"Preparing Agent1")
             agent1_resp = self.bedrock_agent.prepare_agent(agentId=agent1['agent']['agentId'])
-            time.sleep(45)
+            time.sleep(30)
             agent1_alias = self.bedrock_agent.create_agent_alias(agentAliasName="agent1-metadatafilter", agentId=agent1['agent']['agentId'])
             agent1_alias_id = agent1_alias["agentAlias"]["agentAliasId"]
             agent1_alias_arn = agent1_alias["agentAlias"]["agentAliasArn"]
@@ -377,7 +377,7 @@ class BedrockAgentSetup:
             agent2 = self._create_sub_agent('Agent2', 'You are an agent responsible for answering questions ONLY about the 2023 shareholder letter. If a question is not about 2023, respond with "I can only answer questions about the 2023 shareholder letter. Please rephrase your question to focus on 2023."', lambda_arn)
             print(f"Preparing Agent2")
             agent2_resp = self.bedrock_agent.prepare_agent(agentId=agent2['agent']['agentId'])
-            time.sleep(45)
+            time.sleep(30)
             agent2_alias = self.bedrock_agent.create_agent_alias(agentAliasName="agent2-metadatafilter", agentId=agent2['agent']['agentId'])
             agent2_alias_id = agent2_alias["agentAlias"]["agentAliasId"]
             agent2_alias_arn = agent2_alias["agentAlias"]["agentAliasArn"]

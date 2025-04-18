@@ -244,7 +244,7 @@ class KnowledgeBasesForAmazonBedrock:
             print(f"Bucket {bucket_name} already exists - retrieving it!")
         except ClientError as e:
             print(f"Creating bucket {bucket_name}")
-            if self.region_name == "us-east-1":
+            if self.region_name:
                 self.s3_client.create_bucket(Bucket=bucket_name)
             else:
                 self.s3_client.create_bucket(
