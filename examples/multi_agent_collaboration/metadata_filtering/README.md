@@ -4,6 +4,9 @@ This project demonstrates how to create an Amazon Bedrock Mult-Agent setup that 
 
 ## Architecture Overview
 
+## Architecture
+![Architecture](./metadatafiltering.png)
+
 The solution consists of:
 - An Orchestrator Agent that routes queries to appropriate sub-agents
 - Two sub-agents (Agent1 and Agent2) handling different document years
