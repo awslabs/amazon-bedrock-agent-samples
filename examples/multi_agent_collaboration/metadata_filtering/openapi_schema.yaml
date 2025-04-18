@@ -1,0 +1,69 @@
+openapi: 3.0.0
+info:
+  title: Knowledge Base Retrieval API
+  version: 1.0.0
+  description: API for retrieving information from a knowledge base with document filtering
+
+paths:
+  /retrieveKnowledge:
+    post:
+      summary: Retrieve and generate content from the knowledge base and return citations
+      description: Retrieve and generate content from the knowledge base and return citations
+      operationId: retrieveKnowledge
+      parameters: 
+        - name: include_citations
+          in: query
+          description: Flag to include citations when generating responses
+          required: false
+          schema:
+            type: boolean
+            default: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: The user's query to search for in the knowledge base
+                document_id:
+                  type: string
+                  description: Optional filter to retrieve from a specific document
+                session_id:
+                  type: string
+                  description: Optional session ID for maintaining context across requests
+              required:
+                - query
+      responses:
+        '200':
+          description: Successful retrieval and generation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                    description: Generated answer based on retrieved content
+                  citations:
+                    type: array
+                    description: Citations MUST be included in responses to the user
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                        document_id:
+                          type: string
+                        location:
+                          type: string
+              examples:
+                response_with_citations:
+                  value:
+                    answer: "The product launched in 2022."
+                    citations:
+                      - text: "Our flagship product was launched in Q3 2022."
+                        document_id: "annual-report-2022"
+                        location: "s3://company-docs/reports/annual-2022.pdf"
