@@ -28,14 +28,18 @@ This one-hour video takes you through a deep dive introduction to Amazon Bedrock
 
 ## �� Table of Contents ��
 
+- [�� Table of Contents ��](#-table-of-contents-)
 - [Overview](#overview)
-- [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
-- [Amazon Bedrock Agents examples](#agents-examples)
-- [Amazon Bedrock multi-agent collaboration examples](#multi-agent-collaboration-examples)
+- [Agents examples](#agents-examples)
+- [Multi-agent collaboration examples](#multi-agent-collaboration-examples)
+- [UX Demos](#ux-demos)
 - [Best Practices](#best-practices)
 - [Security](#security)
 - [License](#license)
+- [Contributors :muscle:](#contributors-muscle)
+- [Stargazers :star:](#stargazers-star)
+- [Forkers :raised\_hands:](#forkers-raised_hands)
 
 ## Overview
 
@@ -122,6 +126,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Voyage Virtuso Agent](/examples/multi_agent_collaboration/voyage_virtuoso_agent/)
 - [Contract Assistant Agent](/examples/multi_agent_collaboration/contract_assistant_agent/)
 - [Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)
+- [Compliance Assistant Crew](https://github.com/aws-samples/sample-compliance-assistant-with-agents)
 
 ## UX Demos
 
