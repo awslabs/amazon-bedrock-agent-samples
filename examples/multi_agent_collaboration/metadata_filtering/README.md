@@ -30,7 +30,7 @@ Place the following documents in your S3 bucket:
 - AMZN-2020-Shareholder-Letter.pdf
 - Amazon-com-Inc-2023-Shareholder-Letter.pdf
 
-
+* Note: The above documents will be downloaded via the data_source_creation.py script.
 
 ## Setup Instructions
 
@@ -58,7 +58,7 @@ pip3 install -r requirements.txt
 3. Download shareholder letters and copy them to the S3 bucket created
 ```python data_source_creation.py```
 
-```aws s3 cp ./data_sources/ s3://BUCKET_NAME/data_sources/ --recursive```
+```aws s3 cp ./data_sources/ s3://BUCKET_NAME/ --recursive```
 
 
 4. Configure environment variables:
@@ -94,25 +94,18 @@ Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 ├── data_souoce_creation.py
 ├── openapi_schema.yaml
 |── invoke_agent.py/
-└── data_sources/
-    └── Amazon-com-Inc-2023-Shareholder-Letter.pdf
-    └── Amazon-com-Inc-2023-Shareholder-Letter.pdf.metadata.json
-    └── AMZN-2020-Shareholder-Letter.pdf
-    └── AMZN-2020-Shareholder-Letter.pdf.metadata.json
 
 
 ## Clean up:
 
 To clean up ONLY the resources created, run the below command.
 ```
-python cleanup.py --bucket <your bucket> --account-id <your account ID>
+python cleanup.py --delete-bucket <True or False> --bucket <your bucket> --account-id <your account ID>
 ```
-* Note that the regions is set to the region you configure, to check your region run ```aws configure```
-* Note passing your bucket name does not necessarily mean the bucket will be deleted. If you wish to delete the bucket, in delete_knowledge_base function in cleanup.py script, set the following:
 
-```
-delete_s3_bucket=True
-```
+* Note --delete-bucket will be used to determine weather to delete the S3 bucket or not.
+* Note that the regions is set to the region you configure, to check your region run ```aws configure```
+
 
 ## Contributers:
 [x] Omar Elkharbotly
