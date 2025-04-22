@@ -1,18 +1,24 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+
 import boto3
 import json
 import time
 import os
 import argparse
 from botocore.exceptions import ClientError
-from knowledge_base_helper import KnowledgeBasesForAmazonBedrock
+from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
 
 class BedrockAgentCleanup:
-    def __init__(self, bucket_name, account_id):
+    def __init__(self, bucket_name, account_id,delete_bucket):
         boto3_session = boto3.session.Session()
         self.region = boto3_session.region_name
         print(f"the region we're working in is {self.region}")
         self.bucket_name = bucket_name
         self.account_id = account_id 
+        self.delete_bucket = delete_bucket
         self.bedrock = boto3.client('bedrock')
         self.bedrock_agent = boto3.client('bedrock-agent',self.region)
         self.bedrock_agent_runtime = boto3.client('bedrock-agent-runtime',self.region)
@@ -358,9 +364,10 @@ class BedrockAgentCleanup:
                 return True
                 
             print(f"Deleting knowledge base: {kb_name}")
+            print(f"Deleting Bucket is set to {self.delete_bucket}")
             self.kb_helper.delete_kb(
                 kb_name=kb_name,
-                delete_s3_bucket=True,  # Keep the bucket as it might contain other data
+                delete_s3_bucket=self.delete_bucket,  # Keep the bucket as it might contain other data
                 delete_iam_roles_and_policies=True,
                 delete_aoss=True
             )
@@ -422,12 +429,13 @@ class BedrockAgentCleanup:
 
 def main():
     parser = argparse.ArgumentParser(description='Cleanup specific Bedrock Agents and associated resources')
+    parser.add_argument('--delete-bucket',required=True, help='Delete the S3 bucket')
     parser.add_argument('--bucket', required=True, help='S3 bucket name')
     parser.add_argument('--account-id', required=True, help='AWS account ID')
     
     args = parser.parse_args()
     
-    cleanup = BedrockAgentCleanup(args.bucket, args.account_id)
+    cleanup = BedrockAgentCleanup(args.bucket, args.account_id, args.delete_bucket)
     cleanup.cleanup_specific_agents()
     print("Making sure that the sub agents are deleted")
     cleanup.cleanup_specific_agents()

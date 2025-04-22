@@ -1,9 +1,14 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+
 import boto3
 import json
 import time
 import os
 from botocore.exceptions import ClientError
-from knowledge_base_helper import KnowledgeBasesForAmazonBedrock
+from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
 import yaml
 
 class BedrockAgentSetup:

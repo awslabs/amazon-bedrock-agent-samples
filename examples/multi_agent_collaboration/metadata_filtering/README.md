@@ -55,7 +55,9 @@ pip3 install -r requirements.txt
 2. Create a bucket
 ```aws s3 mb s3://<your bucket name>```
 
-3. Copy the files from the local directory to the S3 bucket created above
+3. Download shareholder letters and copy them to the S3 bucket created
+```python data_source_creation.py```
+
 ```aws s3 cp ./data_sources/ s3://BUCKET_NAME/data_sources/ --recursive```
 
 
@@ -89,6 +91,7 @@ Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 ├── requirements.txt
 ├── knowledge_base_helper.py
 ├── setup_agents.py
+├── data_souoce_creation.py
 ├── openapi_schema.yaml
 |── invoke_agent.py/
 └── data_sources/
