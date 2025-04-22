@@ -18,3 +18,5 @@
 - [Kaustav Dey](https://github.com/kaustavbecs)
 - [Tony Santiago](https://github.com/tsanti)
 - [Lucas Banerji](https://github.com/LucaiB)
+- [Rishiraj Chandra](https://github.com/rchandra20)
+- [Blake Shin](https://github.com/ShinBlake)
