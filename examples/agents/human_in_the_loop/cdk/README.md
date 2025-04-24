@@ -102,7 +102,7 @@ Do you wish to deploy these changes (y/n)? y
 ![Select action group](../images/console-click-on-action-group.png)
 
 3. Enable the confirmation dialog by selecting the "Add confirmation" option.
-![Enable confirmation](../images/console-add-confirmation.png)
+![Enable confirmation](../images/console-add-confirmation.jpg)
 
 4. Click on "Prepare agent" to apply the changes.
 ![Prepare the agent](../images/console-prepare-agent.png)

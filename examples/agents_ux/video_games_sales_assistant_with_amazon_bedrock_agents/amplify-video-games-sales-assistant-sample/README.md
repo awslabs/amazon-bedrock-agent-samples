@@ -1,13 +1,11 @@
-# Getting Started with Amplify Video Games Sales Assistant
+# Front-End Application - React UI Amazon Bedrock Agent Configuration
 
-This tutorial guides you through the process of setting up a React front-end application using AWS Amplify that integrates with an Amazon Bedrock Agent project. The services to be deployed are: Amplify Hosting, and it leverages Amazon IAM user credentials service authorization from the front-end application.
+This tutorial guides you through the process of setting up a React front-end application that integrates with an Amazon Bedrock Agent. This agent is specifically created to serve as a Data Analyst Assistant for Video Game Sales.
 
-By the end of this tutorial, you'll have a fully functional Generative AI web application that allows a guest user to interact with a Data Analyst Assistant for Video Game Sales using Amazon Bedrock Agents.
+By the end of this tutorial, you'll have a fully functional Generative AI web application that enables guest users to interact with the Data Analyst Assistant interface.
 
 > [!IMPORTANT]
 > This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
->
-> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
@@ -109,7 +107,7 @@ npm start
 
 You can use the following sample questions to test the Data Analyst Assistant:
 
-- Hello
+- Hello!
 - How can you help me?
 - What is the structure of the data?
 - Which developers tend to get the best reviews?
@@ -122,45 +120,9 @@ You can use the following sample questions to test the Data Analyst Assistant:
 - Which are the most popular consoles and why?
 - Give me a short summary and conclusion.
 
-## Using Amplify for Hosting your Front-End Application
 
-Execute the following commands for hosting the React front-end application in Amplify.
-
-[Install the Amplify CLI](https://docs.amplify.aws/gen1/react/tools/cli/start/set-up-cli/) with the following command:
-
-``` bash
-npm install -g @aws-amplify/cli
-```
-
-### Initialize the Amplify Application using **Gen1**
-
-Set up the Amplify project by executing the following command:
-
-``` bash
-amplify init
-```
-
-- To initialize the project use the **suggested configuration**.
-- Select your authentication method.
-
-### Add Hosting and Testing
-
-Execute the following commands to add hosting to your Amplify project:
-
-
-``` bash
-amplify add hosting
-```
-
-Use the following configuration:
-- Select the plugin module to execute · **Hosting with Amplify Console (Managed hosting with custom domains, Continuous deployment)**
-- Choose a type **Manual deployment**
-
-``` bash
-amplify publish
-```
-
-After the publishing finishes, you can copy the provided **URL** to access your front-end application.
+> [!TIP]
+> 🚀 Deploy your React Application with **[AWS Amplify Hosting](https://aws.amazon.com/amplify/hosting/)** for a production-ready environment. Integrate Amazon Cognito or another identity provider to secure access to Amazon Bedrock and DynamoDB, replacing IAM credentials with proper authentication and authorization controls.
 
 ## Front-End Application Preview Images
 
@@ -185,17 +147,6 @@ Congratulations, now you have your Data Analyst Assistant where you can interact
 - **Summary and conclusion derived from the data analysis conversation.**
 
 ![Video Games Sales Assistant](../images/preview5.png)
-
-
-## Cleaning-up Resources (optional)
-
-The next step is optional to delete the resources that we've created.
-
-``` bash
-amplify delete
-```
-
-Do not forget to [remove your IAM User](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_remove.html) and Access keys for your front-end application.
 
 ## Thank You
 

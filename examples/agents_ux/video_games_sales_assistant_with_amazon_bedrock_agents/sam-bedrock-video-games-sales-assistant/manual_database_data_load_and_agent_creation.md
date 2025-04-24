@@ -284,10 +284,11 @@ In **Resource-based policy statements**, click on **Add permissions**, use the f
 
 Now you can go back to your Amazon Bedrock Agent,, in the **Agent builder** section click on **Save**, **Prepare** and **Test**, use the **Test Agent** with the following sample questions:
 
-- Hello
+- Hello!
 - How can you help me?
 - What is the structure of the data?
 - Which developers tend to get the best reviews?
+- What were the total sales for each region between 2000 and 2010? Give me the data in percentages.
 - What were the best-selling games in the last 10 years?
 - What are the best-selling video game genres?
 - Give me the top 3 game publishers.

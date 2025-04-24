@@ -103,25 +103,21 @@ class MCPServer(ABC):
         tools = await self.session.list_tools()
         tools_list = tools.tools
 
+        # Helper factory function to create a callable with the correct tool name
+        def create_callable(tool_name):
+            async def callable(*args, **kwargs):
+                response = await self.session.call_tool(
+                    tool_name, arguments=kwargs
+                )
+                return response.content[0].text
+            return callable
+
         for tool in tools_list:
             if len(tools_to_use) != 0:
                 if tool.name in tools_to_use:
-
-                    async def callable(*args, **kwargs):
-                        response = await self.session.call_tool(
-                            tool.name, arguments=kwargs
-                        )
-                        return response.content[0].text
-
-                    self.callable_tools[tool.name] = callable
-
+                    self.callable_tools[tool.name] = create_callable(tool.name)
             else:
-
-                async def callable(*args, **kwargs):
-                    response = await self.session.call_tool(tool.name, arguments=kwargs)
-                    return response.content[0].text
-
-                self.callable_tools[tool.name] = callable
+                self.callable_tools[tool.name] = create_callable(tool.name)
 
     async def cleanup(self):
         """Clean up resources"""

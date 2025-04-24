@@ -114,3 +114,10 @@ Adding [Agent with access to house security camera in cloudformation](/examples/
 ## 04/02/2025
 
 [Langfuse self deployment](/examples/agent_observability/deploy-langfuse-on-ecs-fargate-with-typescript-cdk/)
+
+## 04/07/2025
+
+**[Investment Research Agent](/examples/multi_agent_collaboration/investment_research_agent/)**
+
+## 18/04/2025
+**[Metadata filtering](/examples/multi_agent_collaboration/metadata_filtering)**
