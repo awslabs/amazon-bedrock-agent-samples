@@ -1,7 +1,7 @@
 # Financial Analyst and Portfolio system - Multi-Agent Workshop
 
 ## Overview
-This workshop showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an Energy Efficiency Management System. 
+This example showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an Energy Efficiency Management System. 
 The system consists of a supervisor agent that orchestrates three specialized sub-agents, each handling specific aspects of energy management and customer service.
 
 ## System Architecture
