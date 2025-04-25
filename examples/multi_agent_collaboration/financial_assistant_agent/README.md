@@ -1,4 +1,4 @@
-# Financial Analyst and Portfolio system - Multi-Agent Workshop
+# Financial Analyst and Portfolio system - Multi-Agent example
 
 ## Overview
 This example showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an efficient System. 
@@ -13,7 +13,7 @@ The system consists of a supervisor agent that orchestrates two specialized sub-
 ```
 
 ## Overview
-This workshop showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an Energy Efficiency Management System. 
+This example showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an effiicient System. 
 The system consists of a supervisor agent that orchestrates three specialized sub-agents, each handling specific aspects of energy management and customer service.
 
 ## Agents Description
@@ -65,18 +65,12 @@ git clone
 pip install -r requirements.txt
 ```
 
-3. Follow the setup instructions in the workshop guide
+3. Follow the setup instructions in the guide
 
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-This project is licensed under the MIT-0 License - see the LICENSE file for details.
 
 ## Support
 For support and questions, please open an issue in the repository.
 
 ---
-Note: This workshop is for educational purposes and demonstrates the capabilities of Amazon Bedrock Agents' multi-agent collaboration feature.
+Note: This example is for educational purposes and demonstrates the capabilities of Amazon Bedrock Agents' multi-agent collaboration feature.
 
