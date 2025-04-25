@@ -14,7 +14,7 @@ The system consists of a supervisor agent that orchestrates two specialized sub-
 
 ## Overview
 This example showcases the new Amazon Bedrock Agents' [multi-agent collaboration capabilities](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-multi-agents-collaboration.html) through an effiicient System. 
-The system consists of a supervisor agent that orchestrates three specialized sub-agents, each handling specific aspects of energy management and customer service.
+The system consists of a supervisor agent that orchestrates two specialized sub-agents, each handling specific aspects of energy management and customer service.
 
 ## Agents Description
 
@@ -39,7 +39,7 @@ The Portfolio Assistant Agent performs the following key functions:
 #### 2. Knowledge Agent
 The Data Assistant Agent functions as an information repository and data retrieval specialist. Its primary responsibilities include:
 
-* Providing data-driven insights on economic trends, company financial statements, and Federal public documents (FOMC)
+* Providing data-driven insights on economic trends, company financial statements, and Federal public documents (FOMC). this is downloadable and can be uploaded to the data folder to be embedded to the knowledge base. 
 * Processing and responding to user queries regarding financial data like previous year revenue, stakeholder docs of the company for every fiscal quarter, etc. This is again just static data for the purpose of our experimentation; however, we can stream the real-time data using API’s available.
 
 
