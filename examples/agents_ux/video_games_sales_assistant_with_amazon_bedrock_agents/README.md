@@ -4,15 +4,23 @@ This solution provides a Generative AI application reference that allows users t
 
 ![Video Games Sales Assistant](./images/preview.png)
 
-A Data Analyst Assistant offers an approach to data analysis that enables enterprises to interact with their structured data through natural language conversations rather than complex SQL queries. This kind of assistant provides an intuitive question-answering for data analysis conversations and can be improved by offering data visualizations to enhance the user experience.
+🤖 A Data Analyst Assistant offers an approach to data analysis that enables enterprises to interact with their structured data through natural language conversations rather than complex SQL queries. This kind of assistant provides an intuitive question-answering for data analysis conversations and can be improved by offering data visualizations to enhance the user experience.
 
-This solution enables users to:
+✨ This solution enables users to:
 
 - Ask questions about video game sales data in natural language
 - Receive AI-generated responses based on SQL queries to a PostgreSQL database
 - View query results in tabular format
 - Explore data through automatically generated visualizations
 - Get insights and analysis from the AI assistant
+
+
+🚀 This reference solution can help you explore use cases like:
+
+• Empower analysts with real-time business intelligence
+• Provide quick answers to C-level executives for common business questions
+• Unlock new revenue streams through data monetization (consumer behavior, audience segmentation)
+• Optimize infrastructure through performance insights
 
 ## Solution Overview
 
