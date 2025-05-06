@@ -1,10 +1,15 @@
-# Stock Data Lookup Tool
+# Financial Data Tools: Stock Data Lookup & Portfolio Optimization
 
-To demonstrate use of a Bedrock Agents Action Group as a reusable tool across multiple Bedrock Agents, here we have created a lightweight StockData tool. It is able to take a stock ticker and return stock price history data by leveraging Yahoo Finance (hyperlink here). It can be easily extended to cover many other functions as well. The [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/) supervisor example demonstrates reusing this StockData tool. Note the implementation of the Lambda function currently ignores which Agent was used to call the Action Group and is not tightly coupled to any single Agent.
 
-This tool consists of an AWS Lambda function named "stock_data_lookup" to retrieve stock data using the yfinance Python library. The "stock_data_lookup" Lambda function can then be invoked to retrieve stock data for a given ticker symbol. Here's a breakdown:
+This project demonstrates the use of a Bedrock Agents Action Group as a reusable tool across multiple Bedrock Agents. It now provides two key functionalities:
 
-- **AgentLambdaFunction**: This is the AWS Lambda function that implements the "stock_data_lookup" functionality. It uses the Python 3.11 runtime and attaches two layers: a custom layer, and the AWSSDKPandas layer managed by AWS.
+- Stock Data Lookup: Retrieves a 1-month stock price history for a given ticker by leveraging the Yahoo Finance (yfinance) library.
+
+- Portfolio Optimization: Uses historical price data and a list of ticker symbols to compute an optimal portfolio. This function leverages portfolio optimization techniques from the pypfopt library, including the Efficient Frontier approach and discrete allocation based on latest prices.
+
+The [Portfolio Assistant Agent](/examples/multi_agent_collaboration/portfolio_assistant_agent/) supervisor example demonstrates reusing this StockData tool. Note the implementation of the Lambda function currently ignores which Agent was used to call the Action Group and is not tightly coupled to any single Agent.
+
+- **AgentLambdaFunction**: This AWS Lambda function implements the stock_data_lookup and portfolio_optimization functionalities. It uses a Python 3.12 container image with all dependencies packaged at build time.
 - **AgentLambdaRole**: This is an AWS Identity and Access Management (IAM) role that grants the Lambda function the necessary permissions to execute.
 - **AgentAliasLambdaPermission** and **AgentLambdaPermission**: These resources grant permissions for Amazon Bedrock Agents to invoke the Lambda function.
 
@@ -28,32 +33,70 @@ from src.utils.bedrock_agent import (
 )
 import uuid
 
-stock_data_agent = Agent.create(
-    name="stock_data_agent",
+stock_data_tools_arn = f"arn:aws:lambda:{region}:{account_id}:function:stock_data_tools"
+
+quantitative_analysis_agent = Agent.create(
+    name="quantitative_analysis_agent",
     role="Financial Data Collector",
-    goal="Retrieve accurate stock trends for a given ticker.",
-    instructions="Specialist in real-time financial data extraction.",
-    tool_code=f"arn:aws:lambda:{region}:{account_id}:function:stock_data_lookup",
-    tool_defs=[
-        {  # lambda_layers: yfinance_layer.zip, numpy_layer.zip
-            "name": "stock_data_lookup",
-            "description": "Gets the 1 month stock price history for a given stock ticker, formatted as JSON",
-            "parameters": {
-                "ticker": {
-                    "description": "The ticker to retrieve price history for",
-                    "type": "string",
-                    "required": True,
+    goal="Retrieve real-time and historic stock prices as well as optimizing a portfolio given tickers.",
+    instructions="""You are a Stock Data and Portfolio Optimization Specialist...
+""",
+    tools=[
+        # Stock Data Lookup Tool
+        {
+            "code": stock_data_tools_arn,
+            "definition": {
+                "name": "stock_data_lookup",
+                "description": "Gets the 1-month stock price history for a given stock ticker, formatted as JSON.",
+                "parameters": {
+                    "ticker": {"description": "The ticker to retrieve price history for", "type": "string", "required": True}
+                },
+            },
+        },
+        # Portfolio Optimization Tool
+        {
+            "code": stock_data_tools_arn,
+            "definition": {
+                "name": "portfolio_optimization",
+                "description": "Optimizes a stock portfolio given a list of tickers and historical prices from the stock_data_lookup function.",
+                "parameters": {
+                    "tickers": {
+                        "description": "A comma-separated list of stock tickers to include in the portfolio",
+                        "type": "string",
+                        "required": True
+                    },
+                    "prices": {
+                        "description": "A JSON object with dates as keys and stock prices as values",
+                        "type": "string",
+                        "required": True
+                    }
                 }
             },
         }
     ],
+    llm=LLM,
 )
-response = stock_data_agent.invoke(
+
+response1 = stock_data_agent.invoke(   #invoking stock_data_lookup
     input_text="What is the stock trend for AMZN?",
     session_id: str = str(uuid.uuid1()),
-enable_trace: bool = False,
+    enable_trace: bool = False,
 )
-print(response)
+print(response1)
+
+response2 = stock_data_agent.invoke(   #invoking portfolio_optimization
+    input_text= "Optimize a portfolio for the following: {\"2025-03-01\": {\"FAKE1\": 100.0, \"FAKE2\": 200.0, \"FAKE3\": 300.0}, \"2025-03-02\": {\"FAKE1\": 101.0, \"FAKE2\": 201.0, \"FAKE3\": 301.0}, \"2025-03-03\": {\"FAKE1\": 102.0, \"FAKE2\": 202.0, \"FAKE3\": 302.0}}",
+    session_id: str = str(uuid.uuid1()),
+    enable_trace: bool = False,
+)
+print(response2)
+
+response3 = stock_data_agent.invoke(   #invoking both tools
+    input_text="Optimize a portfolio with AMZN, GOOG, and MSFT",
+    session_id: str = str(uuid.uuid1()),
+    enable_trace: bool = False,
+)
+print(response3)
 ```
 
 ## Clean Up

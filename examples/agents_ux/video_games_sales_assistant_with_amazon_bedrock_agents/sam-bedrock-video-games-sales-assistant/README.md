@@ -1,35 +1,54 @@
-# Getting Started with SAM Video Games Sales Assistant and Amazon Bedrock Agents
+# Generative AI Application - Data Source and Amazon Bedrock Agent Deployment with AWS SAM
 
-This tutorial guides you through the process of setting up the back-end using AWS Serverless Application Model (SAM) and the Amazon Bedrock Agent. The services to be deployed are: Virtual Private Cloud (VPC), Lambda Function, Aurora Serverless PostgreSQL Cluster Database, AWS Secrets Manager, and Amazon DynamoDB Table within the SAM Project. Using Python scripts, you will create an Amazon S3 Bucket to upload the sales data source and create the Amazon Bedrock Agent.
+This tutorial guides you through setting up the back-end infrastructure and Amazon Bedrock Agent to create a Data Analyst Assistant for Video Game Sales using AWS Serverless Application Model (SAM).
 
-By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
+## Overview
+
+You will deploy the following AWS services:
+
+- **Amazon Bedrock Agent**: Powers the ***Data Analyst Assistant*** that answers questions by generating SQL queries using Claude 3.5 Haiku
+- **AWS Lambda**: Processes agent requests through various tools including:
+    - /runSQLQuery: Executes queries against the database
+    - /getCurrentDate: Retrieves the current date
+    - /getTablesInformation: Provides database tables information for agent context
+- **Aurora Serverless PostgreSQL**: Stores the video game sales data
+- **Amazon DynamoDB**: Tracks questions and query results
+- **AWS Secrets Manager**: Securely stores database credentials
+- **Amazon VPC**: Provides network isolation for the database
+
+By completing this tutorial, you'll have a fully functional Amazon Bedrock Agent for testing in the AWS Console.
 
 > [!IMPORTANT]
 > This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
 >
-> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> Remember to clean up resources after testing to avoid unnecessary costs by following the clean-up steps provided.
 
 ## Prerequisites
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python 3.9 or a later major version installed](https://www.python.org/downloads/) 
-* [Boto3 1.36 or a later major version installed](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
-* Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock
+Before you begin, ensure you have:
 
-**Before proceeding further, verify that you have successfully installed and configured all the listed prerequisites in your development environment.**
+* [SAM CLI Installed](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
+* [Python 3.9 or later](https://www.python.org/downloads/) 
+* [Boto3 1.36 or later](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
+* Anthropic Claude 3.5 Haiku and Sonnet models enabled in Amazon Bedrock
+* Run this command to create a service-linked role for RDS:
 
-## Database and Back-End Deployment with SAM
+```bash
+aws iam create-service-linked-role --aws-service-name rds.amazonaws.com
+```
 
-To deploy the backend services for the Assistant, execute the following commands in your SAM project folder:
+## Deploy the Back-End Services with AWS SAM
+
+Navigate to the SAM project folder (sam-bedrock-video-games-sales-assistant/) and execute::
 
 ```bash
 sam build
 ```
 
-> [!NOTE]
-> If you receive a **Build Failed error**, then you might need to change the Python version in the **template.yaml** file. By default, the Lambda Function uses Python 3.9. You can modify this setting on **line 56** of the **template.yaml** file to use a Python version that is higher than 3.9 that you have installed.
+> [!CAUTION]
+> If you encounter a **Build Failed error**, you might need to change the Python version in the [template.yaml](./template.yaml) file. By default, the Lambda function uses **Python 3.9**. You can modify this setting on **line 84** of the **[template.yaml](./template.yaml)** file to use a Python version higher than 3.9 that you have installed.
 
-Now execute the following command to perform a first SAM deployment:
+Now deploy the SAM application:
 
 ```bash
 sam deploy --guided
@@ -53,81 +72,69 @@ After the SAM project preparation and changeset created, confirm the following t
 
 - Deploy this changeset? [y/N]: **Y**
 
-After the SAM deployment finishes, you will have the following main services created:
-- The Lambda Function API that the agent will use.
-- The Aurora Serverless PostgreSQL Cluster Database.
-- A DynamoDB Table for tracking questions and query details.
+After deployment completes, the following services will be created:
+
+- Amazon Bedrock Agent configured with:
+    - **[Agent Instructions](./resources/agent-instructions.txt)**
+    - **[Agent API Schema that provides the tools for the Agent (Action Group)](./resources/agent-api-schema.json)**
+- Lambda Function API for the agent to use
+    - **[Provide the tools for the agent: runSQLQuery, getCurrentDate, and getTablesInformation](./functions/assistant-api-postgresql-haiku-35/tables_information.txt)**
+- The Aurora Serverless PostgreSQL Cluster Database
+- A DynamoDB Table for tracking questions and query details
 
 > [!TIP]
-> Alternatively, you can choose to follow [this manual](./manual_database_data_load_and_agent_creation.md) to continue creating the Amazon Bedrock Agent step-by-step in the AWS Console. **Otherwise, continue with the instructions below**.
+> You can also change the data source to connect to your preferred database engine by adapting both the Agent's instructions and the AWS Lambda API function logic.
 
+> [!IMPORTANT] 
+> Enhance AI safety and compliance by implementing **[Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/)** for your AI applications.
 
-## Preparing the Database and Creating the Amazon Bedrock Agent
+> [!NOTE]
+> To learn about agent creation configuration, please refer to [this tutorial](./manual_database_data_load_and_agent_creation.md), which provides step-by-step guidance for setting up an Amazon Bedrock Agent in the AWS Console.
 
-To create the agent with the provided scripts, run the following commands to prepare the environment variables that you will need:
+## Load Sample Data into PostgreSQL Database
+
+Set up the required environment variables:
 
 ``` bash
 # Set the stack name environment variable
 export STACK_NAME=sam-bedrock-video-games-sales-assistant
 
 # Retrieve the output values and store them in environment variables
-export DATABASE_CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DatabaseClusterName'].OutputValue" --output text)
-export QUESTION_ANSWERS_TABLE_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuestionAnswersTableName'].OutputValue" --output text)
-export QUESTION_ANSWERS_TABLE_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuestionAnswersTableArn'].OutputValue" --output text)
 export SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='SecretARN'].OutputValue" --output text)
-export LAMBDA_FUNCTION_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionArn'].OutputValue" --output text)
-export LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text)
 export DATA_SOURCE_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DataSourceBucketName'].OutputValue" --output text)
 export AURORA_SERVERLESS_DB_CLUSTER_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AuroraServerlessDBClusterArn'].OutputValue" --output text)
 cat << EOF
 STACK_NAME: ${STACK_NAME}
-QUESTION_ANSWERS_TABLE_NAME: ${QUESTION_ANSWERS_TABLE_NAME}
-QUESTION_ANSWERS_TABLE_ARN: ${QUESTION_ANSWERS_TABLE_ARN}
-DATABASE_CLUSTER_NAME: ${DATABASE_CLUSTER_NAME}
 SECRET_ARN: ${SECRET_ARN}
-LAMBDA_FUNCTION_ARN: ${LAMBDA_FUNCTION_ARN}
-LAMBDA_FUNCTION_NAME: ${LAMBDA_FUNCTION_NAME}
 DATA_SOURCE_BUCKET_NAME: ${DATA_SOURCE_BUCKET_NAME}
 AURORA_SERVERLESS_DB_CLUSTER_ARN: ${AURORA_SERVERLESS_DB_CLUSTER_ARN}
 EOF
 
 ```
 
-### Loading Data Sample to the PostgreSQL Databae
-
-Execute the following command to create the database and load the data source:
+Execute the following command to create the database and load the sample data:
 
 ``` bash
-pip install boto3
 python3 resources/create-sales-database.py
 ```
 
-The script executed uses the **[video_games_sales_no_headers.csv](./resources/database/video_games_sales_no_headers.csv)** as the data source.
+The script uses the **[video_games_sales_no_headers.csv](./resources/database/video_games_sales_no_headers.csv)** as the data source.
 
 > [!NOTE]
 > The data source provided contains information from [Video Game Sales](https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024) which is made available under the [ODC Attribution License](https://opendatacommons.org/licenses/odbl/1-0/).
 
-### Amazon Bedrock Agent Creation
+## Test the Agent in AWS Console
 
-Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
+Navigate to your Amazon Bedrock Agent named **video-games-sales-assistant**:
 
-``` bash
-python3 resources/create-amazon-bedrock-agent.py
-```
+- Click **Edit Agent Builder**
+- In the Agent builder section click **Save**
+- Click **Prepare**
+- Click **Test**
 
-The Amazon Bedrock Agent was created and configured with the following information:
-- [Agent Instruction](./resources/agent-instructions.txt)
-- [Agent Orchestration Strategy](./resources/agent-orchestration-strategy.txt)
-- [Agent API Schema for the Action Group](./resources/agent-api-schema.json)
+Try these sample questions:
 
-> [!IMPORTANT] 
-> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
-
-### Testing the Agent in the AWS Console
-
-Now you can go back to your Amazon Bedrock Agent called **video-games-sales-assistant**, click on **Edit Agent Builder**, in the **Agent builder** section click on **Save**, **Prepare** and **Test**, use the **Test Agent** with the following sample questions:
-
-- Hello
+- Hello!
 - How can you help me?
 - What is the structure of the data?
 - Which developers tend to get the best reviews?
@@ -140,41 +147,18 @@ Now you can go back to your Amazon Bedrock Agent called **video-games-sales-assi
 - Which are the most popular consoles and why?
 - Give me a short summary and conclusion.
 
-## Create Alias Agent for the Front-End Application
+## Create Agent Alias for Front-End Application
 
-To use the agent in the front-end application, you need to **create an Alias of your agent**. After you have prepared a version for testing purposes, go to your **Agent Overview** and click on **Create Alias** so that you can use the alias point.
+To use the agent in your front-end application:
 
-You can now follow the tutorial [Getting Started with Amplify Video Games Sales Assistant](../amplify-video-games-sales-assistant-sample/) to deploy the front-end application. The tutorial will ask you for your your alias along with the other services that you have created so far.
+- Go to your **Agent Overview**
+- Click **Create Alias**
 
-## Cleaning-up Resources (optional)
+You can now proceed to the [Front-End Implementation - Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](../amplify-video-games-sales-assistant-sample/). The tutorial will ask you for your **Agent Alias** along with the other services that you have created so far.
 
-The next steps are optional and demonstrate how to delete the resources that we've created.
-Update the following exports with the values of the services you created before, and then execute.
+## Cleaning-up Resources (Optional)
 
-``` bash
-# Set the stack name environment variable
-export AGENT_ID=<you_agent_id>
-export AGENT_ARN=<you_agent_arn>
-export ACTION_GROUP_ID=<you_action_group_id>
-export LAMBDA_FUNCTION_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionArn'].OutputValue" --output text)
-export LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text)
-export DATA_SOURCE_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DataSourceBucketName'].OutputValue" --output text)
-
-```
-
-Execute the following command to delete Amazon Bedrock Agent.
-
-``` bash
-python3 resources/delete-amazon-bedrock-agent.py
-```
-
-Remove the data source file uploaded to the Amazon S3 bucket.
-
-``` bash
-aws s3api delete-object --bucket $DATA_SOURCE_BUCKET_NAME --key video_games_sales_no_headers.csv
-```
-
-Delete the AWS SAM application by deleting the AWS CloudFormation stack.
+To avoid unnecessary charges, delete the AWS SAM application:
 
 ``` bash
 sam delete

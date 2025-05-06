@@ -321,7 +321,7 @@ For differences between Langfuse and Phoenix checkout this [blog post](https://l
 1. [Time MCP Server](./examples/mcp/mcp_time/)
 2. [Perplexity MCP server](./examples/mcp/mcp_perplexity/)
 3. [Amazon Bedrock KnowledgeBase MCP Server](./examples/mcp/mcp_aws_kb/)
-4. [Connect MCP Server via SSE](./examples/mcp/mcp_aws_kb/)
+4. [Connect MCP Server via SSE](./examples/mcp/mcp_sse/)
 5. [Cost explorer agent](./examples/mcp/cost_explorer_agent/) - Integrate Perplexity MCP server, AWS Cost explorer MCP server, and code interpreter.
 
 ### Langchain Tools Examples
@@ -333,15 +333,19 @@ For differences between Langfuse and Phoenix checkout this [blog post](https://l
 
 ## Roadmap Features
 
-- [Multi Agent collaboration](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-announces-general-availability-of-multi-agent-collaboration/) compatibility of Supervisor and Supervisor with routing mode.
+- Integrations with Zapier
+- Integration with Langraph
+- Integration with CrewAi
+- [Multi Agent collaboration](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-announces-general-availability-of-multi-agent-collaboration/) support of Supervisor and Supervisor with routing mode.
 - [langfuse](https://github.com/langfuse/langfuse) and [Phoenix](https://phoenix.arize.com/) compatibility with `InvokeInlineAgent`API.
 - Better console traces for `InvokeInlineAgent` and `InvokeAgent` API.
-- MCP catalog and ability to dynamically choose MCP servers at runtime.
-- Replace HTTP+SSE with new "Streamable HTTP" transport for MCP compatibility, see information [here](https://github.com/modelcontextprotocol/specification/pull/206).
 - Ready to use Amazon Bedrock Guardrails.
 - Script to manage creation of Amazon Bedrock Knowledge Bases and Amazon Bedrock Guardrails.
-- Documentation for InlineAgent SDK.
 - Publish to PyPI.
+- Easy path to production using `InlineAgent` CLI. Support for `InlineAgent init`, `InlineAgent deploy`, and `InlineAgent destroy` commands.
+- MCP catalog and ability to dynamically choose MCP servers at runtime.
+- Replace HTTP+SSE with new "Streamable HTTP" transport for MCP compatibility, see information [here](https://github.com/modelcontextprotocol/specification/pull/206).
+- Documentation for InlineAgent SDK.
 
 ## FAQ
 

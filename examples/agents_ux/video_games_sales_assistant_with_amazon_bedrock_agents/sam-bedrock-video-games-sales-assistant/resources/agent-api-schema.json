@@ -1,67 +1,124 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-      "title": "Video Game Sales Data API",
-      "description": "This API provides access to a PostgreSQL database containing video game sales data. It allows you to run SQL queries against the database to retrieve results and respond to user's questions.",
-      "version": "1.0.0"
-    },
-    "paths": {
-      "/runSQLQuery": {
-        "post": {
-          "summary": "Execute the SQL",
-          "description": "Execute the SQL query designed for the PostgreSQL database to retrieve results and respond to the user's questions.",
-          "operationId": "runSQLQuery",
-          "requestBody": {
-            "required": true,
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Video Game Sales Data API",
+    "description": "This API provides access to a PostgreSQL database containing video game sales data. It allows you to run SQL queries against the database to retrieve results and respond to user's questions.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/runSQLQuery": {
+      "post": {
+        "summary": "Execute the SQL",
+        "description": "Execute the SQL query designed for the PostgreSQL database to retrieve results and respond to the user's questions.",
+        "operationId": "runSQLQuery",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "SQLQuery": {
+                    "type": "string",
+                    "description": "SQL Query"
+                  }
+                },
+                "required": [
+                  "SQLQuery"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "SQLQuery": {
-                      "type": "string",
-                      "description": "SQL Query"
-                    }
-                  },
-                  "required": [
-                    "SQLQuery"
-                  ]
-                }
-              }
-            }
-          },
-          "responses": {
-            "200": {
-              "description": "Successful response",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "data": {
-                        "type": "object",
-                        "description": "SQL query results returned",
-                        "properties": {
-                          "data": {
-                            "type": "array",
-                            "description": "The data for the SQL query results returned"
-                          },
-                          "message": {
-                            "type": "string",
-                            "description": "Aditional information about the SQL query results returned (optional)"
-                          }
+                    "data": {
+                      "type": "object",
+                      "description": "SQL query results returned",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "description": "The data for the SQL query results returned"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Aditional information about the SQL query results returned (optional)"
                         }
                       }
                     }
                   }
                 }
               }
-            },
-            "400": {
-                "description": "Bad request. One or more required fields are missing or invalid."
             }
+          },
+          "400": {
+            "description": "Bad request. One or more required fields are missing or invalid."
+          }
+        }
+      }
+    },
+    "/getCurrentDate": {
+      "get": {
+        "summary": "Get current date",
+        "description": "Returns the current date in YYYY/MM/DD format to provide time context to the agent",
+        "operationId": "getCurrentDate",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currentDate": {
+                      "type": "string",
+                      "description": "Current date in YYYY/MM/DD format",
+                      "example": "2023/11/15"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. One or more required fields are missing or invalid."
+          }
+        }
+      }
+    },
+    "/getTablesInformation": {
+      "get": {
+        "summary": "Get tables information",
+        "description": "Provides information related to the data tables available to generate the SQL queries to answer the users questions",
+        "operationId": "getTablesInformation",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tablesInformation": {
+                      "type": "string",
+                      "description": "Descriptions, schema tables, a dictionary explaining each table column, and business rules associated with the tables"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. One or more required fields are missing or invalid."
           }
         }
       }
     }
   }
+}

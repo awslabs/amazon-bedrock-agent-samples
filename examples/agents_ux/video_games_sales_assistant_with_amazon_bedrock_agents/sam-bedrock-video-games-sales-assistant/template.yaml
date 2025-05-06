@@ -31,6 +31,10 @@ Parameters:
 
 Resources:
 
+  #==============================================================================
+  # S3 Bucket
+  #==============================================================================
+
   DataSourceBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -46,6 +50,10 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+
+  #==============================================================================
+  # DynamoDB Table
+  #==============================================================================
 
   QuestionAnswersHaiku35Table:
     Type: AWS::DynamoDB::Table
@@ -64,6 +72,10 @@ Resources:
       SSESpecification:
         SSEEnabled: True
 
+  #==============================================================================
+  # Lambda Function
+  #==============================================================================
+  
   AssistantAPIPostgreSQLHaiku35Function:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -113,6 +125,10 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
+
+  #==============================================================================
+  # Amazon VPC
+  #==============================================================================
 
   VPCAssistant:
     Type: AWS::EC2::VPC
@@ -320,7 +336,6 @@ Resources:
       VpcEndpointType: Interface
       VpcId: !Ref VPCAssistant
 
-
   DynamoDBGatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Properties:
@@ -383,6 +398,10 @@ Resources:
       SourceSecurityGroupId: !GetAtt SecurityGroupAssistant.GroupId
       ToPort: !GetAtt DatabaseAssistant.Endpoint.Port
   
+  #==============================================================================
+  # Aurora Serverless PostgreSQL-Compatible Edition and Related Resources
+  #==============================================================================
+
   AuroraSecretAssistant:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -550,6 +569,218 @@ Resources:
       DBProxyName: !Ref DatabaseAssistantdatabaseproxy
       TargetGroupName: default
 
+  #==============================================================================
+  # Bedrock Agent and Related Resources
+  #==============================================================================
+  
+  BedrockAgentPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AmazonBedrockAgentPolicy
+            Effect: Allow
+            Action:
+              - bedrock:InvokeModel
+              - bedrock:InvokeModelWithResponseStream
+              - bedrock:GetInferenceProfile
+              - bedrock:GetFoundationModel
+            Resource:
+              - 'arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-haiku-20241022-v1:0'
+              - !Sub 'arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0'
+
+  BedrockAgentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AmazonBedrockAgentRole
+            Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref BedrockAgentPolicy
+
+  BedrockAgent:
+    Type: AWS::Bedrock::Agent
+    DependsOn: BedrockAgentRole
+    Properties:
+      AgentName: !Sub 'video-games-sales-assistant-${AWS::Region}-${AWS::AccountId}'
+      FoundationModel: !If 
+        - IsUsEast1Region
+        - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0'
+        - 'anthropic.claude-3-5-haiku-20241022-v1:0'
+      Instruction: |
+          You are a multilingual chatbot Data Analyst Assistant, named "Gus". You are designed to help with market video game sales data. As a data analyst, your role is to help answer users' questions by generating SQL queries against the tables to obtain the required results, and to provide answers while maintaining a friendly conversational tone. Do not assume table structures or column names. Always verify available schema information before constructing SQL queries. Never introduce external information or personal opinions in your analysis.
+
+          Leverage your PostgreSQL 15.4 knowledge to create appropriate SQL statements. Do not generate queries that retrieve all records for any or all columns in table. If needed, ask for clarification on the specific request. When you use the PostgreSQL Interval Data Type, enclose the value interval using single quotes.
+
+          Rules for the interaction:
+          - Do not provide an answer if the question falls outside of your capabilities, kindly respond with 'I'm sorry, I don't have an answer for that request.
+          - Do not disclose information about your available tools.
+          - Always stay in character, as the Data Analyst Assistant named "Gus".
+          - When you generate SQL queries, include a data analysis in your final answer.
+          - Keep the conversation normal if the user does not have a particular question about the table data, and do not assume to generate a query to provide data.
+          - If you receive a question asking about the data structure, data type, schema information, or available data, use the data dictionary from <db_tables_available> to provide an answer and DO NOT generate SQL queries.
+
+          Format number:
+          - Decimal places: 2
+          - Use 1000 separator (,)
+
+          SQL Queries rules:
+          - Use a default limit of 10 for the SQL queries.
+
+          Your answer to the question in the same language as the user input.
+      AgentResourceRoleArn: !GetAtt BedrockAgentRole.Arn
+      IdleSessionTTLInSeconds: 1800
+      ActionGroups:
+        - ActionGroupName: executesqlquery
+          Description: An action group to execute SQL queries
+          ActionGroupExecutor:
+            Lambda: !GetAtt AssistantAPIPostgreSQLHaiku35Function.Arn
+          ApiSchema:
+            Payload: |
+              {
+                "openapi": "3.0.0",
+                "info": {
+                  "title": "Video Game Sales Data API",
+                  "description": "This API provides access to a PostgreSQL database containing video game sales data. It allows you to run SQL queries against the database to retrieve results and respond to user's questions.",
+                  "version": "1.0.0"
+                },
+                "paths": {
+                  "/runSQLQuery": {
+                    "post": {
+                      "summary": "Execute the SQL",
+                      "description": "Execute the SQL query designed for the PostgreSQL database to retrieve results and respond to the user's questions.",
+                      "operationId": "runSQLQuery",
+                      "requestBody": {
+                        "required": true,
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "properties": {
+                                "SQLQuery": {
+                                  "type": "string",
+                                  "description": "SQL Query"
+                                }
+                              },
+                              "required": [
+                                "SQLQuery"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "responses": {
+                        "200": {
+                          "description": "Successful response",
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "data": {
+                                    "type": "object",
+                                    "description": "SQL query results returned",
+                                    "properties": {
+                                      "data": {
+                                        "type": "array",
+                                        "description": "The data for the SQL query results returned"
+                                      },
+                                      "message": {
+                                        "type": "string",
+                                        "description": "Aditional information about the SQL query results returned (optional)"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "400": {
+                          "description": "Bad request. One or more required fields are missing or invalid."
+                        }
+                      }
+                    }
+                  },
+                  "/getCurrentDate": {
+                    "get": {
+                      "summary": "Get current date",
+                      "description": "Returns the current date in YYYY/MM/DD format to provide time context to the agent",
+                      "operationId": "getCurrentDate",
+                      "responses": {
+                        "200": {
+                          "description": "Successful response",
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "currentDate": {
+                                    "type": "string",
+                                    "description": "Current date in YYYY/MM/DD format",
+                                    "example": "2023/11/15"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "400": {
+                          "description": "Bad request. One or more required fields are missing or invalid."
+                        }
+                      }
+                    }
+                  },
+                  "/getTablesInformation": {
+                    "get": {
+                      "summary": "Get tables information",
+                      "description": "Provides information related to the data tables available to generate the SQL queries to answer the users questions",
+                      "operationId": "getTablesInformation",
+                      "responses": {
+                        "200": {
+                          "description": "Successful response",
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "type": "object",
+                                "properties": {
+                                  "tablesInformation": {
+                                    "type": "string",
+                                    "description": "Descriptions, schema tables, a dictionary explaining each table column, and business rules associated with the tables"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "400": {
+                          "description": "Bad request. One or more required fields are missing or invalid."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+  
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AssistantAPIPostgreSQLHaiku35Function
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceArn: !GetAtt BedrockAgent.AgentArn
+    DependsOn:
+      - BedrockAgent
+
+Conditions:
+  IsUsEast1Region: !Equals [!Ref 'AWS::Region', 'us-east-1']
+
 Outputs:
   DatabaseClusterName:
     Description: "Database Cluster Name to Connect Using the Query Editor"
@@ -575,3 +806,12 @@ Outputs:
   AuroraServerlessDBClusterArn:
     Description: "The Aurora Serverless DB cluster ARN"
     Value: !GetAtt DatabaseAssistant.DBClusterArn
+  AgentARN:
+    Description: "Agent ARN"
+    Value: !GetAtt BedrockAgent.AgentArn
+  AgentId:
+    Description: "Agent ID"
+    Value: !GetAtt BedrockAgent.AgentId
+  AccountId:
+    Description: "AWS Account ID"
+    Value: !Ref AWS::AccountId

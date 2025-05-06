@@ -13,6 +13,7 @@ DATABASE_NAME = os.environ["DATABASE_NAME"]
 QUESTION_ANSWERS_TABLE = os.environ["QUESTION_ANSWERS_TABLE"]
 AWS_REGION = os.environ["AWS_REGION"]
 
+FILE_TABLES_INFORMATION = "tables_information.txt"
 
 def get_secret(secret_name, region_name):
     # Create a Secrets Manager client
@@ -94,7 +95,9 @@ def get_query_results(sql_query):
         print("Error executing SQL query:", error)
         connection.rollback()  # Rollback the transaction if there's an error
         return {"error": error.pgerror}
-
+    # Close the cursor and the connection
+    ##cur.close()
+    # conn.close()
     if message != "":
         return {"result": records_to_return, "message": message}
     else:
@@ -102,12 +105,11 @@ def get_query_results(sql_query):
 
 
 def lambda_handler(event, context):
-
     print(event)
     action_group = event.get("actionGroup")
     api_path = event.get("apiPath")
     user_question = event.get("inputText")
-    promptSessionAttributes = event.get("promptSessionAttributes")
+    promptSessionAttributes = event.get("promptSessionAttributes", {})
 
     if "queryUuid" in promptSessionAttributes:
         query_uuid = promptSessionAttributes["queryUuid"]
@@ -120,7 +122,7 @@ def lambda_handler(event, context):
     response_code = 200
 
     if api_path == "/runSQLQuery":
-
+        # Retrieve query results to respond to the user's questions
         sql_query = ""
         for item in event["requestBody"]["content"]["application/json"]["properties"]:
             if item["name"] == "SQLQuery":
@@ -157,6 +159,22 @@ def lambda_handler(event, context):
                 result = {"data": data}
         else:
             result = {"message": "No SQL query provided to execute"}
+
+    elif api_path == "/getCurrentDate":
+        # Return the current date in YYYY/MM/DD format
+        current_date = datetime.now().strftime("%Y/%m/%d")
+        result = {"currentDate": current_date}
+
+    elif api_path == "/getTablesInformation":
+        # Provide information about the video game sales database
+        try:
+            with open(FILE_TABLES_INFORMATION, "r") as file:
+                tables_info = file.read()
+            result = {"tablesInformation": tables_info}
+        except FileNotFoundError:
+            result = {"error": "Tables information file not found"}
+        except Exception as e:
+            result = {"error": f"Error loading tables information: {str(e)}"}
 
     else:
         response_code = 404

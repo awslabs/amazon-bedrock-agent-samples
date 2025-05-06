@@ -1064,7 +1064,7 @@ class ConfluenceKnowledgeBasesForAmazonBedrock:
         auth_type: str = "BASIC",
         username: str = None,
         password: str = None,
-        region_name: str = "us-west-2"
+        region_name: str = self.region_name
     ) -> dict:
         """
         Creates or updates a secret in AWS Secrets Manager for Confluence credentials.
