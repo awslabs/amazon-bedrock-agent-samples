@@ -16,9 +16,13 @@ from InlineAgent.constants import TraceColor
 class MCPServer(ABC):
 
     @validate_call
-    async def set_available_tools(self, tools_to_use: set) -> List[FunctionDefination]:
+    async def set_available_tools(self, tools_to_use: set, max_parameters: int = 5) -> List[FunctionDefination]:
         """
         Retrieve a list of available tools from the MCP server.
+        
+        Args:
+            tools_to_use: Set of tool names to use. If empty, all tools are used.
+            max_parameters: Maximum number of parameters allowed per tool (default: 5)
         """
         if not self.session:
             raise RuntimeError("Not connected to MCP server")
@@ -51,10 +55,10 @@ class MCPServer(ABC):
                                 in tool.inputSchema.get("required", []),
                             }
 
-                        if len(function["parameters"]) > 5:
+                        if len(function["parameters"]) > max_parameters:
 
                             raise ValueError(
-                                f"Tool {tool.name} has more than 5 parameters. This is not supported by Bedrock Agents."
+                                f"Tool {tool.name} has more than {max_parameters} parameters. This is not supported by Bedrock Agents."
                             )
 
                     if "functions" not in self.function_schema:
@@ -81,10 +85,10 @@ class MCPServer(ABC):
                             in tool.inputSchema.get("required", []),
                         }
 
-                    if len(function["parameters"]) > 5:
+                    if len(function["parameters"]) > max_parameters:
 
                         raise ValueError(
-                            f"Tool {tool.name} has more than 5 parameters. This is not supported by Bedrock Agents."
+                            f"Tool {tool.name} has more than {max_parameters} parameters. This is not supported by Bedrock Agents."
                         )
 
                 if "functions" not in self.function_schema:
@@ -132,7 +136,7 @@ class MCPStdio(MCPServer):
     @classmethod
     @validate_call
     async def create(
-        cls, server_params: StdioServerParameters, tools_to_use: set = set()
+        cls, server_params: StdioServerParameters, tools_to_use: set = set(), max_parameters: int = 5
     ):
         # Initialize session and client objects
         self = cls()
@@ -161,7 +165,7 @@ class MCPStdio(MCPServer):
             )
         )
 
-        await self.set_available_tools(tools_to_use=tools_to_use)
+        await self.set_available_tools(tools_to_use=tools_to_use, max_parameters=max_parameters)
         await self.set_callable_tool(tools_to_use=tools_to_use)
 
         return self
@@ -177,6 +181,7 @@ class MCPHttp(MCPServer):
         timeout: float = 5,
         sse_read_timeout: float = 60 * 5,
         tools_to_use: set = set(),
+        max_parameters: int = 5,
     ):
 
         # Initialize session and client objects
@@ -211,7 +216,7 @@ class MCPHttp(MCPServer):
             )
         )
 
-        await self.set_available_tools(tools_to_use=tools_to_use)
+        await self.set_available_tools(tools_to_use=tools_to_use, max_parameters=max_parameters)
         await self.set_callable_tool(tools_to_use=tools_to_use)
 
         return self
