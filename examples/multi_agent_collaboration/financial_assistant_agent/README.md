@@ -54,8 +54,9 @@ The Data Assistant Agent functions as an information repository and data retriev
 
 ## Getting Started
 1. Clone this repository
-2. Use the sub-Agents Notebook file to create the 2 sub agents that is required. 
-3. use the [MultiFinancialagent.ipynb](<Fianancial Assistant Agent/MultiFinancialagent.ipynb>) to run the orchestrator agent. 
+2. Create a folder Data and upload all the documents that needs to be ingested to the Knowledge Base. 
+3. Use the sub-Agents Notebook file to create the 2 sub agents that is required. 
+4. use the [MultiFinancialagent.ipynb](<Fianancial Assistant Agent/MultiFinancialagent.ipynb>) to run the orchestrator agent. 
 
 For ease of use, you can go ahead and add any data under the data folder to be picked up for the data for knowledge Base. 
 
