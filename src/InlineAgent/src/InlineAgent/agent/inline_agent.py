@@ -29,6 +29,7 @@ from InlineAgent.types import (
     InlineCollaboratorConfigurations,
 )
 
+import requests
 
 @dataclass
 class InlineAgent:
@@ -54,7 +55,11 @@ class InlineAgent:
     @property
     def session(self) -> boto3.Session:
         """Lazy loading of AWS session"""
-        return boto3.Session(profile_name=self.profile)
+        try:
+            return boto3.Session(profile_name=self.profile)
+        except:
+            region = self._get_region_from_ec2_metadata()
+            return boto3.Session(region_name=region)
 
     @property
     def account_id(self) -> str:
@@ -66,6 +71,41 @@ class InlineAgent:
     def region(self) -> str:
         return self.session.region_name
 
+    def _get_region_from_ec2_metadata(self) -> Optional[str]:
+        """
+        Retrieve the current region from EC2 Instance Metadata Service (IMDSv2).
+        
+        Returns:
+            Optional[str]: AWS region name or None if unavailable
+        """
+        try:
+            # Step 1: Get session token for IMDSv2
+            token_response = requests.put(
+                "http://169.254.169.254/latest/api/token",
+                headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"},
+                timeout=2
+            )
+            
+            if token_response.status_code != 200:
+                return None
+            
+            token = token_response.text
+            
+            # Step 2: Use token to get region
+            region_response = requests.get(
+                "http://169.254.169.254/latest/meta-data/placement/region",
+                headers={"X-aws-ec2-metadata-token": token},
+                timeout=2
+            )
+            
+            if region_response.status_code == 200:
+                return region_response.text
+            
+            return None
+            
+        except requests.RequestException as e:
+            return None
+        
     def __post_init__(self):
 
         if self.knowledge_bases:
@@ -231,8 +271,8 @@ class InlineAgent:
             raise ValueError("invocationId key is not supported in inlineSessionState")
 
         agent_answer = ""
-
-        bedrock_agent_runtime = boto3.Session(profile_name=self.profile).client(
+        
+        bedrock_agent_runtime = self.session.client(
             "bedrock-agent-runtime"
         )
 
