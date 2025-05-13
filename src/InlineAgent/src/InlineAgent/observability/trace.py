@@ -164,6 +164,7 @@ class HighLevelTrace:
                         "<--- Guardrail Intervened --->", TraceColor.guardrail_trace
                     )
                 )
+            if "inputAssessments" in trace["guardrailTrace"]:
                 for inputAssessment in trace["guardrailTrace"]["inputAssessments"]:
                     print(colored("Input Guardrail", TraceColor.guardrail_trace))
                     print(
@@ -173,6 +174,7 @@ class HighLevelTrace:
                         )
                     )
 
+            if "outputAssessments" in trace["guardrailTrace"]:
                 for outputAssessment in trace["guardrailTrace"]["outputAssessments"]:
                     print(colored("Output Guardrail", TraceColor.guardrail_trace))
                     print(
