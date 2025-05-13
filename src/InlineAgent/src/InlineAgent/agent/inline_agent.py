@@ -222,13 +222,6 @@ class InlineAgent:
             session_state = {}
 
         print(f"SessionId: {session_id}")
-        if "returnControlInvocationResults" in session_state:
-            raise ValueError(
-                "returnControlInvocationResults key is not supported in inlineSessionState"
-            )
-
-        if "invocationId" in session_state:
-            raise ValueError("invocationId key is not supported in inlineSessionState")
 
         agent_answer = ""
 
