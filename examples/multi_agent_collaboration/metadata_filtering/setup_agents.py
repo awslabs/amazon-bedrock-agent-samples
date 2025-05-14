@@ -404,14 +404,14 @@ class BedrockAgentSetup:
                 agentResourceRoleArn=self._create_agent_role(),
                 instruction='''You are an orchestrator agent that routes queries to appropriate sub-agents.
                 Route queries about 2020 documents to Agent1 and 2023 documents to Agent2.''',
-                foundationModel=f"arn:aws:bedrock:{self.region}:166827918465:inference-profile/{modelId}",
+                foundationModel=f"arn:aws:bedrock:{self.region}:{self.account_id}:inference-profile/{modelId}",
                 idleSessionTTLInSeconds=1800,
                 agentCollaboration="SUPERVISOR_ROUTER"
             )
             time.sleep(60)
             print(f"Preparing Orchestrator")
             supervistor_info = self.associate_sub_agents(orchestrator['agent']['agentId'], _sub_agent_list)
-            #orch_resp = self.bedrock_agent.prepare_agent(agentId=orchestrator['agent']['agentId'])
+            
             time.sleep(45)
 
             self.lambda_client.update_function_configuration(
@@ -422,8 +422,8 @@ class BedrockAgentSetup:
                         'MODEL_ID': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
                         'AGENT1_ID': agent1['agent']['agentId'],
                         'AGENT2_ID': agent2['agent']['agentId'],
-                        'DOC_2020': 'AMZN-2020-Shareholder-Letter.pdf',
-                        'DOC_2023': 'Amazon-com-Inc-2023-Shareholder-Letter.pdf',
+                        'DOC_2020': 'Amazon-Shareholder-Letter-2020.pdf',
+                        'DOC_2023': 'Amazon-Shareholder-Letter-2023.pdf',
                         'AWSREGION': self.region
                     }
                 }
@@ -447,7 +447,7 @@ class BedrockAgentSetup:
                 agentName=name,
                 agentResourceRoleArn=self._create_agent_role(),
                 instruction=description,
-                foundationModel=f"arn:aws:bedrock:{self.region}:166827918465:inference-profile/{modelId}",
+                foundationModel=f"arn:aws:bedrock:{self.region}:{self.account_id}:inference-profile/{modelId}",
                 idleSessionTTLInSeconds=1800
             )
 
@@ -520,9 +520,9 @@ def lambda_handler(event, context):
         
         if agent_id == os.environ.get('AGENT1_ID'):
             # Hardcoded document filter (can be made dynamic)
-            document_id = 'AMZN-2020-Shareholder-Letter.pdf'
+            document_id = 'Amazon-Shareholder-Letter-2020.pdf'
         elif agent_id == os.environ.get('AGENT2_ID',):
-            document_id = 'Amazon-com-Inc-2023-Shareholder-Letter.pdf'
+            document_id = 'Amazon-Shareholder-Letter-2023.pdf'
         else:
             document_id = ''
         
@@ -572,7 +572,7 @@ def lambda_handler(event, context):
                 'type': 'KNOWLEDGE_BASE',
                 'knowledgeBaseConfiguration': {
                     'knowledgeBaseId': knowledge_base_id,
-                    'modelArn': f"arn:aws:bedrock:{region}:166827918465:inference-profile/{model_id}",
+                    'modelArn': f"arn:aws:bedrock:{region}:{self.account_id}:inference-profile/{model_id}",
                     'retrievalConfiguration': retrieval_config
                 }
             }
