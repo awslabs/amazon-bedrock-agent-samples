@@ -10,7 +10,7 @@ class KnowledgeBasePlugin(BaseModel):
     name: str
     description: str
     additional_props: Dict[str, Any] = Field(default_factory=dict)
-    profile: str = "default"
+    profile: Optional[str] = Field(default="default")
 
     class Config:
         arbitrary_types_allowed = True
