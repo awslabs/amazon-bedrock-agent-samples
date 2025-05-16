@@ -26,7 +26,7 @@ The solution consists of:
   - IAM
   - Amazon S3
     
-For more details on how to enable Amazon Bedrock model access and how to configure credentials see [Getting started with Amazon Bedrock]https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html)
+For more details on how to enable Amazon Bedrock model access and how to configure credentials see [Getting started with Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html)
 
 
 ## Setup Instructions
@@ -76,7 +76,7 @@ export S3_BUCKET_NAME=your-bucket-name
 ```
 python setup_agents.py --bucket <your bucket name> --account-id <your account ID>
 ```
-Keep note of the orchestrator's ID and aliad ID since we will need to use it in the next step
+Keep note of the orchestrator's ID and alias ID since we will need to use it in the next step
 
 6. Test the Solution:
 
