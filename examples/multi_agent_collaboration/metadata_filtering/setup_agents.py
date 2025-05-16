@@ -227,7 +227,8 @@ class BedrockAgentSetup:
                             'KNOWLEDGE_BASE_ID': kb_id,
                             'MODEL_ID': 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
                             'S3_BUCKET': self.bucket_name,
-                            'AWSREGION': self.region
+                            'AWSREGION': self.region,
+                            'ACCOUNT_ID': self.account_id
                         }
                     },
                     Timeout=900,
@@ -543,7 +544,7 @@ def lambda_handler(event, context):
         knowledge_base_id = os.environ.get('KNOWLEDGE_BASE_ID', "PHE22GQXYJ")
         model_id = os.environ.get('MODEL_ID', 'us.anthropic.claude-3-5-haiku-20241022-v1:0')
         region = os.environ.get('AWSREGION')
-        
+        account_id = os.environ.get('ACCOUNT_ID')
         # Initialize Bedrock Knowledge Bases client
         bedrock_agent_runtime = boto3.client('bedrock-agent-runtime')
         
@@ -572,7 +573,7 @@ def lambda_handler(event, context):
                 'type': 'KNOWLEDGE_BASE',
                 'knowledgeBaseConfiguration': {
                     'knowledgeBaseId': knowledge_base_id,
-                    'modelArn': f"arn:aws:bedrock:{region}:{self.account_id}:inference-profile/{model_id}",
+                    'modelArn': f"arn:aws:bedrock:{region}:{account_id}:inference-profile/{model_id}",
                     'retrievalConfiguration': retrieval_config
                 }
             }
