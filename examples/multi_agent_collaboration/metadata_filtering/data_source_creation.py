@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Create a new cell with the following code
 # Create the directory structure
-base_path = os.path.expanduser('./data_sources')
+base_path = './data_sources'
 Path(base_path).mkdir(parents=True, exist_ok=True)
 
 # URLs for the shareholder letters
