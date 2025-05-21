@@ -1,4 +1,6 @@
 ## 4/3/2025
+Added example for multi-agent collaboration with medatadata filtering
+- [Assistant Agent with metadata filtering](/examples/multi_agent_collaboration/metadata_filtering/)
 
 Added examples for agents not yet optimized with Bedrock Agents 
 - [Contract Assistant Agent](/examples/multi_agent_collaboration/not_yet_optimized_models_agent/)
