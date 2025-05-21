@@ -86,7 +86,9 @@ python invoke_agent.py --agent-id <your agent ID> --agent-alias-id <your agent a
 
 Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 
-
+A sample query could be: 
+- "What is the plan for 2023?"
+- "What is the plan for 2020?"
 
 7. Project Structure
 ```bash
