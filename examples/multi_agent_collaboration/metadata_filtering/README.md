@@ -89,6 +89,7 @@ Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 
 
 7. Project Structure
+```bash
 .
 ├── README.md
 ├── requirements.txt
@@ -97,7 +98,7 @@ Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 ├── data_souoce_creation.py
 ├── openapi_schema.yaml
 |── invoke_agent.py/
-
+```
 
 ## Clean up:
 
