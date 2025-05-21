@@ -425,7 +425,8 @@ class BedrockAgentSetup:
                         'AGENT2_ID': agent2['agent']['agentId'],
                         'DOC_2020': 'Amazon-Shareholder-Letter-2020.pdf',
                         'DOC_2023': 'Amazon-Shareholder-Letter-2023.pdf',
-                        'AWSREGION': self.region
+                        'AWSREGION': self.region,
+                        'ACCOUNT_ID': self.account_id
                     }
                 }
             )
