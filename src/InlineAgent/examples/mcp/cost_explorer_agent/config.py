@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 from mcp import StdioServerParameters
 
@@ -14,20 +15,19 @@ cost_server_params = StdioServerParameters(
         "-i",
         "--rm",
         "-e",
-        "AWS_ACCESS_KEY_ID",
-        "-e",
-        "AWS_SECRET_ACCESS_KEY",
+        "AWS_PROFILE",
         "-e",
         "AWS_REGION",
         "-e",
         "BEDROCK_LOG_GROUP_NAME",
+        "-v",
+        f"{str(Path.home())}:/root/.aws/",
         "-e",
         "stdio",
         "aws-cost-explorer-mcp:latest",
     ],
     env={
-        "AWS_ACCESS_KEY_ID": config.AWS_ACCESS_KEY_ID,
-        "AWS_SECRET_ACCESS_KEY": config.AWS_SECRET_ACCESS_KEY,
+        "AWS_PROFILE": config.AWS_PROFILE,
         "AWS_REGION": config.AWS_REGION,
         "BEDROCK_LOG_GROUP_NAME": config.BEDROCK_LOG_GROUP_NAME,
     },
