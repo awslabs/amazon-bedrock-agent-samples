@@ -1,3 +1,8 @@
+## 5/20/25
+Fixes to bedrock_agent_helper.py
+- Minor fix to reference formatting to avoid sometimes clipping final character in description
+- FIxed exception when tracing events containing datetimes (appeared when tracing reference formatting with tracing set to "all")
+
 ## 4/3/2025
 Added example for multi-agent collaboration with medatadata filtering
 - [Assistant Agent with metadata filtering](/examples/multi_agent_collaboration/metadata_filtering/)
