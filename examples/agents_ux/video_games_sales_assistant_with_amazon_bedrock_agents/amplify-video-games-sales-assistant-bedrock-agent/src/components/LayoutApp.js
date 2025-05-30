@@ -17,8 +17,6 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import Chat from "./Chat";
 import { APP_NAME } from "../env";
-import { Slide } from "react-slideshow-image";
-import "react-slideshow-image/dist/styles.css";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -116,41 +114,11 @@ function LayoutApp() {
       >
         <DialogTitle>Amazon Bedrock</DialogTitle>
         <DialogContent>
-          <Slide
-            autoplay={false}
-            transitionDuration={500}
-            onChange={function noRefCheck() {}}
-            onStartChange={function noRefCheck() {}}
-          >
-            <div className="each-slide-effect">
-              <img
-                src="/images/gen-ai-assistant-diagram.png"
-                width={"100%"}
-                alt="Powered By AWS"
-              />
-            </div>
-            <div className="each-slide-effect">
-              <img
-                src="/images/gen-ai-assistant-bedrock.png"
-                width={"100%"}
-                alt="Powered By AWS"
-              />
-            </div>
-            <div className="each-slide-effect">
-              <img
-                src="/images/gen-ai-assistant-agent.png"
-                width={"100%"}
-                alt="Powered By AWS"
-              />
-            </div>
-            <div className="each-slide-effect">
-              <img
-                src="/images/gen-ai-assistant-agent-flow.png"
-                width={"100%"}
-                alt="Powered By AWS"
-              />
-            </div>
-          </Slide>
+          <img
+            src="/images/gen-ai-assistant-diagram.png"
+            width={"100%"}
+            alt="Powered By AWS"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Close</Button>

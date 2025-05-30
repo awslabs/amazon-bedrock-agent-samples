@@ -69,7 +69,7 @@ The **user interaction workflow** operates as follows:
 The deployment consists of two main steps:
 
 1. **Generative AI Application** - [Data Source and Amazon Bedrock Agent Deployment with AWS SAM](./sam-bedrock-video-games-sales-assistant/)
-2. **Front-End Implementation** - [Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](./amplify-video-games-sales-assistant-sample/)
+2. **Front-End Implementation** - [Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](./amplify-video-games-sales-assistant-bedrock-agent/)
 
 > [!NOTE]
 > *It is recommended to use the Oregon (us-west-2) or N. Virginia (us-east-1) regions to deploy the application.*

@@ -28,7 +28,7 @@ npm install react-scripts
 
 ## Set Up the Front-End Application
 
-Navigate to the React application folder (amplify-video-games-sales-assistant-sample/) and install the Reac application dependencies:
+Navigate to the React application folder (amplify-video-games-sales-assistant-bedrock-agent/) and install the Reac application dependencies:
 
 ``` bash
 npm install
@@ -122,7 +122,7 @@ Try these sample questions to test the assistant:
 - Give me the top 3 video games with the best reviews and the best sales.
 - Which is the year with the highest number of games released?
 - Which are the most popular consoles and why?
-- Give me a short summary and conclusion.
+- Give me a short summary and conclusion of our conversation.
 
 > [!TIP]
 > 🚀 For production deployment, consider using **[AWS Amplify Hosting](https://aws.amazon.com/amplify/hosting/)** and integrate Amazon Cognito or another identity provider for proper authentication and authorization instead of using IAM user credentials.
