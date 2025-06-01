@@ -306,13 +306,18 @@ class ActionGroups(BaseModel):
                         ],
                     }
                 elif action_group.api_schema:
-                    actionGroup["apiSchema"] = {
-                        "payload": action_group.api_schema.payload,
-                        "s3": {
-                            "s3BucketName": action_group.api_schema.s3["s3BucketName"],
-                            "s3ObjectKey": action_group.api_schema.s3["s3ObjectKey"],
-                        },
-                    }
+                    if action_group.api_schema.payload:
+                        actionGroup["apiSchema"] = {
+                            "payload": action_group.api_schema.payload,
+                        }
+                    else :
+                        actionGroup["apiSchema"] = {
+                            "s3": {
+                                "s3BucketName": action_group.api_schema.s3["s3BucketName"],
+                                "s3ObjectKey": action_group.api_schema.s3["s3ObjectKey"],
+                            },
+                        }
+    
             elif action_group.executor == Executor.INBUILT_TOOL:
                 actionGroup["parentActionGroupSignature"] = action_group.builtin_tools[
                     "parentActionGroupSignature"
