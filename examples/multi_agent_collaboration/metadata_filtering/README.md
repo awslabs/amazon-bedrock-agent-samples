@@ -1,6 +1,8 @@
-# Amazon Bedrock Multi Agent with metadtafiltering
+# Amazon Bedrock Multi Agent with metadata filtering
 
-This project demonstrates how to create an Amazon Bedrock Mult-Agent setup that can answer questions from multiple documents using a Lambda Action group, with separate agents handling different documents from the same Knowledgebase. The architecture utilized action groups to use RetrieveAndGenerate API call with metadata filtering.
+In many cases, builders would like to refine the results returned by the agent group by providing [metadata to filter results from the knowledge base](https://aws.amazon.com/blogs/machine-learning/amazon-bedrock-knowledge-bases-now-supports-metadata-filtering-to-improve-retrieval-accuracy/).
+
+This sample shows how to create an Amazon Bedrock Multi-Agent setup that can answer questions from multiple documents using a Lambda Action group. Using a single knowledge based each agent retrieves only the documents that are pertinent to them. The architecture utilized action groups and the RetrieveAndGenerate API call with metadata filtering.
 
 ## Architecture Overview
 
@@ -9,28 +11,23 @@ This project demonstrates how to create an Amazon Bedrock Mult-Agent setup that 
 
 The solution consists of:
 - An Orchestrator Agent that routes queries to appropriate sub-agents
-- Two sub-agents (Agent1 and Agent2) handling different document years
-- A Lambda function acting a an Action Group in both sub agents, that processes queries using Bedrock Knowledge Base's RetrieveAndGenerate API call.
-- A Knowledge Base containing the shareholder letters and the metadata json file for each letter.
+- Two sub-agents Agent1 (2020 specialist) and Agent2 (2023 specialist)
+- A Lambda function acting as an Action Group in both sub-agents, that processes queries using the Bedrock Knowledge Base's RetrieveAndGenerate API call.
+- A knowledge base containing the shareholder letters and the metadata json file for each letter.
 
 ## Prerequisites
 
-- AWS Account with appropriate permissions
-- Python 3.11 or later
+- AWS Account with appropriate permissions 
 - AWS CLI configured with appropriate credentials
+- Python 3.11 or later
 - The following AWS services enabled:
   - Amazon Bedrock
   - AWS Lambda
   - IAM
   - Amazon S3
+    
+For more details on how to enable Amazon Bedrock model access and how to configure credentials see [Getting started with Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html)
 
-## Required Documents
-
-Place the following documents in your S3 bucket:
-- AMZN-2020-Shareholder-Letter.pdf
-- Amazon-com-Inc-2023-Shareholder-Letter.pdf
-
-* Note: The above documents will be downloaded via the data_source_creation.py script.
 
 ## Setup Instructions
 
@@ -55,7 +52,13 @@ pip3 install -r requirements.txt
 2. Create a bucket
 ```aws s3 mb s3://<your bucket name>```
 
-3. Download shareholder letters and copy them to the S3 bucket created
+3. Download shareholder letters and copy them to the S3 bucket created and create the corresponding metadata file.
+
+This step downloads the Amazon Letters to Shareholders for 2020 and 2023 from [aboutamazon.com](https://ir.aboutamazon.com/annual-reports-proxies-and-shareholder-letters/default.aspx):
+
+- Amazon-Shareholder-Letter-2023.pdf
+- Amazon-Shareholder-Letter-2020.pdf
+
 ```python data_source_creation.py```
 
 ```aws s3 cp ./data_sources/ s3://BUCKET_NAME/ --recursive```
@@ -71,9 +74,9 @@ export S3_BUCKET_NAME=your-bucket-name
 
 5. Deploy the solution:
 ```
-python setup_agents.py --bucket <your bucket name> --account-id <your account ID> 
+python setup_agents.py --bucket <your bucket name> --account-id <your account ID>
 ```
-Keep note of the orchestrator's ID and aliad ID since we will need to use it in the next step
+Keep note of the orchestrator's ID and alias ID since we will need to use it in the next step
 
 6. Test the Solution:
 
@@ -83,9 +86,12 @@ python invoke_agent.py --agent-id <your agent ID> --agent-alias-id <your agent a
 
 Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 
-
+A sample query could be: 
+- "What is the plan for 2023?"
+- "What is the plan for 2020?"
 
 7. Project Structure
+```bash
 .
 ├── README.md
 ├── requirements.txt
@@ -94,7 +100,7 @@ Replace the agent Id and Agent Alias ID with the info returned in Step #3.
 ├── data_souoce_creation.py
 ├── openapi_schema.yaml
 |── invoke_agent.py/
-
+```
 
 ## Clean up:
 

@@ -145,7 +145,7 @@ Try these sample questions:
 - Give me the top 3 video games with the best reviews and the best sales.
 - Which is the year with the highest number of games released?
 - Which are the most popular consoles and why?
-- Give me a short summary and conclusion.
+- Give me a short summary and conclusion of our conversation.
 
 ## Create Agent Alias for Front-End Application
 
@@ -154,7 +154,7 @@ To use the agent in your front-end application:
 - Go to your **Agent Overview**
 - Click **Create Alias**
 
-You can now proceed to the [Front-End Implementation - Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](../amplify-video-games-sales-assistant-sample/). The tutorial will ask you for your **Agent Alias** along with the other services that you have created so far.
+You can now proceed to the [Front-End Implementation - Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](../amplify-video-games-sales-assistant-bedrock-agent/). The tutorial will ask you for your **Agent Alias** along with the other services that you have created so far.
 
 ## Cleaning-up Resources (Optional)
 

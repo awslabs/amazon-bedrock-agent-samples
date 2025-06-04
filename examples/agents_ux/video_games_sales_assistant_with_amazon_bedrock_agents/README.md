@@ -4,9 +4,9 @@ This solution provides a Generative AI application reference that allows users t
 
 ![Video Games Sales Assistant](./images/preview.png)
 
-A Data Analyst Assistant offers an approach to data analysis that enables enterprises to interact with their structured data through natural language conversations rather than complex SQL queries. This kind of assistant provides an intuitive question-answering for data analysis conversations and can be improved by offering data visualizations to enhance the user experience.
+🤖 A Data Analyst Assistant offers an approach to data analysis that enables enterprises to interact with their structured data through natural language conversations rather than complex SQL queries. This kind of assistant provides an intuitive question-answering for data analysis conversations and can be improved by offering data visualizations to enhance the user experience.
 
-This solution enables users to:
+✨ This solution enables users to:
 
 - Ask questions about video game sales data in natural language
 - Receive AI-generated responses based on SQL queries to a PostgreSQL database
@@ -14,14 +14,23 @@ This solution enables users to:
 - Explore data through automatically generated visualizations
 - Get insights and analysis from the AI assistant
 
+🚀 This reference solution can help you explore use cases like:
+
+- Empower analysts with real-time business intelligence
+- Provide quick answers to C-level executives for common business questions
+- Unlock new revenue streams through data monetization (consumer behavior, audience segmentation)
+- Optimize infrastructure through performance insights
+
 ## Solution Overview
 
 The following architecture diagram illustrates a reference solution for a generative AI data analyst assistant that is powered by Amazon Bedrock Agents. This assistant enables users to access structured data that is stored in a PostgreSQL database through a question-answering interface.
 
+![Video Games Sales Assistant](./images/gen-ai-assistant-diagram.png)
+
 > [!IMPORTANT]
 > This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
-
-![Video Games Sales Assistant](./images/gen-ai-assistant-diagram.png)
+> 
+> Cost Alert: This solution will cost approximately $180 USD per month, mainly for Aurora Serverless and RDS Proxy, plus the usage of on-demand services like Amazon Bedrock and Lambda functions. Please ensure you understand these costs before deployment.
 
 The solution deploys the following AWS services:
 
@@ -60,7 +69,7 @@ The **user interaction workflow** operates as follows:
 The deployment consists of two main steps:
 
 1. **Generative AI Application** - [Data Source and Amazon Bedrock Agent Deployment with AWS SAM](./sam-bedrock-video-games-sales-assistant/)
-2. **Front-End Implementation** - [Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](./amplify-video-games-sales-assistant-sample/)
+2. **Front-End Implementation** - [Integrating Amazon Bedrock Agent with a Ready-to-Use Data Analyst Assistant Application](./amplify-video-games-sales-assistant-bedrock-agent/)
 
 > [!NOTE]
 > *It is recommended to use the Oregon (us-west-2) or N. Virginia (us-east-1) regions to deploy the application.*

@@ -96,8 +96,8 @@
   
   /* Code blocks and inline code */
   .markdown-code-block {
-    background-color: #f6f8fa;
-    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
     padding: 16px;
     overflow-x: auto;
     margin-top: 0;
@@ -105,6 +105,8 @@
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 85%;
     line-height: 1.45;
+    border: 1px solid rgba(0, 0, 0, 0.12)
+
   }
   
   .markdown-inline-code {
@@ -143,15 +145,15 @@
   }
   
   .markdown-table th {
-    font-weight: 600;
+    font-weight: 500;
     padding: 6px 13px;
-    border: 1px solid #dfe2e5;
-    background-color: rgba(246, 248, 250, 0.5);
+    border: 1px solid #e0e0e0;
+    background-color: rgba(245, 247, 250, 0.6);
   }
   
   .markdown-table td {
     padding: 6px 13px;
-    border: 1px solid #dfe2e5;
+    border: 1px solid #e0e0e0;
   }
   
   .markdown-table tr {
@@ -159,7 +161,7 @@
   }
   
   .markdown-table tr:nth-child(2n) {
-    background-color: rgba(246, 248, 250, 0.4);
+    background-color: rgba(245, 247, 250, 0.6);
   }
   
   /* Horizontal rule */
@@ -201,54 +203,4 @@
   .markdown-sub {
     vertical-align: sub;
     font-size: smaller;
-  }
-  
-  /* Dark mode adjustments */
-  @media (prefers-color-scheme: dark) {
-    .markdown-container {
-      color: #c9d1d9;
-    }
-    
-    .markdown-code-block {
-      background-color: #161b22;
-    }
-    
-    .markdown-inline-code {
-      background-color: rgba(240, 246, 252, 0.15);
-    }
-    
-    .markdown-table th {
-      background-color: #161b22;
-      border-color: #30363d;
-    }
-    
-    .markdown-table td {
-      border-color: #30363d;
-    }
-    
-    .markdown-table tr {
-      background-color: #0d1117;
-      border-color: #30363d;
-    }
-    
-    .markdown-table tr:nth-child(2n) {
-      background-color: #161b22;
-    }
-    
-    .markdown-blockquote {
-      color: #8b949e;
-      border-color: #30363d;
-    }
-    
-    .markdown-hr {
-      background-color: #30363d;
-    }
-    
-    .markdown-link {
-      color: #58a6ff;
-    }
-    
-    .markdown-heading1, .markdown-heading2 {
-      border-color: #30363d;
-    }
   }
