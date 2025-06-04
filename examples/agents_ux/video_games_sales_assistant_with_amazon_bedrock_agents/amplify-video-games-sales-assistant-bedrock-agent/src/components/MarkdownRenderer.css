@@ -4,64 +4,63 @@
   overflow-wrap: break-word;
 }
 
-/* Headings */
+/* Headings - Chat Optimized */
 .markdown-heading1 {
-  font-size: 2em;
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid #eaecef;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 1.4em;
+  margin-top: 12px;
+  margin-bottom: 12px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  color: #1a1a1a;
 }
 
 .markdown-heading2 {
-  font-size: 1.5em;
-  padding-bottom: 0.3em;
-  border-bottom: 1px solid #eaecef;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 1.25em;
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  color: #1a1a1a;
 }
 
 .markdown-heading3 {
-  font-size: 1.25em;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 1.15em;
+  margin-top: 8px;
+  margin-bottom: 8px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .markdown-heading4 {
-  font-size: 1em;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 1.05em;
+  margin-top: 8px;
+  margin-bottom: 8px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .markdown-heading5 {
-  font-size: 0.875em;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 1em;
+  margin-top: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
 }
 
 .markdown-heading6 {
-  font-size: 0.85em;
-  margin-top: 24px;
-  margin-bottom: 16px;
+  font-size: 0.95em;
+  margin-top: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
-  line-height: 1.25;
-  color: #6a737d;
+  line-height: 1.2;
+  color: #4a4a4a;
 }
 
 /* Paragraphs */
 .markdown-paragraph {
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  line-height: 1.5;
 }
 
 /* Links */
@@ -76,13 +75,13 @@
 
 /* Lists */
 .markdown-list {
-  padding-left: 2em;
+  padding-left: 1.5em;
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .markdown-list-item {
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   display: list-item;
 }
 
@@ -98,10 +97,10 @@
 .markdown-code-block {
   background-color: #f6f8fa;
   border-radius: 3px;
-  padding: 16px;
+  padding: 12px;
   overflow-x: auto;
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 85%;
   line-height: 1.45;
@@ -118,7 +117,7 @@
 
 /* Blockquotes */
 .markdown-blockquote {
-  margin: 16px 0;
+  margin: 14px 0;
   padding: 0 1em;
   color: #6a737d;
   border-left: 0.25em solid #dfe2e5;
@@ -134,9 +133,9 @@
 
 /* Tables */
 .markdown-table {
-  width: 100%; /* Always 100% width */
+  width: 100%;
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border-spacing: 0;
   border-collapse: collapse;
   background-color: rgba(255, 255, 255, 0.2);
@@ -164,9 +163,9 @@
 
 /* Horizontal rule */
 .markdown-hr {
-  height: 0.25em;
+  height: 1px;
   padding: 0;
-  margin: 24px 0;
+  margin: 16px 0;
   background-color: #e1e4e8;
   border: 0;
 }

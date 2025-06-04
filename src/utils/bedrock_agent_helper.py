@@ -26,15 +26,23 @@ from boto3.dynamodb.conditions import Key
 import inspect
 from typing import Callable
 from textwrap import dedent
-
 # import matplotlib.pyplot as plt
 # import matplotlib.image as mpimg
 # from IPython.display import display, Markdown
-
 from termcolor import colored
 from rich.console import Console
 from rich.markdown import Markdown
 
+# Custom DateTimeEncoder to handle datetime objects in the LLM response event stream
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
+def json_dumps_with_datetime(obj, indent=None):
+    """Helper function to serialize JSON with datetime objects"""
+    return json.dumps(obj, indent=indent, cls=DateTimeEncoder)
 
 PYTHON_TIMEOUT = 180
 PYTHON_RUNTIME = "python3.12"
@@ -190,7 +198,7 @@ class AgentsForAmazonBedrock:
                 ],
             }
 
-            _assume_role_policy_document_json = json.dumps(_assume_role_policy_document)
+            _assume_role_policy_document_json = json_dumps_with_datetime(_assume_role_policy_document)
 
             _lambda_iam_role = self._iam_client.create_role(
                 RoleName=_lambda_function_role_name,
@@ -249,7 +257,7 @@ class AgentsForAmazonBedrock:
                 ],
             }
             # Attach the inline policy to the Lambda function's role
-            sub_agent_policy_json = json.dumps(_sub_agent_policy_document)
+            sub_agent_policy_json = json_dumps_with_datetime(_sub_agent_policy_document)
             self._iam_client.put_role_policy(
                 PolicyDocument=sub_agent_policy_json,
                 PolicyName="sub_agent_policy",
@@ -278,7 +286,7 @@ class AgentsForAmazonBedrock:
             }
 
             # Attach the inline policy to the Lambda function's role
-            _dynamodb_access_policy_json = json.dumps(_dynamodb_access_policy)
+            _dynamodb_access_policy_json = json_dumps_with_datetime(_dynamodb_access_policy)
             self._iam_client.put_role_policy(
                 PolicyDocument=_dynamodb_access_policy_json,
                 PolicyName=_dynamodb_access_policy_name,
@@ -691,14 +699,14 @@ class AgentsForAmazonBedrock:
             try:
                 # create the default role w/ the proper assume role policy
                 _assume_role_policy_document_json = DEFAULT_AGENT_IAM_ASSUME_ROLE_POLICY
-                _assume_role_policy_document = json.dumps(
+                _assume_role_policy_document = json_dumps_with_datetime(
                     _assume_role_policy_document_json
                 )
 
                 _bedrock_agent_bedrock_allow_policy_document_json = (
                     DEFAULT_AGENT_IAM_POLICY
                 )
-                _bedrock_agent_bedrock_allow_policy_document = json.dumps(
+                _bedrock_agent_bedrock_allow_policy_document = json_dumps_with_datetime(
                     _bedrock_agent_bedrock_allow_policy_document_json
                 )
 
@@ -727,7 +735,7 @@ class AgentsForAmazonBedrock:
 
             # Create IAM policies for agent
             _assume_role_policy_document = DEFAULT_AGENT_IAM_ASSUME_ROLE_POLICY
-            _assume_role_policy_document_json = json.dumps(_assume_role_policy_document)
+            _assume_role_policy_document_json = json_dumps_with_datetime(_assume_role_policy_document)
 
             _agent_role = self._iam_client.create_role(
                 RoleName=_agent_role_name,
@@ -738,7 +746,7 @@ class AgentsForAmazonBedrock:
             time.sleep(10)
 
             _bedrock_agent_bedrock_allow_policy_statement = DEFAULT_AGENT_IAM_POLICY
-            _bedrock_policy_json = json.dumps(
+            _bedrock_policy_json = json_dumps_with_datetime(
                 _bedrock_agent_bedrock_allow_policy_statement
             )
             if verbose:
@@ -750,7 +758,7 @@ class AgentsForAmazonBedrock:
                 )
 
             _bedrock_agent_bedrock_allow_policy_statement = DEFAULT_AGENT_IAM_POLICY
-            _bedrock_policy_json = json.dumps(
+            _bedrock_policy_json = json_dumps_with_datetime(
                 _bedrock_agent_bedrock_allow_policy_statement
             )
 
@@ -776,7 +784,7 @@ class AgentsForAmazonBedrock:
                         }
                     ],
                 }
-                _kb_policy_json = json.dumps(_kb_policy_doc)
+                _kb_policy_json = json_dumps_with_datetime(_kb_policy_doc)
                 self._iam_client.put_role_policy(
                     PolicyDocument=_kb_policy_json,
                     PolicyName="bedrock_kb_allow_policy",
@@ -801,7 +809,7 @@ class AgentsForAmazonBedrock:
             #             "Resource": f"arn:aws:bedrock:*:{self._account_id}:guardrail/*"
             #         }]
             # }
-            # _gr_policy_json = json.dumps(_gr_policy_doc)
+            # _gr_policy_json = json_dumps_with_datetime(_gr_policy_doc)
             # self._iam_client.put_role_policy(
             #     PolicyDocument=_gr_policy_json,
             #     PolicyName="bedrock_gr_allow_policy",
@@ -1376,7 +1384,7 @@ class AgentsForAmazonBedrock:
                 print(colored(f"  !!no retrieved references for citation!!", "red"))
 
             _interim_answer = (
-                _answer_prefix + _cleaned_text[_start:_end] + " [" + _ref_url + "] "
+                _answer_prefix + _cleaned_text[_start:_end + 1] + " [" + _ref_url + "] "
             )
             if enable_trace and trace_level == "all":
                 print(colored(f"fully cited: '{_interim_answer}'", "red"))
@@ -1390,7 +1398,7 @@ class AgentsForAmazonBedrock:
                 )
                 print(f"citation span... start: {_start}, end: {_end}")
                 print(
-                    f"citation based on span:====\n{_cleaned_text[_start:_end]}\n===="
+                    f"citation based on span:====\n{_cleaned_text[_start:_end + 1]}\n===="
                 )
                 print(f"citation url: {_ref_url}\n============")
 
@@ -1936,7 +1944,7 @@ class AgentsForAmazonBedrock:
                             )
 
                     if trace_level == "all":
-                        print(json.dumps(_event["trace"], indent=2))
+                        print(json_dumps_with_datetime(_event["trace"], indent=2))
 
                 if "files" in _event.keys() and enable_trace:
                     console = Console()
@@ -2530,7 +2538,7 @@ class AgentsForAmazonBedrock:
                             )
 
                     if trace_level == "all":
-                        print(json.dumps(_event["trace"], indent=2))
+                        print(json_dumps_with_datetime(_event["trace"], indent=2))
 
                 if "files" in _event.keys() and enable_trace:
                     console = Console()
@@ -2665,7 +2673,7 @@ class AgentsForAmazonBedrock:
                 elif "returnControl" in _event:
                     _agent_answer = _event["returnControl"]
                 elif "trace" in _event:
-                    print(json.dumps(_event["trace"], indent=2))
+                    print(json_dumps_with_datetime(_event["trace"], indent=2))
                 else:
                     raise Exception("unexpected event.", _event)
             return _agent_answer

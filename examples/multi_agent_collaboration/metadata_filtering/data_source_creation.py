@@ -6,13 +6,13 @@ from pathlib import Path
 
 # Create a new cell with the following code
 # Create the directory structure
-base_path = os.path.expanduser('~/amazon-bedrock-agent-samples/examples/multi_agent_collaboration/metadata_filtering/data_sources')
+base_path = './data_sources'
 Path(base_path).mkdir(parents=True, exist_ok=True)
 
 # URLs for the shareholder letters
 urls = {
-    'Amazon-com-Inc-2023-Shareholder-Letter.pdf': 'https://s2.q4cdn.com/299287126/files/doc_financials/2024/ar/Amazon-com-Inc-2023-Shareholder-Letter.pdf',
-    'AMZN-2020-Shareholder-Letter.pdf': 'https://s2.q4cdn.com/299287126/files/doc_financials/2021/ar/Amazon-2020-Shareholder-Letter-and-1997-Shareholder-Letter.pdf'
+    'Amazon-Shareholder-Letter-2023.pdf': 'https://s2.q4cdn.com/299287126/files/doc_financials/2024/ar/Amazon-com-Inc-2023-Shareholder-Letter.pdf',
+    'Amazon-Shareholder-Letter-2020.pdf': 'https://s2.q4cdn.com/299287126/files/doc_financials/2021/ar/Amazon-2020-Shareholder-Letter-and-1997-Shareholder-Letter.pdf'
 }
 
 # Download PDFs
@@ -27,20 +27,20 @@ for filename, url in urls.items():
 
 # Create metadata files
 metadata = {
-    'Amazon-com-Inc-2023-Shareholder-Letter.pdf.metadata.json': {
+    'Amazon-Shareholder-Letter-2023.pdf.metadata.json': {
         "metadataAttributes": {
             "_created_at": "2025-03-26T05:33:59+00:00",
             "_last_updated_at": "2025-04-02T06:34:52+00:00",
-            "DocumentId": "Amazon-com-Inc-2023-Shareholder-Letter.pdf",
-            "Title": "Amazon-com-Inc-2023-Shareholder-Letter.pdf"
+            "DocumentId": "Amazon-Shareholder-Letter-2023.pdf",
+            "Title": "Amazon-Shareholder-Letter-2023.pdf"
         }
     },
-    'AMZN-2020-Shareholder-Letter.pdf.metadata.json': {
+    'Amazon-Shareholder-Letter-2020.pdf.metadata.json': {
         "metadataAttributes": {
             "_created_at": "2025-03-26T05:33:59+00:00",
             "_last_updated_at": "2025-04-02T06:34:52+00:00",
-            "DocumentId": "AMZN-2020-Shareholder-Letter.pdf",
-            "Title": "AMZN-2020-Shareholder-Letter.pdf"
+            "DocumentId": "Amazon-Shareholder-Letter-2020.pdf",
+            "Title": "Amazon-Shareholder-Letter-2020.pdf"
         }
     }
 }
