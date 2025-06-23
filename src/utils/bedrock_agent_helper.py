@@ -605,7 +605,6 @@ class AgentsForAmazonBedrock:
         # Delete the agent aliases
         if _target_agent is not None:
             _agent_id = _target_agent["agentId"]
-
             if verbose:
                 print(f"Deleting aliases for agent {_agent_id}...")
 
@@ -615,6 +614,8 @@ class AgentsForAmazonBedrock:
                 )
                 for alias in _agent_aliases["agentAliasSummaries"]:
                     alias_id = alias["agentAliasId"]
+                    if alias_id == "TSTALIASID":
+                        continue
                     print(f"Deleting alias {alias_id} from agent {_agent_id}")
                     response = self._bedrock_agent_client.delete_agent_alias(
                         agentAliasId=alias_id, agentId=_agent_id
