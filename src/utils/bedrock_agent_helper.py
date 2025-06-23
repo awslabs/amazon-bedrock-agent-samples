@@ -33,6 +33,9 @@ from termcolor import colored
 from rich.console import Console
 from rich.markdown import Markdown
 
+from opentelemetry import trace
+tracer = trace.get_tracer(__name__)
+
 # Custom DateTimeEncoder to handle datetime objects in the LLM response event stream
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -2075,6 +2078,7 @@ class AgentsForAmazonBedrock:
 
         try:
             _sub_agent_name = "<collab-name-not-yet-provided>"
+            _sub_agent_model_id = None
             for _event in _event_stream:
                 _sub_agent_alias_id = None
 
@@ -2443,6 +2447,9 @@ class AgentsForAmazonBedrock:
                                             )
                                         )
 
+                        if "modelInvocationInput" in _orch:
+                            _sub_agent_model_id = _orch["modelInvocationInput"]["foundationModel"]
+
                         if "modelInvocationOutput" in _orch:
                             if _sub_agent_alias_id is not None:
                                 _sub_step += 1
@@ -2485,6 +2492,37 @@ class AgentsForAmazonBedrock:
                                         "yellow",
                                     )
                                 )
+
+                            model_id = ""
+                            try:
+                                _content = json.loads(_orch["modelInvocationOutput"]["rawResponse"]["content"])
+                                if 'model' in _content.keys():
+                                    model_id = _content["model"]
+                            except Exception as e:
+                                pass
+
+                            trace_id = _orch["modelInvocationOutput"]["traceId"][:-2]
+                            trace_duration = round(_orch_duration.total_seconds(),1)
+
+                            agent_name = ""
+                            for key, value in multi_agent_names.items():
+                                if agent_id in key:
+                                  agent_name = value
+                            with tracer.start_as_current_span("multiagents_orch") as current_span:
+                                current_span.set_attribute("agent_id", agent_id)
+                                current_span.set_attribute("session_id", session_id)
+                                current_span.set_attribute("agent_trace_id", trace_id)
+                                if model_id:
+                                    current_span.set_attribute("model_id", model_id)
+                                    current_span.set_attribute("agent_name", agent_name)
+                                else:
+                                    model_id = _sub_agent_model_id.split('.')[1].split(':')[0]
+                                    current_span.set_attribute("model_id", model_id)
+                                    current_span.set_attribute("agent_name", _sub_agent_name)
+
+                                current_span.set_attribute("duration", trace_duration)
+                                current_span.set_attribute("input", _in_tokens)
+                                current_span.set_attribute("output", _out_tokens)
 
                             # restart the clock for next step/sub-step
                             _time_before_orchestration = datetime.datetime.now()
@@ -2563,15 +2601,24 @@ class AgentsForAmazonBedrock:
                 duration = datetime.datetime.now() - _time_before_call
 
                 if trace_level in ["core", "outline"]:
+                    total_seconds = round(duration.total_seconds(),1)
                     print(
                         colored(
                             f"Agent made a total of {_total_llm_calls} LLM calls, "
                             + f"using {_total_in_tokens+_total_out_tokens} tokens "
                             + f"(in: {_total_in_tokens}, out: {_total_out_tokens})"
-                            + f", and took {duration.total_seconds():,.1f} total seconds",
+                            + f", and took {total_seconds} total seconds",
                             "yellow",
                         )
                     )
+                    with tracer.start_as_current_span("multiagents") as current_span:
+                        current_span.set_attribute("agent_id", agent_id)
+                        current_span.set_attribute("total_llm_calls", _total_llm_calls)
+                        current_span.set_attribute("total_tokens", _total_in_tokens+_total_out_tokens)
+                        current_span.set_attribute("total_duration", total_seconds)
+                        current_span.set_attribute("input", _total_in_tokens)
+                        current_span.set_attribute("output", _total_out_tokens)
+                        current_span.set_attribute("session_id", session_id)
 
                 if trace_level == "all":
                     print(f"Returning agent answer as: {_agent_answer}")
