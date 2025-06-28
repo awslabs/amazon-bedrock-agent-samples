@@ -1,0 +1,18 @@
+{
+    "langfuse": {
+        "project_name" : "INSERT YOUR PROJECT NAME",
+        "environment" : "INSERT YOUR ENVIRONMENT",
+        "langfuse_public_key": "INSERT YOUR PUBLIC KEY",
+        "langfuse_secret_key" : "INSERT YOUR PRIVATE KEY",
+        "langfuse_api_url" : "https://cloud.langfuse.com/"
+    },
+    "kb": {
+        "kbId": "INSERT YOUR KB ID"
+    },
+    "question": {
+        "question": "INSERT YOUR QUERY"
+    },
+    "user": {
+        "userId" : "INSERT YOUR USERID"
+    }
+}
