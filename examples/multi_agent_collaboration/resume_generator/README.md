@@ -39,6 +39,7 @@ A full-stack web application that allows users to upload their resumes, manage t
 - AWS CLI configured
 - Basic understanding of AWS services
 - Modern web browser with JavaScript enabled
+- **Model Access**: Request access to Claude 3.7 models in US East 1 region via AWS Bedrock console
 
 ## 🛠️ Installation & Deployment
 
@@ -51,8 +52,8 @@ Upload the required Lambda layers to an S3 bucket:
 *Lambda layer zip files uploaded to S3 bucket under layers/ folder*
 
 ### 2. Deploy CloudFormation Stack
-Deploy the infrastructure using AWS Console:
-- Navigate to CloudFormation in AWS Console
+Deploy the infrastructure using AWS Console in US East 1 region:
+- Navigate to CloudFormation in AWS Console (ensure you're in us-east-1 region)
 - Create new stack using `cloudformation-template.yaml`
 
 ![CloudFormation Upload](images/image_1.png)
