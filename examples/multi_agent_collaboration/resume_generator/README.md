@@ -14,6 +14,7 @@ A full-stack web application that allows users to upload their resumes, manage t
 - **Responsive Design**: Mobile-friendly interface with expandable sections
 
 ## 🏗️ Architecture
+![Architecture Diagram](images/architecture.png)
 
 ### Frontend
 - **HTML5/CSS3/JavaScript**: Single-page application with modern UI
