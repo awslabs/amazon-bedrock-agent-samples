@@ -561,20 +561,31 @@ const Chat = ({ userName = "Guest User" }) => {
                         textAlign: "right",
                         borderRadius: borderRadius,
                         fontWeight: 500,
-                        pt: 1,
-                        pb: 1,
-                        pl: 2,
-                        pr: 2,
+                        py: 1,
+                        px: 2,
                         mt: 2,
                         mb: 1.5,
                         mr: 1,
                         boxShadow: "rgba(0, 0, 0, 0.05) 0px 4px 12px",
-                        background: `linear-gradient(to right, 
-                  ${alpha(theme.palette.primary.light, 0.5)}, 
-                  ${alpha(theme.palette.primary.main, 0.5)})`,
+                        border: `1px solid ${alpha(
+                          theme.palette.secondary.main,
+                          0.15
+                        )}`,
+                        backgroundColor: alpha(
+                          theme.palette.secondary.main,
+                          0.1
+                        ),
                       })}
                     >
-                      <Typography variant="body1">{answer.query}</Typography>
+                      <Typography
+                        sx={{
+                          color: "text.primary",
+                          fontSize: "0.95rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {answer.query}
+                      </Typography>
                     </Box>
                   </Grid>
                 )}
@@ -593,51 +604,76 @@ const Chat = ({ userName = "Guest User" }) => {
           </ul>
         ) : (
           <Box
-            textAlign={"center"}
             sx={{
-              pl: 1,
-              pt: 1,
-              pr: 1,
-              pb: 6,
               height: height,
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: "center",
+              justifyContent: "center",
+              px: 3,
             }}
           >
-            <div style={{ width: "100%" }}>
-              <img
-                src="/images/amazon_bedrock_agents.png"
-                alt="Agents for Amazon Bedrock"
-                height={128}
-              />
+            <Box sx={{ textAlign: "center", maxWidth: 600 }}>
+              <Box sx={{ mb: 4 }}>
+                <img
+                  src="/images/amazon_bedrock_agents.png"
+                  alt="Agents for Amazon Bedrock"
+                  height={96}
+                  style={{ opacity: 0.9 }}
+                />
+              </Box>
+
               <Typography
-                variant="h5"
-                sx={(theme) => ({
-                  pb: 1,
-                  fontWeight: 500,
-                  background: `linear-gradient(to right, 
-                  ${theme.palette.text.primary}, 
-                  ${theme.palette.primary.dark}, 
-                  ${theme.palette.text.primary})`,
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  textFillColor: "transparent",
-                })}
+                variant="h4"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "1.75rem", sm: "2rem" },
+                  lineHeight: 1.2,
+                  mb: 2,
+                  color: "text.primary",
+                  letterSpacing: "-0.02em",
+                }}
               >
                 Agents for Amazon Bedrock
               </Typography>
-              <Typography sx={{ pb: 4, fontWeight: 400 }}>
+
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "1.1rem",
+                  lineHeight: 1.5,
+                  mb: 3,
+                  fontWeight: 400,
+                }}
+              >
                 Fully managed service enabling generative AI applications to
                 execute multi-step business tasks using natural language.
               </Typography>
-              <Typography
-                color="primary"
-                sx={{ fontSize: "1.1rem", pb: 1, fontWeight: 500 }}
+
+              <Box
+                sx={(theme) => ({
+                  borderRadius: 2,
+                  px: 3,
+                  py: 2,
+                  border: `1px solid ${alpha(
+                    theme.palette.secondary.main,
+                    0.15
+                  )}`,
+                  backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                })}
               >
-                {WELCOME_MESSAGE}
-              </Typography>
-            </div>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "secondary.main",
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {WELCOME_MESSAGE}
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         )}
       </Box>

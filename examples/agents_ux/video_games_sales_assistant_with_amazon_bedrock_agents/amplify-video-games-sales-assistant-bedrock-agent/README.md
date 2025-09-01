@@ -6,11 +6,12 @@ This tutorial guides you through setting up a React Web application that integra
 
 By the end of this tutorial, you'll have a fully functional Generative AI web application that allows users to interact with a Data Analyst Assistant interface.
 
-The application consists of:
+The application consists of two main components:
 
-- **React Web Application**: Delivers the user interface for the assistant
-    - The application invokes the Amazon Bedrock Agent for interacting with the assistant
-    - For chart generation, the application directly invokes the Claude 3.5 Sonnet model
+- **React Web Application**: Provides the user interface and handles user interactions
+- **Amazon Bedrock Integration:**:
+    - Uses your Bedrock Agent for data analysis and natural language processing
+    - Directly invokes Claude 3.7 Sonnet model for chart generation and visualization
 
 > [!IMPORTANT]
 > This sample application is for demonstration purposes only and is not production-ready. Please validate the code against your organization's security best practices.
@@ -28,19 +29,85 @@ npm install react-scripts
 
 ## Set Up the Front-End Application
 
-Navigate to the React application folder (amplify-video-games-sales-assistant-bedrock-agent/) and install the Reac application dependencies:
+### Install Dependencies
+
+Navigate to the React application folder (amplify-video-games-sales-assistant-bedrock-agent/) and install the dependencies:
 
 ``` bash
 npm install
 ```
 
-## Configure IAM User Access for Front-End Permissions
+### Install Amplify CLI
 
-- [Create an IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html)
-- [Create Access key and Secret access key](https://docs.aws.amazon.com/keyspaces/latest/devguide/create.keypair.html) for programmatic access
-- Add an inline policy to this user with the following JSON (replace placeholder values with your actual ARNs).
+Install the Amplify CLI globally:
 
-Update the values with your **<agent_arn>**, **<agent_id>**, **<account_id>** and **<question_answers_table_arn>** that you can find in the outputs from the SAM tutorial.
+``` bash
+npm install -g @aws-amplify/cli
+```
+
+### Initialize Amplify Project
+
+Initialize the Amplify project:
+
+``` bash
+amplify init
+```
+
+Use the following configuration:
+
+? Enter a name for the project: **daabedrockagent**
+
+Use the following default configuration:
+
+| Name: **daabedrockagent**
+| Environment: dev
+| Default editor: Visual Studio Code
+| App type: javascript
+| Javascript framework: react
+| Source Directory Path: src
+| Distribution Directory Path: build
+| Build Command: npm run-script build
+| Start Command: npm run-script start
+
+? Do you want to use an AWS profile? **Yes (select your AWS profile)**
+
+### Add Authentication
+
+Add Amazon Cognito authentication to enable user sign-in:
+
+``` bash
+amplify add auth
+```
+
+Use the following configuration:
+
+- Service: `Cognito`
+- Configuration: `Default configuration`
+- Sign-in method: `Email`
+- Advanced settings: `No, I am done`
+
+ Do you want to use the default authentication and security configuration? **Default configuration**
+ 
+ How do you want users to be able to sign in? **Email**
+ Do you want to configure advanced settings? **No, I am done**
+
+### Deploy Backend Resources
+
+Deploy the authentication resources to AWS:
+
+``` bash
+amplify push
+```
+
+> [!NOTE]
+> This creates a Cognito User Pool and Identity Pool in your AWS account for user authentication. AWS credentials for the Front-End Application are automatically managed through Cognito.
+
+## Configure AuthRole Permissions
+
+After authentication deployment, you need to grant your authenticated users permission to access AWS services.
+
+1. **Find your AuthRole**: Go to AWS Console → IAM → Roles → Search for amplify-daabedrockagent-dev-*-authRole
+2. **Add this policy** (replace the placeholder values with your actual values from SAM outputs):
 
 ``` json
 {
@@ -64,10 +131,10 @@ Update the values with your **<agent_arn>**, **<agent_id>**, **<account_id>** an
                 "bedrock:InvokeModel"
             ],
             "Resource": [
-                "arn:aws:bedrock:*:<account_id>:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-                "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
-                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
-                "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+                "arn:aws:bedrock:*:<account_id>:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+                "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0",
+                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0",
+                "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0"
             ]
         },
         {
@@ -84,22 +151,21 @@ Update the values with your **<agent_arn>**, **<agent_id>**, **<account_id>** an
 
 ## Configure Environment Variables
 
-- Rename the file **src/sample.env.js** to **src/env.js** and update the following environment variables:
+Rename the file **src/sample.env.js** to **src/env.js**:
 
-    - AWS Credentials and Region:
-        - **ACCESS_KEY_ID**
-        - **SECRET_ACCESS_KEY**
-        - **AWS_REGION**
+``` bash
+mv src/sample.env.js src/env.js
+```
 
-    - Agent and table information that you can find in the CloudFormation Outputs from the SAM project:
-        - **AGENT_ID**
-        - **AGENT_ALIAS_ID**
-        - **QUESTION_ANSWERS_TABLE_NAME** 
+In you **src/env.js** update the following environment variables
 
-    - Also, you can update the general application description:
-        - **APP_NAME**
-        - **APP_SUBJECT**
-        - **WELCOME_MESSAGE**
+ - AWS Region:
+     - **AWS_REGION**
+
+ - Agent and DynamoDB table name information that you can find in the CloudFormation Outputs from the SAM project:
+     - **AGENT_ID**
+     - **AGENT_ALIAS_ID**
+     - **QUESTION_ANSWERS_TABLE_NAME** 
 
 ## Test Your Data Analyst Assistant
 
@@ -109,23 +175,88 @@ Start the application locally:
 npm start
 ```
 
+The application will open in your browser at http://localhost:3000.
+
+First-Time access:
+1. **Create Account**: Click "Create Account" and use your email address
+2. **Verify Email**: Check your email for a verification code
+3. **Sign In**: Use your email and password to sign in
+
 Try these sample questions to test the assistant:
 
-- Hello!
-- How can you help me?
-- What is the structure of the data?
-- Which developers tend to get the best reviews?
-- What were the total sales for each region between 2000 and 2010? Give me the data in percentages.
-- What were the best-selling games in the last 10 years?
-- What are the best-selling video game genres?
-- Give me the top 3 game publishers.
-- Give me the top 3 video games with the best reviews and the best sales.
-- Which is the year with the highest number of games released?
-- Which are the most popular consoles and why?
-- Give me a short summary and conclusion of our conversation.
+```
+Hello!
+```
 
-> [!TIP]
-> 🚀 For production deployment, consider using **[AWS Amplify Hosting](https://aws.amazon.com/amplify/hosting/)** and integrate Amazon Cognito or another identity provider for proper authentication and authorization instead of using IAM user credentials.
+```
+How can you help me?
+```
+
+```
+What is the structure of the data?
+```
+
+```
+Which developers tend to get the best reviews?
+```
+
+```
+What were the total sales for each region between 2000 and 2010? Give me the data in percentages.
+```
+
+```
+What were the best-selling games in the last 10 years?
+```
+
+```
+What are the best-selling video game genres?
+```
+
+```
+Give me the top 3 game publishers.
+```
+
+```
+Give me the top 3 video games with the best reviews and the best sales.
+```
+
+```
+Which is the year with the highest number of games released?
+```
+
+```
+Which are the most popular consoles and why?
+```
+
+```
+Give me a short summary and conclusion of our conversation.
+```
+
+## Deploy your Application with Amplify Hosting
+
+To deploy your application yu can use AWS Amplify Hosting:
+
+### Add Hosting
+
+Add hosting to your Amplify project:
+
+``` bash
+amplify add hosting
+```
+
+Use the following configuration:
+- Select the plugin module: `Hosting with Amplify Console`
+- Type: `Manual deployment`
+
+### Publish Application
+
+Build and deploy your application:
+
+``` bash
+amplify publish
+```
+
+This will build your React application and deploy it to AWS Amplify Hosting. You'll receive a URL where your application is accessible.
 
 ## Application Features
 

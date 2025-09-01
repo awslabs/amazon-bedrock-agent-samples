@@ -1,25 +1,24 @@
-// AWS Credentials
+// ================================
+// CUSTOMIZABLE CONFIGURATION VALUES
+// ================================
 
-const ACCESS_KEY_ID = "";
-const SECRET_ACCESS_KEY = "";
-const AWS_REGION = "";
+// AWS Configuration - UPDATE THESE VALUES
+const AWS_REGION = ""; // Your AWS region
+const AGENT_ID = ""; // Your Bedrock Agent ID
+const AGENT_ALIAS_ID = ""; // Your Bedrock Agent Alias ID
+const QUESTION_ANSWERS_TABLE_NAME = ""; // Your DynamoDB table name
 
-// Amazon Bedrock Agent and DynamoDB Table
-
-const AGENT_ID = "";
-const AGENT_ALIAS_ID = "";
-const QUESTION_ANSWERS_TABLE_NAME = "";
-
-// Application Information
-
+// Application Information - CUSTOMIZE AS NEEDED
 const APP_NAME = "Data Analyst Assistant";
 const APP_SUBJECT = "Video Games Sales";
 const WELCOME_MESSAGE = "I'm your Video Games Sales Data Analyst, crunching data for insights.";
 
-// --------------------------------
+// ================================
+// SYSTEM CONFIGURATION
+// ================================
 
 const MAX_LENGTH_INPUT_SEARCH = 140;
-const MODEL_ID_FOR_CHART = "us.anthropic.claude-3-5-sonnet-20241022-v2:0";
+const MODEL_ID_FOR_CHART = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 const CHART_PROMPT =
   '\n\
@@ -296,15 +295,20 @@ Example Chart Configurations:\n\
 \n\
 </ChartExamples>';
 
-export { AGENT_ID, 
-    AGENT_ALIAS_ID, 
-    CHART_PROMPT, 
-    QUESTION_ANSWERS_TABLE_NAME, 
-    APP_NAME, APP_SUBJECT, 
-    WELCOME_MESSAGE, 
-    MODEL_ID_FOR_CHART, 
-    MAX_LENGTH_INPUT_SEARCH,
-    ACCESS_KEY_ID,
-    SECRET_ACCESS_KEY,
-    AWS_REGION
+export {
+  // AWS Configuration
+  AWS_REGION,
+  AGENT_ID,
+  AGENT_ALIAS_ID,
+  QUESTION_ANSWERS_TABLE_NAME,
+  
+  // Application Information
+  APP_NAME,
+  APP_SUBJECT,
+  WELCOME_MESSAGE,
+  
+  // System Configuration
+  MAX_LENGTH_INPUT_SEARCH,
+  MODEL_ID_FOR_CHART,
+  CHART_PROMPT
 };
