@@ -11,6 +11,7 @@ The application consists of two main components:
 - **React Web Application**: Provides the user interface and handles user interactions
 - **Amazon Bedrock Integration:**:
     - Uses your Bedrock Agent for data analysis and natural language processing
+    - The application invokes the Amazon Bedrock Agent for interacting with the assistant
     - Directly invokes Claude 3.7 Sonnet model for chart generation and visualization
 
 > [!IMPORTANT]
@@ -20,7 +21,6 @@ The application consists of two main components:
 
 Before you begin, ensure you have:
 
-- An **Alias** created for your Amazon Bedrock Agent from the **Generative AI Application - Data Source and Amazon Bedrock Agent Deployment** tutorial
 - [Node.js version 18+](https://nodejs.org/en/download/package-manager)
 - React Scripts installed:
 ``` bash
@@ -55,21 +55,21 @@ amplify init
 
 Use the following configuration:
 
-? Enter a name for the project: **daabedrockagent**
+- ? Enter a name for the project: **`daabedrockagent`**
 
 Use the following default configuration:
+- Name: **daabedrockagent**
+- Environment: dev
+- Default editor: Visual Studio Code
+- App type: javascript
+- Javascript framework: react
+- Source Directory Path: src
+- Distribution Directory Path: build
+- Build Command: npm run-script build
+- Start Command: npm run-script start
 
-| Name: **daabedrockagent**
-| Environment: dev
-| Default editor: Visual Studio Code
-| App type: javascript
-| Javascript framework: react
-| Source Directory Path: src
-| Distribution Directory Path: build
-| Build Command: npm run-script build
-| Start Command: npm run-script start
-
-? Do you want to use an AWS profile? **Yes (select your AWS profile)**
+- ? Initialize the project with the above configuration? **`Yes`**
+- ? Select the authentication method you want to use: **`AWS profile`**
 
 ### Add Authentication
 
@@ -81,15 +81,9 @@ amplify add auth
 
 Use the following configuration:
 
-- Service: `Cognito`
-- Configuration: `Default configuration`
-- Sign-in method: `Email`
-- Advanced settings: `No, I am done`
-
- Do you want to use the default authentication and security configuration? **Default configuration**
- 
- How do you want users to be able to sign in? **Email**
- Do you want to configure advanced settings? **No, I am done**
+- Do you want to use the default authentication and security configuration?: **`Default configuration`**
+- How do you want users to be able to sign in?: **`Email`**
+- Do you want to configure advanced settings?: **`No, I am done`**
 
 ### Deploy Backend Resources
 
@@ -98,6 +92,8 @@ Deploy the authentication resources to AWS:
 ``` bash
 amplify push
 ```
+
+- ? Are you sure you want to continue? **`Yes`**
 
 > [!NOTE]
 > This creates a Cognito User Pool and Identity Pool in your AWS account for user authentication. AWS credentials for the Front-End Application are automatically managed through Cognito.

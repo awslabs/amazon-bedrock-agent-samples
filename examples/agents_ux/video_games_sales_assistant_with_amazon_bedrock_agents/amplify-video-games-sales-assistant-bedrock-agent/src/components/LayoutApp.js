@@ -22,6 +22,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
+import ArchitectureDiagramDialog from "./ArchitectureDiagramDialog";
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { signOut, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
@@ -179,24 +180,7 @@ function LayoutApp() {
         </IconButton>
       </Box>
 
-      <Dialog
-        fullWidth={true}
-        maxWidth={"xl"}
-        open={open}
-        onClose={handleClose}
-      >
-        <DialogTitle>Data Analyst Assistant Architecture Diagram</DialogTitle>
-        <DialogContent>
-          <img
-            src="/images/gen-ai-assistant-diagram.png"
-            width={"100%"}
-            alt="Powered By AWS"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <ArchitectureDiagramDialog open={open} onClose={handleClose} src="/images/gen-ai-assistant-diagram.png" />
     </ThemeProvider>
   );
 }
