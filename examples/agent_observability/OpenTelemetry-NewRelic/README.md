@@ -1,51 +1,61 @@
-# Amazon Bedrock Agent Observability with OpenTelemetry on Dynatrace
+# Amazon Bedrock Agent Observability with OpenTelemetry on New Relic
 
 An OpenTelemetry example to provide observability to AWS Bedrock Agents.
 
-## Setup
+<div align="center">
+    <img src="./img/newrelic.png" alt="image">
+</div>
 
-Create a [Free Dynatrace Trial](https://www.dynatrace.com/signup/) for 15 days.
-After a few minutes, you will get redirected to your tenant. The URL will look like `https://wkf10640.apps.dynatrace.com/`.
-The value `wkf10640` is your environment id which will be needed later.
+## Signup New Relic
 
+Create a [Free New Relic Account](https://newrelic.com/signup).
+- Only your Email is required to create new account
+- Up to 100 GB monthly
+- 1 free user with access to everything and it has **no expiration date**
+- No credit card required
 
-### Prerequisites
-1. AWS account with appropriate IAM permissions for Amazon Bedrock Agents
-2. An existing Amazon Bedrock Agent (or follow [AWS documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-create.html) to create one)
-3. A Dynatrace Token, to create one:
+### Preparation
+1. A New Relic License key from the free account you made. How toget it: [New Relic API keys](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/?_gl=1*1ys60zo*_gcl_au*MTc2MDM1NTA4Mi4xNzU3OTQ1MjAw*_ga*MTQ3MTg1NTQxNC4xNzQ5NjQ4MjY3*_ga_R5EF3MCG7B*czE3NTg0NDI5MDQkbzEzJGcxJHQxNzU4NDQzMzA4JGo1NyRsMSRoMTA0Njk4OTYy)
+    > -> OTEL_EXPORTER_OTLP_HEADERS
+2. AWS account with appropriate IAM permissions for Amazon Bedrock Agents (or follow [AWS documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/access-keys-admin-managed.html) to create one)
+    > -> AGENT_ID, AGENT_ALIAS_ID
+3. An existing Amazon Bedrock Agent (or follow [AWS documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-create.html) to create one)
+    > -> AGENT_ID, AGENT_ALIAS_ID
 
-   1. In Dynatrace, go to **Access Tokens**. To find **Access Tokens**, press **Ctrl/Cmd+K** to search for and select **Access Tokens**.
-   2. In **Access Tokens**, select **Generate new token**.
-   3. Enter a **Token name** for your new token.
-   4. Give your new token the following permissions:
-   5. Search for and select all of the following scopes.
-       * **Ingest OpenTelemetry traces** (`openTelemetryTrace.ingest`)
-   6. Select **Generate token**.
-   7. Copy the generated token to the clipboard. Store the token in a password manager for future use.
+4. Insert your info about AWS access and New Relic account
 
+    Update the *compose.yaml* file below, according to the key information you received at **Prerequisites**
 
-### Installation
+    > /amazon-bedrock-agent-samples/examples/agent_observability/OpenTelemetry-NewRelic/newrelic-otlp/compose.yaml
 
-```bash
-pip install -r requirements.txt
-```
+    ```yaml
+    services:
+    python:
+        build: python
+        environment:
+        ...
+        - OTEL_EXPORTER_OTLP_HEADERS=api-key=INSERT_YOUR_NEWRELIC_INGUEST_LICENSE_KEY #Insert New Relic Info
+        - AWS_ACCESS_KEY_ID=INSERT_YOUR_AWS_ACCESS_KEY_ID #Insert AWS Info
+        - AWS_SECRET_ACCESS_KEY=INSERT_YOUR_AWS_SECRET_KEY_ID #Insert AWS Info
+        - AGENT_ID=INSERT_BEDROCK_AGENT_ID #Insert AWS Bedrock agent Info
+        - AGENT_ALIAS_ID=INSERT_BEDROCK_ALIAS_ID #Insert AWS Bedrock agent Info
+        ...
+    ```
 
-## Quick Start
+## Run App and monitor Agents
+1. Run *docker compose* and build a container 
 
-Configure the following env var
+    ```bash
+    cd /amazon-bedrock-agent-samples/examples/agent_observability/OpenTelemetry-NewRelic/newrelic-otlp
 
-- `DT_TOKEN`
-- `OTLP_ENDPOINT`
+    docker compose up --build
+    ```
 
-| EnvVar | Description                    | Example                                         |
-|--------|--------------------------------|-------------------------------------------------|
-| `DT_TOKEN` | Dynatrace Access token         | `dt0c01.VFGZLKTQ...`                            |
-| `OTLP_ENDPOINT` | OpenTelemetry Protocol Endpoint | `https://{your-environment-id}.live.dynatrace.com/api/v2/otlp` <br> `http://0.0.0.0:4318` |
+2. View the monitoring page of your New Relic account
+    
+    Check your [dashboard page](https://one.newrelic.com/nr1-core/distributed-tracing/distributed-trace-list).
 
-Run the main script to test your agent integration:
-
-```bash
-python main.py
-```
-
-![Example](./img/example_trace.png)
+    ![Dashboard](./img/dashboard.png)
+    ---
+    ![Tracing Agents](./img/trace.png)
+    ---
