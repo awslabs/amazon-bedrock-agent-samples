@@ -6,8 +6,9 @@ Have a new startup in mind, but haven't quite hired your marketing staff? Use th
 
 ## Prerequisites
 
-1. Clone and install repository
+1. Clone and install repository on your host computer
 
+Linux
 ```bash
 git clone https://github.com/awslabs/amazon-bedrock-agent-samples
 
@@ -18,6 +19,20 @@ python3 -m venv .venv
 source .venv/bin/activate
 
 pip3 install -r src/requirements.txt
+```
+Windows
+```bash
+git clone https://github.com/awslabs/amazon-bedrock-agent-samples
+
+cd amazon-bedrock-agent-samples
+
+python -m venv .venv
+
+.\.venv\Scripts\activate
+
+python -m pip install --upgrade pip
+
+pip install -r src\requirements.txt
 ```
 
 2. Deploy Web Search tool
