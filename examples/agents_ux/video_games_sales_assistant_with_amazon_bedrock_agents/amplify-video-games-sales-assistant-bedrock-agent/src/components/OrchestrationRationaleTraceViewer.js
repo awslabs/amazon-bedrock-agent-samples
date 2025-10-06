@@ -1,9 +1,9 @@
-import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import "./OrchestrationRationaleTraceViewer.css";
+import IconButton from "@mui/material/IconButton";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { alpha } from "@mui/material/styles";
+import MarkdownRenderer from "./MarkdownRenderer.js";
 
 const OrchestrationRationaleTraceViewer = ({ traces }) => {
   // Extract all rationale and query information from traces in order of appearance
@@ -51,35 +51,64 @@ const OrchestrationRationaleTraceViewer = ({ traces }) => {
     <Box>
       {traceItems.length > 0 ? (
         traceItems.map((item, index) => (
-          <Box key={index} className="trace-item">
+          <Box key={index} sx={{ mb: 2 }}>
             {item.type === "rationale" && (
-              <Box className="rationale-section">
+              <Box sx={{ mb: 2 }}>
                 <Typography
                   variant="subtitle1"
+                  color="primary"
                   sx={{ fontWeight: "bold" }}
                   gutterBottom
                 >
                   SQL Rationale
                 </Typography>
-                <ReactMarkdown
-                  remarkPlugins={[[remarkGfm, { singleTilde: false }]]}
-                >
-                  {item.text}
-                </ReactMarkdown>
+                <MarkdownRenderer content={item.text} />
               </Box>
             )}
 
             {item.type === "query" && (
-              <Box className="query-section">
-                <Typography
-                  component="div"
-                  variant="subtitle1"
-                  sx={{ fontWeight: "bold" }}
-                  gutterBottom
+              <Box sx={{ mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  SQL Generated
-                </Typography>
-                <pre>{item.text}</pre>
+                  <Typography
+                    component="div"
+                    variant="subtitle1"
+                    color="secondary"
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    SQL Generated
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => navigator.clipboard.writeText(item.text)}
+                    sx={{ color: "secondary.main" }}
+                  >
+                    <ContentCopyIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+                <Box
+                  component="pre"
+                  sx={(theme) => ({
+                    backgroundColor: "rgba(0, 0, 0, 0.02)",
+                    border: `1px solid ${alpha(
+                      theme.palette.secondary.main,
+                      0.3
+                    )}`,
+                    borderRadius: 2,
+                    padding: theme.spacing(1.5),
+                    fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                    fontSize: "0.875rem",
+                    overflow: "auto",
+                    margin: 0,
+                  })}
+                >
+                  {item.text}
+                </Box>
               </Box>
             )}
           </Box>

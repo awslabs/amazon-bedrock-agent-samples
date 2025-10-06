@@ -178,7 +178,7 @@ const QueryResultsDisplay = ({ index, answer }) => {
                       fontFamily: "monospace",
                       fontSize: "0.85rem",
                       whiteSpace: "pre-wrap",
-                      overflowX: "auto",
+                      overflow: "auto",
                     }}
                   >
                     {query_result.query}

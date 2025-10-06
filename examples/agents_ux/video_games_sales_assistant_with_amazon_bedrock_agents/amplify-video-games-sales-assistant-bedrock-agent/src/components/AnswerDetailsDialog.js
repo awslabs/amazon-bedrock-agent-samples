@@ -7,6 +7,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import { alpha } from "@mui/material/styles";
 import OrchestrationRationaleTraceViewer from "./OrchestrationRationaleTraceViewer.js";
 import MarkdownRenderer from "./MarkdownRenderer.js";
 
@@ -38,7 +39,6 @@ const AnswerDetailsDialog = ({ answer, question, handleClose, open }) => {
             </Box>
             <Box key="answer_value">
               <Typography
-                component="div"
                 color="primary"
                 variant="subtitle1"
                 sx={{ fontWeight: "bold" }}
@@ -53,11 +53,12 @@ const AnswerDetailsDialog = ({ answer, question, handleClose, open }) => {
           </Grid>
           <Grid size={{ sm: 12, md: 12, xs: 6, md: 6 }}>
             <Box
-              sx={{
-                borderRadius: 4,
+              sx={(theme) => ({
+                borderRadius: 2,
                 p: 2,
-                background: "#A4E9DB",
-              }}
+                backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+              })}
             >
               <OrchestrationRationaleTraceViewer
                 traces={answer.runningTraces}
