@@ -10,3 +10,4 @@ botocore
 pyyaml
 retrying
 streamlit>=1.28.0
+opentelemetry
