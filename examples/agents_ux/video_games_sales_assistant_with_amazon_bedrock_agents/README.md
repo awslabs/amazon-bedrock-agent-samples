@@ -8,7 +8,7 @@
 > [!IMPORTANT]
 > **🚀 Ready-to-Deploy Agent Web Application**: Use this reference solution to build other agent-powered web applications across different industries. Extend the agent capabilities by adding custom tools for specific industry workflows and adapt it to various business domains.
 
-This solution provides a Generative AI application reference that allows users to interact with data through a natural language interface. The solution connects Amazon Bedrock Agents to a PostgreSQL database, providing data analysis capabilities through a Web Application interface.
+This solution provides a Generative AI application reference that allows users to interact with data through a natural language interface. The solution connects **[Amazon Bedrock Agents](https://aws.amazon.com/bedrock/agents/)** to a PostgreSQL database, providing data analysis capabilities through a Web Application interface.
 
 <div align="center">
 <img src="./images/data-analyst-assistant-amazon-bedrock-agents.gif" alt="Conversational Data Analyst Assistant Solution with Amazon Bedrock Agents">
