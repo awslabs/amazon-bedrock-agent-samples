@@ -5,6 +5,9 @@
 > 
 > **🔥 [Deploy with Amazon AgentCore →](https://github.com/awslabs/amazon-bedrock-agentcore-samples/tree/main/02-use-cases/video-games-sales-assistant)**
 
+> [!IMPORTANT]
+> **🚀 Extensible Foundation**: Use this solution as a starting point for other data use cases. Extend the agent with custom tools for your specific business needs and adapt it to different industries and data sources.
+
 This solution provides a Generative AI application reference that allows users to interact with data through a natural language interface. The solution connects Amazon Bedrock Agents to a PostgreSQL database, providing data analysis capabilities through a Web Application interface.
 
 <div align="center">
