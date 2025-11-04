@@ -1,0 +1,34 @@
+services:
+  python:
+    build: python
+    environment:
+      - OTEL_SERVICE_NAME=BedrockSample-OpenTelemetry-NewRelic
+      - OTEL_RESOURCE_ATTRIBUTES=service.instance.id=123
+      - OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp.nr-data.net
+      - OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT=4095
+      - OTEL_EXPORTER_OTLP_COMPRESSION=gzip
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta
+      - OTEL_EXPORTER_OTLP_HEADERS=api-key=INSERT_YOUR_NEWRELIC_INGUEST_LICENSE_KEY #Insert New Relic Info
+      - AWS_ACCESS_KEY_ID=INSERT_YOUR_AWS_ACCESS_KEY_ID #Insert AWS Info
+      - AWS_SECRET_ACCESS_KEY=INSERT_YOUR_AWS_SECRET_KEY_ID #Insert AWS Info
+      - AGENT_ID=INSERT_BEDROCK_AGENT_ID #Insert AWS Bedrock agent Info
+      - AGENT_ALIAS_ID=INSERT_BEDROCK_ALIAS_ID #Insert AWS Bedrock agent Info
+      - AGENT_PROMPT="Please give an example of one social problem in the world and present an idea for a startup that would solve it. As a startup advisor, please come up with an original idea and explain it." #This prompt is an example for tests. You can change anyway. 
+
+    ports:
+      - 8080
+  envoy:
+    image: envoyproxy/envoy:v1.29.4
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./supporting-files/envoy.yaml:/etc/envoy/envoy.yaml
+  loadgenerator:
+    image: python:3.12.3
+    command: ["python", "/loadgenerator.py"]
+    volumes:
+      - ./supporting-files/loadgenerator.py:/loadgenerator.py
+    depends_on:
+      - python
