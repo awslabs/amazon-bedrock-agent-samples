@@ -956,7 +956,7 @@ class AgentsForAmazonBedrock:
         _agent_id = None
 
         _kwargs = {}
-
+        
         if routing_classifier_model is not None:
             _kwargs["promptOverrideConfiguration"] = {
                 "promptConfigurations": [
@@ -969,6 +969,13 @@ class AgentsForAmazonBedrock:
                     }
                 ]
             }
+            
+        if prompt_override_configuration is not None:
+            if routing_classifier_model is not None:
+                routing_config = _kwargs["promptOverrideConfiguration"]["promptConfigurations"]
+                prompt_override_configuration["promptConfigurations"] = routing_config + prompt_override_configuration["promptConfigurations"]
+            _kwargs["promptOverrideConfiguration"] = prompt_override_configuration
+            
         if guardrail_id is not None:
             _kwargs["guardrailConfiguration"] = {
                 "guardrailIdentifier": guardrail_id,
