@@ -2,6 +2,9 @@
 
 This tutorial guides you through setting up the back-end infrastructure and **[Amazon Bedrock Agent](https://aws.amazon.com/bedrock/agents/)** to create a Data Analyst Assistant for Video Game Sales using **[AWS Cloud Development Kit (CDK)](https://docs.aws.amazon.com/cdk/v2/guide/home.html)** with TypeScript.
 
+> [!NOTE]
+> **Working Directory**: Make sure you are in the `cdk-video-games-sales-assistant-bedrock-agent/` folder before starting this tutorial. All commands in this guide should be executed from this directory.
+
 ## Overview
 
 You will deploy the following AWS services:
@@ -42,9 +45,12 @@ Before you begin, ensure you have:
 aws iam create-service-linked-role --aws-service-name rds.amazonaws.com
 ```
 
+> [!NOTE]
+> If the role already exists, you will see the message: `Service role name AWSServiceRoleForRDS has been taken in this account`. This is expected and you can proceed with the deployment.
+
 ## Deploy the Back-End Services with AWS CDK
 
-Navigate to the CDK project folder (cdk-video-games-sales-assistant-bedrock-agent/) and install dependencies:
+Install the required npm dependencies:
 
 ```bash
 npm install
@@ -65,17 +71,12 @@ cdk synth
 Deploy the CDK stack:
 
 ```bash
-cdk deploy --parameters PostgreSQLDatabaseName=video_games_sales --parameters AuroraMaxCapacity=2 --parameters AuroraMinCapacity=1
-```
-
-You can also deploy with default parameter values:
-
-```bash
 cdk deploy
 ```
 
 The default values are:
 - **PostgreSQLDatabaseName**: `video_games_sales`
+- **PostgreSQLTableName**: `video_games_sales_units`
 - **AuroraMaxCapacity**: `2`
 - **AuroraMinCapacity**: `1`
 
@@ -84,7 +85,6 @@ After deployment completes, the following services will be created:
 - Amazon Bedrock Agent configured as a Data Analyst Assistant
 - Lambda Function API for the agent (using RDS Data API for database access)
 - Aurora Serverless v2 PostgreSQL Cluster with RDS Data API enabled
-- A read-only database user (created via custom resource) for least-privilege Lambda access
 - A DynamoDB Table for tracking questions and query details
 - S3 Bucket for data source storage
 
@@ -94,27 +94,43 @@ After deployment completes, the following services will be created:
 > [!IMPORTANT] 
 > Enhance AI safety and compliance by implementing **[Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/)** for your AI applications.
 
-## Load Sample Data into PostgreSQL Database
+## Set Up the PostgreSQL Database
 
-Set up the required environment variables:
+1. Install required Python dependencies:
+
+```bash
+pip install boto3
+```
+
+2. Set up the required environment variables:
 
 ```bash
 # Set the stack name environment variable
 export STACK_NAME=CdkVideoGamesSalesAssistantBedrockAgentStack
 
-# Retrieve the output values and store them in environment variables
+# Retrieve the output values from the CDK stack
 export SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='SecretARN'].OutputValue" --output text)
 export DATA_SOURCE_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DataSourceBucketName'].OutputValue" --output text)
 export AURORA_SERVERLESS_DB_CLUSTER_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AuroraServerlessDBClusterArn'].OutputValue" --output text)
+export READONLY_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ReadOnlySecretARN'].OutputValue" --output text)
+
+# Retrieve the parameter values from the CDK stack
+export TABLE_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Parameters[?ParameterKey=='PostgreSQLTableName'].ParameterValue" --output text)
+export DATABASE_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Parameters[?ParameterKey=='PostgreSQLDatabaseName'].ParameterValue" --output text)
 cat << EOF
 STACK_NAME: ${STACK_NAME}
 SECRET_ARN: ${SECRET_ARN}
 DATA_SOURCE_BUCKET_NAME: ${DATA_SOURCE_BUCKET_NAME}
 AURORA_SERVERLESS_DB_CLUSTER_ARN: ${AURORA_SERVERLESS_DB_CLUSTER_ARN}
+READONLY_SECRET_ARN: ${READONLY_SECRET_ARN}
+TABLE_NAME: ${TABLE_NAME}
+DATABASE_NAME: ${DATABASE_NAME}
 EOF
 ```
 
-Execute the following command to create the database and load the sample data:
+### Load Sample Data
+
+Execute the following command to create the database table and load the sample data:
 
 ```bash
 python3 resources/create-sales-database.py
@@ -124,6 +140,16 @@ The script uses the **[video_games_sales_no_headers.csv](./resources/database/vi
 
 > [!NOTE]
 > The data source provided contains information from [Video Game Sales](https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024) which is made available under the [ODC Attribution License](https://opendatacommons.org/licenses/odbl/1-0/).
+
+### Create Read-Only Database User
+
+Execute the following command to create the read-only database user:
+
+```bash
+python3 resources/create-readonly-user.py
+```
+
+This script creates a `readonly_user` in PostgreSQL with SELECT-only privileges on the `video_games_sales_units` table. The Lambda function uses this user for least-privilege database access.
 
 ## Test the Agent in AWS Console
 

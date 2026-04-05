@@ -1,3 +1,14 @@
+"""
+Creates the PostgreSQL database table and loads sample data in Aurora Serverless v2
+via the RDS Data API.
+
+Required environment variables:
+  - SECRET_ARN: Admin secret ARN (for RDS Data API authentication)
+  - DATA_SOURCE_BUCKET_NAME: S3 bucket name for uploading the CSV data source
+  - AURORA_SERVERLESS_DB_CLUSTER_ARN: Aurora cluster ARN
+  - DATABASE_NAME: Target database name (from CDK stack parameter PostgreSQLDatabaseName)
+"""
+
 import boto3
 import os
 
@@ -8,7 +19,7 @@ region = session.region_name
 data_source_bucket_name = os.environ["DATA_SOURCE_BUCKET_NAME"]
 aurora_serverless_db_cluster_arn = os.environ["AURORA_SERVERLESS_DB_CLUSTER_ARN"]
 secret_arn = os.environ["SECRET_ARN"]
-database_name = "video_games_sales"
+database_name = os.environ["DATABASE_NAME"]
 
 # File path variables
 local_file_path = "resources/database/video_games_sales_no_headers.csv"

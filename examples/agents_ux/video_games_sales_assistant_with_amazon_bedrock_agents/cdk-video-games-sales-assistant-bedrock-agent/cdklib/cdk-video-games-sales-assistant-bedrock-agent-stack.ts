@@ -12,7 +12,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as cr from 'aws-cdk-lib/custom-resources';
 import * as bedrock from 'aws-cdk-lib/aws-bedrock';
 import { Construct } from 'constructs';
 
@@ -42,12 +41,17 @@ export class CdkVideoGamesSalesAssistantBedrockAgentStack extends cdk.Stack {
       default: 1,
     });
 
+    const postgreSQLTableName = new cdk.CfnParameter(this, 'PostgreSQLTableName', {
+      type: 'String',
+      description: 'The name of the PostgreSQL table for video game sales data',
+      default: 'video_games_sales_units',
+    });
+
     // ================================
     // S3 BUCKET
     // ================================
 
     const dataSourceBucket = new s3.Bucket(this, 'DataSourceBucket', {
-      bucketName: `sales-data-source-${cdk.Aws.REGION}-${cdk.Aws.ACCOUNT_ID}`,
       versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -171,53 +175,13 @@ export class CdkVideoGamesSalesAssistantBedrockAgentStack extends cdk.Stack {
     });
 
     // ================================
-    // CUSTOM RESOURCE - DB USER SETUP
-    // ================================
-
-    const dbUserSetupFunction = new lambda.Function(this, 'DbUserSetupFunction', {
-      runtime: lambda.Runtime.PYTHON_3_9,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('lambda/db-user-setup'),
-      timeout: cdk.Duration.seconds(60),
-      environment: {
-        ADMIN_SECRET_ARN: adminSecret.secretArn,
-        READONLY_SECRET_ARN: readOnlySecret.secretArn,
-        CLUSTER_ARN: auroraCluster.clusterArn,
-        DATABASE_NAME: postgreSQLDatabaseName.valueAsString,
-      },
-    });
-
-    // Grant rds-data:ExecuteStatement on the Aurora cluster
-    dbUserSetupFunction.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['rds-data:ExecuteStatement'],
-      resources: [auroraCluster.clusterArn],
-    }));
-
-    // Grant secretsmanager:GetSecretValue on both secrets
-    dbUserSetupFunction.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['secretsmanager:GetSecretValue'],
-      resources: [adminSecret.secretArn, readOnlySecret.secretArn],
-    }));
-
-    const dbUserSetupProvider = new cr.Provider(this, 'DbUserSetupProvider', {
-      onEventHandler: dbUserSetupFunction,
-    });
-
-    const dbUserSetupCustomResource = new cdk.CustomResource(this, 'DbUserSetupCustomResource', {
-      serviceToken: dbUserSetupProvider.serviceToken,
-    });
-
-    // Ensure the custom resource runs after the Aurora cluster is available
-    dbUserSetupCustomResource.node.addDependency(auroraCluster);
-
-    // ================================
     // LAMBDA FUNCTION - BEDROCK AGENT ACTION GROUP EXECUTOR
     // ================================
 
     const assistantFunction = new lambda.Function(this, 'AssistantFunction', {
       runtime: lambda.Runtime.PYTHON_3_9,
       handler: 'app.lambda_handler',
-      code: lambda.Code.fromAsset('lambda/assistant-api-postgresql-haiku-35'),
+      code: lambda.Code.fromAsset('lambda/assistant-api-postgresql'),
       architecture: lambda.Architecture.X86_64,
       timeout: cdk.Duration.seconds(60),
       memorySize: 512,
@@ -418,7 +382,7 @@ export class CdkVideoGamesSalesAssistantBedrockAgentStack extends cdk.Stack {
       foundationModel: foundationModel,
       instruction: `You are a multilingual chatbot Data Analyst Assistant named "Gus". You are designed to help with market video game sales data. As a data analyst, your role is to help answer users' questions by generating SQL queries against tables to obtain required results, providing answers for a C-level executive focusing on delivering business insights through extremely concise communication that prioritizes key data points and strategic implications for efficient decision-making, while maintaining a friendly conversational tone. Do not assume table structures or column names. Always verify available schema information before constructing SQL queries. Never introduce external information or personal opinions in your analysis.
 
-Leverage your PostgreSQL 15.4 knowledge to create appropriate SQL statements. Do not use queries that retrieve all records in a table. If needed, ask for clarification on specific requests.
+Leverage your PostgreSQL knowledge to create appropriate SQL statements. Do not use queries that retrieve all records in a table. If needed, ask for clarification on specific requests.
 
 ## Your Process
 For EVERY user question about data, follow these steps in order:
@@ -534,6 +498,7 @@ For EVERY user question about data, follow these steps in order:
       value: bedrockAgent.attrAgentId,
     });
 
+    // Account ID
     new cdk.CfnOutput(this, 'AccountId', {
       description: 'AWS Account ID',
       value: cdk.Aws.ACCOUNT_ID,
