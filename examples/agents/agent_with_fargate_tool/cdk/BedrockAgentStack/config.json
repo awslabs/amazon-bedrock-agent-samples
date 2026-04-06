@@ -1,0 +1,16 @@
+{
+    "_comment1": "Bedrock Agent definition",
+    "agentName": "tika-document-processor",
+    "agentAliasName": "live",
+    "agentDescription": "Agent that processes documents using Apache Tika on ECS Fargate for text extraction, metadata retrieval, and MIME type detection",
+    "agentInstruction": "You are a document processing assistant. You can extract text content from documents and files using Apache Tika. Users upload files to the S3 bucket and ask you to process them by providing the S3 object key. Use the TikaDocumentProcessor action group to extract text from PDFs, Word documents, spreadsheets, images (via OCR), and many other file formats. You can also detect MIME types and retrieve metadata. When a user refers to a file, use the process-s3-file endpoint with the object key.",
+    "actionGroupName": "TikaDocumentProcessor",
+    "actionGroupDescription": "Process documents using Apache Tika for text extraction, metadata retrieval, and MIME type detection.",
+    "_comment2": "Bedrock models supported",
+    "agentModelId": "anthropic.claude-3-haiku-20240307-v1:0",
+    "_comment3": "Fargate configuration",
+    "tikaImageTag": "3.2.3.0-full",
+    "fargateMemoryMiB": 2048,
+    "fargateCpu": 1024,
+    "desiredCount": 1
+}

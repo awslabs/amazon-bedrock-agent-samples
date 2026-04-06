@@ -1,0 +1,168 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Apache Tika Document Processor",
+    "description": "Process documents using Apache Tika for text extraction, metadata retrieval, and MIME type detection.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/process-s3-file": {
+      "post": {
+        "operationId": "processS3File",
+        "summary": "Process a file from S3 using Apache Tika",
+        "description": "Fetches a file from the configured S3 bucket by its object key and processes it with Apache Tika. Supports text extraction, metadata extraction, and MIME type detection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["s3_key"],
+                "properties": {
+                  "s3_key": {
+                    "type": "string",
+                    "description": "The S3 object key of the file to process (e.g. reports/quarterly.pdf)"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": ["extract_text", "extract_metadata", "detect_type"],
+                    "description": "The processing action to perform. Defaults to extract_text.",
+                    "default": "extract_text"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "s3_key": { "type": "string", "description": "The S3 object key that was processed" },
+                    "extracted_text": { "type": "string", "description": "The extracted text (when action is extract_text)" },
+                    "metadata": { "type": "object", "description": "Document metadata (when action is extract_metadata)" },
+                    "mime_type": { "type": "string", "description": "Detected MIME type (when action is detect_type)" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract-text": {
+      "post": {
+        "operationId": "extractText",
+        "summary": "Extract text content from a base64-encoded document",
+        "description": "Sends a base64-encoded document to Apache Tika and returns the extracted plain text. Prefer /process-s3-file for files already in S3.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["document_base64"],
+                "properties": {
+                  "document_base64": { "type": "string", "description": "Base64-encoded document content" },
+                  "content_type": { "type": "string", "description": "MIME type of the document (e.g. application/pdf).", "default": "application/octet-stream" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Text extracted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "extracted_text": { "type": "string", "description": "The extracted plain text from the document" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/detect-type": {
+      "post": {
+        "operationId": "detectType",
+        "summary": "Detect the MIME type of a base64-encoded document",
+        "description": "Sends a base64-encoded document to Apache Tika to detect its MIME type. Prefer /process-s3-file for files already in S3.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["document_base64"],
+                "properties": {
+                  "document_base64": { "type": "string", "description": "Base64-encoded document content" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MIME type detected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mime_type": { "type": "string", "description": "The detected MIME type of the document" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/extract-metadata": {
+      "post": {
+        "operationId": "extractMetadata",
+        "summary": "Extract metadata from a base64-encoded document",
+        "description": "Sends a base64-encoded document to Apache Tika and returns document metadata. Prefer /process-s3-file for files already in S3.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["document_base64"],
+                "properties": {
+                  "document_base64": { "type": "string", "description": "Base64-encoded document content" },
+                  "content_type": { "type": "string", "description": "MIME type of the document.", "default": "application/octet-stream" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata extracted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "metadata": { "type": "object", "description": "Document metadata key-value pairs" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

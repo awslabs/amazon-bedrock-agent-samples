@@ -95,6 +95,7 @@ The solutions presented here use the [boto3 SDK in Python](https://boto3.amazona
 - [Agent using Amazon Bedrock Knowledge Bases](/examples/agents/agent_with_knowledge_base_integration/)
 - [Agent with long term memory](/examples/agents/agent_with_long_term_memory/)
 - [Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/)
+- [Agent using tools hosted on ECS Fargate](/examples/agents/agent_with_fargate_tool/)
 - [AWS CDK Agent](/examples/agents/cdk_agent/)
 - [Computer use Agent](/examples/agents/computer_use/)
 - [Custom orchestration Agent](/examples/agents/custom_orchestration_agent/)

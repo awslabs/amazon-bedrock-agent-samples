@@ -1,3 +1,7 @@
+## 3/17/26
+Added example for agent with tools hosted on AWS ECS Fargate
+- [Agent using tools hosted on ECS Fargate](/examples/agents/agent_with_fargate_tool/)
+
 ## 5/20/25
 Fixes to bedrock_agent_helper.py
 - Minor fix to reference formatting to avoid sometimes clipping final character in description

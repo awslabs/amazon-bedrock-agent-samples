@@ -24,3 +24,4 @@
 - [Emir Ayar](https://github.com/eercanayar)
 - [Anna Gruebler Clark](https://github.com/annainspace)
 - [HYUNJUN KWON](https://github.com/T0M4TO)
+- [Daren Wong](https://github.com/darenwkt)
