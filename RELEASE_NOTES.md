@@ -1,3 +1,11 @@
+## 07/22/2025
+Updates to Resume Generator example
+- Updated README.md file structure to include images/ and layers/ folders
+- Added configuration variables with CloudFormation template outputs reference
+- Added local testing instructions using Python HTTP server
+- Added prerequisite for Claude 3.7 model access in US East 1 region
+- Specified US East 1 region requirement for CloudFormation deployment
+
 ## 5/20/25
 Fixes to bedrock_agent_helper.py
 - Minor fix to reference formatting to avoid sometimes clipping final character in description

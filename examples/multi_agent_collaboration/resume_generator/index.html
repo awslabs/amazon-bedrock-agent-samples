@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Builder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1692.0.min.js"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f7fa; }
+        h1, h2 { color: #2c3e50; }
+        section { margin-bottom: 20px; padding: 20px; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #3498db; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; }
+        button:hover { background-color: #2980b9; }
+        #notification { position: fixed; top: 20px; right: 20px; background-color: #2ecc71; color: white; padding: 15px; border-radius: 5px; display: none; z-index: 1000; }
+        .error { background-color: #e74c3c !important; }
+        #app-content { display: none; }
+        #login-screen { max-width: 500px; margin: 50px auto; }
+        .auth-status { padding: 10px; margin-top: 15px; border-radius: 4px; }
+        .signed-in { background-color: #d4edda; color: #155724; }
+        .signed-out { background-color: #f8d7da; color: #721c24; }
+        .user-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        /* Expandable tabs styling */
+        .expandable-section {
+            margin-top: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+        
+        .expandable-header {
+            padding: 15px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+        
+        .expandable-header:hover {
+            background-color: #2980b9;
+        }
+        
+        .expandable-header i {
+            transition: transform 0.3s;
+        }
+        
+        .expandable-header.expanded i {
+            transform: rotate(180deg);
+        }
+        
+        .expandable-content {
+            padding: 15px;
+            display: none;
+            background-color: white;
+        }
+        
+        .expandable-content.show {
+            display: block;
+        }
+        
+        /* Progress bar styling */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .progress-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        /* Resume response styling */
+        .resume-response-styled {font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333;}
+        .response-intro {margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #28a745;}
+        .response-section {margin-bottom: 25px; padding: 20px; background-color: #ffffff; border-radius: 8px; border: 1px solid #e9ecef; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .section-title {color: #2c3e50; margin-bottom: 15px; font-size: 1.1em; font-weight: 600; border-bottom: 2px solid #3498db; padding-bottom: 8px;}
+        .response-text {margin-bottom: 10px; color: #555;}
+        .bullet-point {margin-bottom: 8px; padding-left: 15px; color: #666; position: relative;}
+        .bullet-point::before {content: "•"; color: #3498db; font-weight: bold; position: absolute; left: 0;}
+        .json-response {background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 15px; font-family: 'Monaco', 'Menlo', 'Consolas', monospace; font-size: 0.9em; overflow-x: auto;}
+        
+        /* Save button styling */
+        .save-btn {
+            background-color: #2ecc71;
+        }
+        
+        .save-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        /* Hide resume actions initially */
+        #resume-actions {
+            display: none;
+            margin-top: 15px;
+        }
+        .btn-preview {
+            background-color: #17a2b8;
+            font-size: 14px;
+        }
+
+        .btn-preview:hover {
+            background-color: #138496;
+        }
+
+        .btn-download {
+            background-color: #28a745;
+            font-size: 14px;
+        }
+
+        .btn-download:hover {
+            background-color: #218838;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="notification"></div>
+    
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <section>
+            <h1><i class="fas fa-user-circle"></i> Profile Builder</h1>
+            <p>Please sign in to access your profile.</p>
+            
+            <div>
+                <label for="auth-username"><i class="fas fa-user"></i> Username:</label>
+                <input type="text" id="auth-username" placeholder="Enter username" required>
+            </div>
+            
+            <div>
+                <label for="auth-password"><i class="fas fa-key"></i> Password:</label>
+                <input type="password" id="auth-password" placeholder="Enter password" required>
+            </div>
+            
+            <button id="sign-in-btn"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+            <button onclick="redirectToSignUp()">Sign Up</button>
+
+            <div id="auth-status" class="auth-status signed-out">
+                <i class="fas fa-info-circle"></i> Please sign in to continue.
+            </div>
+        </section>
+    </div>
+
+    <!-- App Content -->
+    <div id="app-content">
+        <div class="user-nav">
+            <span id="user-welcome">Welcome!</span>
+            <button id="sign-out-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+        </div>
+        
+        <h1>Profile & Resume Builder</h1>
+        
+        <section>
+            <h2><i class="fas fa-id-card"></i> Profile Information</h2>
+            <form id="profile-form">
+                <input type="text" id="first-name" placeholder="First Name" required>
+                <input type="text" id="last-name" placeholder="Last Name" required>
+                <input type="text" id="resume-name" placeholder="Resume name will appear here after upload" readonly style="background-color: #f0f0f0;">
+                <textarea id="objectives" placeholder="Job Objectives and Interests..."></textarea>
+
+                <div>
+                    <button type="button" id="save-btn" class="save-btn"><i class="fas fa-save"></i> Save</button>
+                    <button type="button" id="clear-profile-btn"><i class="fas fa-eraser"></i> Clear</button>
+                    <button type="button" id="generate-btn"><i class="fas fa-cogs"></i> Generate</button>
+                </div>
+            </form>
+
+            <!-- Progress Container -->
+            <div id="progress-container" class="progress-container">
+                <h3>Processing Your Request</h3>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill">0%</div>
+                </div>
+                <div id="progress-text" class="progress-text">Initializing...</div>
+            </div>
+
+            <!-- Expandable Saved Profile Section -->
+            <div class="expandable-section" id="profile-section" style="display: none;">
+                <div class="expandable-header" onclick="toggleSection('profile')">
+                    <span><i class="fas fa-user"></i> Saved Profile</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="expandable-content" id="profile-content">
+                    <div id="profile-display-content"></div>
+                </div>
+            </div>
+
+            <!-- Expandable Generated Resume Section -->
+            <div class="expandable-section" id="generated-section" style="display: none;">
+                <div class="expandable-header" onclick="toggleSection('generated')">
+                    <span><i class="fas fa-file-alt"></i> Generated Resume Information</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="expandable-content" id="generated-content">
+                    <div id="api-response-generate-content"></div>
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <h2><i class="fas fa-file-alt"></i> Resume</h2>
+            <input type="file" id="resume-file" accept=".pdf">
+            <p id="file-name"></p>
+            
+            <div id="resume-actions">
+                <button id="preview-resume-btn"><i class="fas fa-search"></i> Preview</button>
+                <button id="delete-resume-btn"><i class="fas fa-trash"></i> Delete</button>
+                <button id="download-resume-btn"><i class="fas fa-download"></i> Download</button>
+                <button id="upload-resume-btn"><i class="fas fa-cloud-upload-alt"></i> Upload</button>
+            </div>
+            
+            <div id="resume-preview-container" style="display: none;">
+                <img id="resume-preview" alt="Resume Preview" style="max-width:100%;display:none">
+                <p id="resume-preview-text"></p>
+            </div>
+        </section>
+        <section>
+            <h2><i class="fas fa-folder-open"></i> My Resumes</h2>
+            
+            <!-- Uploaded Resume Section -->
+            <div class="expandable-section" id="uploaded-resume-section" style="display: none;">
+                <div class="expandable-header" onclick="toggleSection('uploaded-resume')">
+                    <span><i class="fas fa-file-pdf"></i> Uploaded Resume</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="expandable-content" id="uploaded-resume-content">
+                    <div id="uploaded-resume-info"></div>
+                    <div id="uploaded-resume-preview" style="display: none;">
+                        <iframe id="uploaded-pdf-viewer" style="width: 100%; height: 600px; border: 1px solid #ddd;"></iframe>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Generated Resumes Section -->
+            <div class="expandable-section" id="generated-resumes-section" style="display: none;">
+                <div class="expandable-header" onclick="toggleSection('generated-resumes')">
+                    <span><i class="fas fa-robot"></i> AI Generated Resumes</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="expandable-content" id="generated-resumes-content">
+                    <div id="generated-resumes-list"></div>
+                    <div id="generated-resume-preview" style="display: none;">
+                        <iframe id="generated-pdf-viewer" style="width: 100%; height: 600px; border: 1px solid #ddd;"></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // AWS SDK Configuration
+        AWS.config.region = 'us-east-1';
+        const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
+        const userclient = '<example>';
+        const userpool = 'us-east-1_<example>';
+        const baseUrl = 'https://<example>.execute-api.us-east-1.amazonaws.com';
+        const cognitoDomain = 'https://auth-event-driven-agents-<ACCOUNT_ID>.auth.us-east-1.amazoncognito.com';
+        const redirectUri = 'https://<example>.cloudfront.net';
+        
+        const poolData = {
+            UserPoolId: userpool,
+            ClientId: userclient
+        };
+
+        // DOM elements
+        const els = {};
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            cacheElements();
+            setupEventListeners();
+            checkAuth();
+        });
+        
+        // Cache all DOM elements
+        function cacheElements() {
+            const ids = [
+                'notification', 'login-screen', 'app-content', 'auth-username', 
+                'auth-password', 'auth-status', 'sign-in-btn', 'sign-out-btn', 
+                'user-welcome', 'profile-form', 'first-name', 'last-name', 'resume-name', 
+                'objectives', 'save-btn', 'clear-profile-btn', 'generate-btn',
+                'profile-section', 'profile-content', 'profile-display-content',
+                'generated-section', 'generated-content', 'api-response-generate-content',
+                'resume-file', 'file-name', 'resume-actions', 'preview-resume-btn', 
+                'delete-resume-btn', 'download-resume-btn', 'upload-resume-btn',
+                'resume-preview-container', 'resume-preview', 'resume-preview-text',
+                'progress-container', 'progress-fill', 'progress-text','uploaded-resume-section', 'uploaded-resume-content', 'uploaded-resume-info',
+                'uploaded-resume-preview', 'uploaded-pdf-viewer', 'generated-resumes-section',
+                'generated-resumes-content', 'generated-resumes-list', 'generated-resume-preview',
+                'generated-pdf-viewer'
+            ];
+            
+            ids.forEach(id => {
+                els[id] = document.getElementById(id);
+            });
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Auth buttons
+            els['sign-in-btn'].addEventListener('click', signIn);
+            els['sign-out-btn'].addEventListener('click', signOut);
+            
+            // Profile buttons
+            els['save-btn'].addEventListener('click', saveProfile);
+            els['clear-profile-btn'].addEventListener('click', () => {
+                els['profile-form'].reset();
+                notify('Form cleared');
+            });
+            els['generate-btn'].addEventListener('click', callGenerateApi);
+            
+            // Resume buttons
+            els['resume-file'].addEventListener('change', e => {
+                const file = e.target.files[0];
+                if (file) {
+                    els['file-name'].textContent = `Selected: ${file.name}`;
+                    els['resume-actions'].style.display = 'block';
+                }
+            });
+            
+            els['preview-resume-btn'].addEventListener('click', previewResume);
+            els['delete-resume-btn'].addEventListener('click', deleteResume);
+            els['download-resume-btn'].addEventListener('click', downloadResumeSecure);
+            els['upload-resume-btn'].addEventListener('click', () => {
+                console.log("upload clicked...")
+                const file = els['resume-file'].files[0];
+                if (file) {
+                    uploadFileToS3(file);
+                } else {
+                    notify("Please select a file before uploading", true);
+                }
+            });
+        }
+
+        // Toggle expandable sections
+        function toggleSection(section) {
+            const header = document.querySelector(`#${section}-section .expandable-header`);
+            const content = document.querySelector(`#${section}-content`);
+            
+            header.classList.toggle('expanded');
+            content.classList.toggle('show');
+        }
+
+        // Redirect to sign up
+        function redirectToSignUp() {
+            const clientId = userclient;
+            
+            window.location.href = `${cognitoDomain}/signup?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        }
+        
+        // Check authentication status
+        function checkAuth() {
+            const idToken = localStorage.getItem('idToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            const username = localStorage.getItem('username');
+            
+            if (!idToken || !refreshToken || !username) {
+                showLoginScreen();
+                return;
+            }
+            
+            const params = {
+                ClientId: poolData.ClientId,
+                AuthFlow: 'REFRESH_TOKEN_AUTH',
+                AuthParameters: {
+                    'REFRESH_TOKEN': refreshToken
+                }
+            };
+            
+            cognitoIdentityServiceProvider.initiateAuth(params, (err, result) => {
+                if (err) {
+                    console.error("Token refresh failed:", err);
+                    showLoginScreen();
+                    return;
+                }
+                
+                if (result.AuthenticationResult) {
+                    localStorage.setItem('idToken', result.AuthenticationResult.IdToken);
+                    if (result.AuthenticationResult.RefreshToken) {
+                        localStorage.setItem('refreshToken', result.AuthenticationResult.RefreshToken);
+                    }
+                    showApp(username);
+                } else {
+                    showLoginScreen();
+                }
+            });
+        }
+        
+        // Enhanced sign in function with retry logic for email
+        async function signIn() {
+            const username = els['auth-username'].value;
+            const password = els['auth-password'].value;
+            
+            if (!username || !password) {
+                notify('Please enter username and password', true);
+                return;
+            }
+            
+            els['auth-status'].innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            
+            const params = {
+                ClientId: poolData.ClientId,
+                AuthFlow: 'USER_PASSWORD_AUTH',
+                AuthParameters: {
+                    'USERNAME': username,
+                    'PASSWORD': password
+                }
+            };
+            
+            cognitoIdentityServiceProvider.initiateAuth(params, async (err, result) => {
+                if (err) {
+                    els['auth-status'].className = 'auth-status signed-out';
+                    els['auth-status'].innerHTML = `<i class="fas fa-times-circle"></i> ${err.message}`;
+                    notify('Sign in failed: ' + err.message, true);
+                    return;
+                }
+
+                // Save tokens
+                localStorage.setItem('idToken', result.AuthenticationResult.IdToken);
+                localStorage.setItem('refreshToken', result.AuthenticationResult.RefreshToken);
+                localStorage.setItem('accessToken', result.AuthenticationResult.AccessToken);
+                localStorage.setItem('username', username);
+                
+                // Get user email with retry logic
+                await getUserEmailWithRetry(result.AuthenticationResult.AccessToken);
+                
+                els['auth-status'].className = 'auth-status signed-in';
+                els['auth-status'].innerHTML = '<i class="fas fa-check-circle"></i> Success! Redirecting...';
+                
+                setTimeout(() => showApp(username), 1000);
+                notify('Signed in successfully!');
+            });
+        }
+
+        // Get user email with retry logic
+        async function getUserEmailWithRetry(accessToken, maxRetries = 3) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const params = {
+                        AccessToken: accessToken
+                    };
+                    
+                    const userData = await new Promise((resolve, reject) => {
+                        cognitoIdentityServiceProvider.getUser(params, (err, data) => {
+                            if (err) reject(err);
+                            else resolve(data);
+                        });
+                    });
+                    
+                    const emailAttribute = userData.UserAttributes.find(attr => attr.Name === 'email');
+                    if (emailAttribute && emailAttribute.Value) {
+                        localStorage.setItem('userEmail', emailAttribute.Value);
+                        console.log('User email saved:', emailAttribute.Value);
+                        return emailAttribute.Value;
+                    }
+                } catch (err) {
+                    console.log(`Attempt ${i + 1} failed to get user email:`, err);
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                    }
+                }
+            }
+            
+            notify('Warning: Could not retrieve user email. Some features may not work.', true);
+            return null;
+        }
+        
+        // Sign out function
+        function signOut() {
+            const username = localStorage.getItem('username');
+            if (username) {
+                localStorage.clear();
+                showLoginScreen();
+                notify('Signed out successfully');
+            }
+        }
+        
+        // Show login screen
+        function showLoginScreen() {
+            els['login-screen'].style.display = 'block';
+            els['app-content'].style.display = 'none';
+            els['auth-status'].className = 'auth-status signed-out';
+            els['auth-status'].innerHTML = '<i class="fas fa-info-circle"></i> Please sign in to continue.';
+        }
+        
+        // Show app content with automatic profile loading
+        async function showApp(username) {
+            els['login-screen'].style.display = 'none';
+            els['app-content'].style.display = 'block';
+            els['user-welcome'].textContent = `Welcome, ${username}!`;
+            
+            // Automatically load profile from cloud
+            await getFromCloud(false);
+            
+            // Check for uploaded resume
+            await checkUploadedResume();
+            
+            // Check for generated resumes
+            await checkGeneratedResumes();
+        }
+
+        
+        // Enhanced save profile function (saves both locally and to cloud)
+        async function saveProfile() {
+            const firstName = els['first-name'].value;
+            const lastName = els['last-name'].value;
+            const resumeName = els['resume-name'].value;
+            
+            if (!firstName || !lastName) {
+                notify('Please fill in first name and last name', true);
+                return;
+            }
+            
+            const profileData = {
+                email: localStorage.getItem("userEmail"),
+                first_name: firstName,
+                last_name: lastName,
+                job_descriptions: els['objectives'].value,
+                resume_name: resumeName || '', // Allow empty resume name
+                savedDate: new Date().toLocaleString()
+            };
+            
+            // Save locally
+            localStorage.setItem('userProfile', JSON.stringify(profileData));
+            
+            // Save to cloud
+            try {
+                await callApiWithRetry('POST', '/profile', profileData);
+                notify('Profile saved successfully!');
+                viewProfile();
+            } catch (err) {
+                notify('Failed to save to cloud: ' + err.message, true);
+            }
+        }
+
+        
+        // View saved profile with expandable UI
+        function viewProfile() {
+            const profileData = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            
+            if (!profileData.first_name) {
+                return;
+            }
+            
+            els['profile-display-content'].innerHTML = `
+                <p><strong>Name:</strong> ${profileData.first_name} ${profileData.last_name}</p>
+                <p><strong>Email:</strong> ${profileData.email || 'Not available'}</p>
+                <p><strong>Resume Status:</strong> ${profileData.resume_name 
+                    ? `<span style="color: #27ae60;">✓ ${profileData.resume_name}</span>` 
+                    : '<span style="color: #e74c3c;">✗ No resume uploaded</span>'}</p>
+                <p><strong>Objectives:</strong> ${profileData.job_descriptions || 'None'}</p>
+                <p><strong>Last Saved:</strong> ${profileData.savedDate || 'Unknown'}</p>
+            `;
+            
+            els['profile-section'].style.display = 'block';
+        }
+        
+        // Get profile from cloud
+        async function getFromCloud(showNotification = true) {
+            try {
+                const email = localStorage.getItem('userEmail');
+                
+                if (!email) {
+                    if (showNotification) {
+                        notify('No user email found. Please sign in again.', true);
+                    }
+                    return;
+                }
+
+                const response = await callApiWithRetry('POST', '/get-profile', { email });
+                
+                if (response && response.email) {
+                    // Save to localStorage
+                    const profileData = {
+                        email: response.email,
+                        first_name: response.first_name || '',
+                        last_name: response.last_name || '',
+                        job_descriptions: response.job_descriptions || '',
+                        resume_name: response.resume_name || '',
+                        savedDate: new Date().toLocaleString()
+                    };
+                    
+                    localStorage.setItem('userProfile', JSON.stringify(profileData));
+                    
+                    // Populate form fields
+                    els['first-name'].value = response.first_name || '';
+                    els['last-name'].value = response.last_name || '';
+                    els['objectives'].value = response.job_descriptions || '';
+                    if (response.resume_name) {
+                        els['resume-name'].value = response.resume_name;
+                        els['resume-name'].style.backgroundColor = '#d4edda'; // Light green to show it's populated
+                    } else {
+                        els['resume-name'].value = '';
+                        els['resume-name'].placeholder = 'No resume uploaded yet';
+                    }
+                    
+                    viewProfile();
+                    
+                    if (showNotification) {
+                        notify('Profile loaded from cloud');
+                    }
+                }
+            } catch (err) {
+                if (showNotification) {
+                    notify('Failed to load from cloud: ' + err.message, true);
+                }
+            }
+        }
+
+        // Enhanced generate API call with progress bar
+        async function callGenerateApi() {
+            const userEmail = localStorage.getItem('userEmail');
+            
+            if (!userEmail) {
+                notify('Could not find user email. Please sign in again.', true);
+                return;
+            }
+
+            try {
+                // First, check if user has uploaded a resume
+                notify('Checking for uploaded resume...');
+                
+                const profileResponse = await callApiWithRetry('POST', '/get-profile', { email: userEmail });
+                
+                if (!profileResponse || !profileResponse.resume_name) {
+                    notify('Please upload your resume before generating', true);
+                    // Highlight the resume upload section
+                    document.querySelector('#resume-file').scrollIntoView({ behavior: 'smooth' });
+                    document.querySelector('#resume-file').style.border = '2px solid #e74c3c';
+                    setTimeout(() => {
+                        document.querySelector('#resume-file').style.border = '1px solid #ddd';
+                    }, 3000);
+                    return;
+                }
+                
+                // Show progress container
+                els['progress-container'].style.display = 'block';
+                updateProgress(0, 'Resume found. Initializing generation process...');
+                
+                // Initial API call
+                const response = await callApiWithRetry('POST', '/generate', { email: userEmail });
+                console.log('Response from /generate:', response);
+                
+                updateProgress(10, 'Request submitted. Processing...');
+                
+                // Start polling for result
+                const result = await pollForResult(userEmail);
+                
+                if (result) {
+                    displayResult(result);
+                    // Refresh the generated resumes list
+                    await checkGeneratedResumes();
+                }
+
+                
+                // Hide progress container
+                setTimeout(() => {
+                    els['progress-container'].style.display = 'none';
+                }, 1000);
+                
+            } catch (err) {
+                console.error('Error calling /generate API:', err);
+                notify('Failed to generate: ' + err.message, true);
+                els['progress-container'].style.display = 'none';
+            }
+        }
+
+
+        // Update progress bar
+        function updateProgress(percentage, text) {
+            els['progress-fill'].style.width = percentage + '%';
+            els['progress-fill'].textContent = percentage + '%';
+            els['progress-text'].textContent = text;
+        }
+
+        // Enhanced polling with progress updates
+        async function pollForResult(email, maxAttempts = 90, intervalMs = 3000) {
+            let attempts = 0;
+            const progressIncrement = 90 / maxAttempts; // Distribute progress from 10% to 100%
+            
+            while (attempts < maxAttempts) {
+                try {
+                    const response = await callApiWithRetry('POST', '/get-profile', { email });
+                    console.log(`Poll attempt ${attempts + 1}:`, response);
+                    
+                    if (response && response.email) {
+                        if (response.modelResponse && response.processingStatus === 'COMPLETED') {
+                            updateProgress(100, 'Processing completed successfully!');
+                            notify('Resume information generated successfully!');
+                            return response.modelResponse;
+                        } else if (response.processingStatus === 'FAILED') {
+                            updateProgress(100, 'Processing failed');
+                            notify('Processing failed: ' + (response.errorMessage || 'Unknown error'), true);
+                            return null;
+                        } else if (response.processingStatus === 'PROCESSING') {
+                            const progress = 10 + (attempts * progressIncrement);
+                            updateProgress(Math.min(progress, 90), `Processing your resume... (${attempts + 1}/${maxAttempts})`);
+                        } else {
+                            const progress = 10 + (attempts * progressIncrement);
+                            updateProgress(Math.min(progress, 90), `Waiting for processing to start... (${attempts + 1}/${maxAttempts})`);
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error checking status (attempt ${attempts + 1}):`, err);
+                    
+                    if (attempts === maxAttempts - 1) {
+                        notify('Failed to get processing status: ' + err.message, true);
+                    }
+                }
+                
+                attempts++;
+                
+                if (attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, intervalMs));
+                }
+            }
+            
+            updateProgress(100, 'Processing timeout reached');
+            notify('Processing timeout reached. Please try again later.', true);
+            return null;
+        }
+
+        // Display result in expandable section
+        function displayResult(data) {
+            console.log('Final result:', data);
+            
+            if (typeof data === 'string') {
+                const formattedContent = formatResumeResponse(data);
+                els['api-response-generate-content'].innerHTML = formattedContent;
+            } else {
+                els['api-response-generate-content'].innerHTML = `<pre class="json-response">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            
+            els['generated-section'].style.display = 'block';
+            
+            // Auto-expand the generated section
+            const header = document.querySelector('#generated-section .expandable-header');
+            const content = document.querySelector('#generated-content');
+            header.classList.add('expanded');
+            content.classList.add('show');
+        }
+
+        // ############# Resume ################
+        async function checkUploadedResume() {
+            try {
+                const email = localStorage.getItem('userEmail');
+                if (!email) return;
+                
+                const profile = await callApiWithRetry('POST', '/get-profile', { email });
+                
+                if (profile && profile.resume_name) {
+                    // Show uploaded resume section
+                    els['uploaded-resume-section'].style.display = 'block';
+                    
+                    // Store the resume key for later use
+                    const resumeKey = `uploads/${profile.resume_name}`;
+                    
+                    els['uploaded-resume-info'].innerHTML = `
+                        <p><strong>File Name:</strong> ${profile.resume_name}</p>
+                        <p><strong>Status:</strong> <span style="color: #27ae60;">✓ Uploaded</span></p>
+                        <div style="margin-top: 10px;">
+                            <button onclick="viewUploadedResumeSecure('${resumeKey}')" class="btn-preview">
+                                <i class="fas fa-eye"></i> Preview Resume
+                            </button>
+                            <button onclick="downloadResumeSecure('${resumeKey}', '${profile.resume_name}')" class="btn-download">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error('Error checking uploaded resume:', err);
+            }
+        }
+
+
+        async function checkGeneratedResumes() {
+            try {
+                const email = localStorage.getItem('userEmail');
+                if (!email) return;
+                
+                // Convert email to S3 folder format (replace @ with _at_ and . with _)
+                const emailFolder = email.replace('@', '_at_').replace(/\./g, '_');
+                
+                // Call API to list objects in the user's output folder
+                const response = await callApiWithRetry('POST', '/list-generated-resumes', { 
+                    email: email,
+                    prefix: `outputs/${emailFolder}/`
+                });
+                
+                if (response && response.resumes && response.resumes.length > 0) {
+                    els['generated-resumes-section'].style.display = 'block';
+                    
+                    let listHtml = '<h4>Your AI Generated Resumes:</h4><ul style="list-style: none; padding: 0;">';
+                    
+                    response.resumes.forEach((resume, index) => {
+                        const resumeName = resume.key.split('/').pop();
+                        
+                        listHtml += `
+                            <li style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <i class="fas fa-file-pdf" style="color: #dc3545;"></i> ${resumeName}
+                                        <br><small style="color: #666;">Generated: ${new Date(resume.lastModified).toLocaleDateString()}</small>
+                                    </div>
+                                    <div>
+                                        <button onclick="viewGeneratedResumeSecure('${resume.key}')" class="btn-preview" style="margin-right: 5px;">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                        <button onclick="downloadResumeSecure('${resume.key}', '${resumeName}')" class="btn-download">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </div>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    
+                    listHtml += '</ul>';
+                    els['generated-resumes-list'].innerHTML = listHtml;
+                }
+            } catch (err) {
+                console.error('Error checking generated resumes:', err);
+            }
+        }
+
+
+
+
+        // Format resume response
+        function formatResumeResponse(responseText) {
+            let formatted = responseText
+                .replace(/(\d+\.\s+[^:]+:)/g, '<h4>$1</h4>')
+                .replace(/\s+-\s+([^\n]+)/g, '<li>$1</li>')
+                .replace(/\s+\*\s+([^\n]+)/g, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^/, '<p>')
+                .replace(/$/, '</p>')
+                .replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>')
+                .replace(/<\/ul><ul>/g, '');
+            
+            return `<div class="resume-response-styled">${formatted}</div>`;
+        }
+        
+        // Preview resume
+        function previewResume() {
+            const file = els['resume-file'].files[0];
+            
+            if (!file) {
+                notify('No file selected', true);
+                return;
+            }
+            
+            if (file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                els['resume-preview-container'].innerHTML = `
+                    <h4>Preview:</h4>
+                    <iframe src="${fileURL}" style="width: 100%; height: 600px; border: 1px solid #ddd;"></iframe>
+                `;
+                els['resume-preview-container'].style.display = 'block';
+            } else {
+                notify('Only PDF files are supported', true);
+            }
+        }
+
+        
+        // Delete resume
+        function deleteResume() {
+            els['resume-file'].value = '';
+            els['file-name'].textContent = '';
+            els['resume-actions'].style.display = 'none';
+            els['resume-preview-container'].style.display = 'none';
+            notify('Resume deleted');
+        }
+        
+        // Add these new functions to replace the direct S3 access
+        async function viewUploadedResumeSecure(resumeKey) {
+            try {
+                notify('Loading resume preview...');
+                const url = await getResumeDownloadUrl(resumeKey);
+                
+                els['uploaded-pdf-viewer'].src = url;
+                els['uploaded-resume-preview'].style.display = 'block';
+                
+                // Auto-expand the section if not already expanded
+                const content = els['uploaded-resume-content'];
+                if (!content.classList.contains('show')) {
+                    toggleSection('uploaded-resume');
+                }
+                
+                notify('Resume loaded successfully!');
+            } catch (err) {
+                notify('Failed to load resume preview', true);
+            }
+        }
+
+        async function viewGeneratedResumeSecure(resumeKey) {
+            try {
+                notify('Loading resume preview...');
+                const url = await getResumeDownloadUrl(resumeKey);
+                
+                els['generated-pdf-viewer'].src = url;
+                els['generated-resume-preview'].style.display = 'block';
+                
+                // Auto-expand the section if not already expanded
+                const content = els['generated-resumes-content'];
+                if (!content.classList.contains('show')) {
+                    toggleSection('generated-resumes');
+                }
+                
+                notify('Resume loaded successfully!');
+            } catch (err) {
+                notify('Failed to load resume preview', true);
+            }
+        }
+
+        async function downloadResumeSecure(resumeKey, filename) {
+            try {
+                notify('Preparing download...');
+                
+                const url = await getResumeDownloadUrl(resumeKey);
+                
+                // Create a temporary anchor element to trigger download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                notify('Resume download started!');
+            } catch (err) {
+                console.error('Download error:', err);
+                notify('Failed to download resume', true);
+            }
+        }
+
+            
+        // Add this new function after your existing API functions
+        async function getResumeDownloadUrl(resumeKey) {
+            try {
+                const response = await callApiWithRetry('POST', '/get-resume-url', {
+                    resumeKey: resumeKey
+                });
+                
+                if (response && response.downloadUrl) {
+                    return response.downloadUrl;
+                }
+                throw new Error('Failed to get download URL');
+            } catch (err) {
+                console.error('Error getting download URL:', err);
+                throw err;
+            }
+        }
+
+
+
+        // Enhanced upload function (no auto-generate)
+        async function uploadFileToS3(file) {
+            console.log("uploading resume...")
+            const email = localStorage.getItem('userEmail');
+
+            if (!email) {
+                notify('User email not found. Please sign in again.', true);
+                return;
+            }
+
+            try {
+                notify('Getting upload URL...');
+
+                const res = await callApiWithRetry('POST', '/get-upload-url', {
+                    fileName: file.name,
+                    fileType: file.type,
+                    email: email
+                });
+
+                const { uploadUrl, fileUrl } = res;
+                notify('Uploading file to S3...');
+
+                const uploadRes = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file
+                });
+
+                if (!uploadRes.ok) throw new Error("Upload failed");
+
+                notify('File uploaded successfully!');
+                console.log('File available at:', fileUrl);
+
+                // Auto-populate the resume name field
+                els['resume-name'].value = file.name;
+                
+                // Update profile data with file name
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                profile.resume_name = file.name;
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+                
+                // Automatically save to database
+                try {
+                    const profileData = {
+                        email: email,
+                        first_name: els['first-name'].value || profile.first_name || '',
+                        last_name: els['last-name'].value || profile.last_name || '',
+                        job_descriptions: els['objectives'].value || profile.job_descriptions || '',
+                        resume_name: file.name,
+                        resume_url: fileUrl // Save the S3 URL as well
+                    };
+                    
+                    await callApiWithRetry('POST', '/profile', profileData);
+                    notify('Resume name saved to profile!');
+                    
+                    // Refresh interface to show uploaded resume
+                    await checkUploadedResume();
+                    viewProfile();
+                } catch (err) {
+                    console.error('Failed to save resume name to profile:', err);
+                    notify('Warning: Resume uploaded but failed to save to profile', true);
+                }
+
+            } catch (err) {
+                console.error(err);
+                notify('Upload failed: ' + err.message, true);
+            }
+        }
+
+
+        // Enhanced API call with retry logic
+        async function callApiWithRetry(method, path, data = null, maxRetries = 3) {
+            let lastError;
+            
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    return await callApi(method, path, data);
+                } catch (err) {
+                    console.error(`API call attempt ${i + 1} failed:`, err);
+                    lastError = err;
+                    
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+                    }
+                }
+            }
+            
+            throw lastError;
+        }
+
+        // Base API call function
+        async function callApi(method, path, data = null) {
+            console.log("Calling API:", method, path);
+            const token = localStorage.getItem('idToken');
+
+            if (!token) {
+                throw new Error('Not authenticated');
+            }
+
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                }
+            };
+
+            if (data) options.body = JSON.stringify(data);
+
+            const apiUrl = baseUrl + path;
+            console.log('Full URL:', apiUrl);
+
+            const response = await fetch(apiUrl, options);
+
+            if (!response.ok) {
+                let errorBody = 'No additional error information.';
+                try {
+                    errorBody = await response.text();
+                } catch (e) { /* ignore */ }
+                throw new Error(`API error: ${response.status} - ${response.statusText}. Body: ${errorBody}`);
+            }
+
+            try {
+                return await response.json();
+            } catch (e) {
+                console.log("Response was not valid JSON or empty.");
+                return null;
+            }
+        }
+        
+        // Show notification
+        function notify(message, isError = false) {
+            els['notification'].textContent = message;
+            els['notification'].className = isError ? 'error' : '';
+            els['notification'].style.display = 'block';
+            
+            setTimeout(() => {
+                els['notification'].style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

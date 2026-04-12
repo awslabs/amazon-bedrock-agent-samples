@@ -1,0 +1,2808 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Template for API Gateway, Lambda, DynamoDB, S3 static website, CloudFront, and Bedrock agents for a smart resume generator.
+  
+  IMPORTANT: Before deploying this template, you must:
+  1. Create an S3 bucket for Lambda layer dependencies and upload the required layer ZIP files
+  2. Ensure you have access to Amazon Bedrock models in the specified region
+  3. Provide a unique Cognito domain prefix
+  4. Provide the API Gateway URL
+
+Parameters:
+  DependenciesBucketName:
+    Type: String
+    Default: 'smart-resume-dependencies'
+    Description: 'Name of the S3 bucket for Lambda layer dependencies. Note: You must upload the required layer ZIP files to this bucket before deploying this template.'
+  
+  BedrockModelRegion:
+    Type: String
+    Default: 'us-east-1'
+    Description: 'AWS Region where the Bedrock models are available. This may be different from the region where you deploy this stack.'
+    AllowedValues:
+      - 'us-east-1'
+      - 'us-west-2'
+    
+  PyPDF2LayerArn:
+    Type: String
+    Description: 'ARN of an existing PyPDF2 Lambda layer. If provided, this will be used instead of creating a new layer.'
+    Default: ''
+    
+  CloudFrontDomainName:
+    Type: String
+    Description: 'The domain name of the CloudFront distribution. If provided, this will be used for the Cognito callback URL.'
+    Default: ''
+
+Conditions:
+  CreatePyPDF2Layer: !Equals [!Ref PyPDF2LayerArn, '']
+  UseProvidedCloudFrontDomain: !Not [!Equals [!Ref CloudFrontDomainName, '']]
+
+Resources:
+  # DynamoDB Table
+  ProfilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ProfilesTable
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S  # String type
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH  # Partition key
+      BillingMode: PAY_PER_REQUEST
+
+  ################### Lambda Functions #####################################
+  ################ Lambda 1 ##################
+  # Profile fucntion
+  ProfileLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt LambdaJobRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import time
+          import os
+          
+          dynamodb = boto3.resource('dynamodb')
+          table_name = os.environ.get('TABLE_NAME')
+          
+          import uuid
+          from datetime import datetime
+
+          def lambda_handler(event, context):
+              try:
+                  # Get the table name from environment variable
+                  table = dynamodb.Table(table_name)
+                  if event['requestContext']['http']['path']=='/profile' and 'body' in event:
+                      # If the body is a string (which is common from API Gateway), parse it as JSON
+                      if isinstance(event['body'], str):
+                          body = json.loads(event['body'])
+                      else:
+                          body = event['body']
+                  
+                  # Add a unique ID and timestamp to the item
+                  item = {
+                      'id': str(uuid.uuid4()),  # Generate a unique ID
+                      'timestamp': datetime.utcnow().isoformat(),
+                      **body  # Unpack the request body into the item
+                  }
+                  
+                  for key, value in item.items():
+                      if value == '':
+                          item[key] = None
+                      else:
+                          item[key] = value
+
+                  # Write the item to DynamoDB
+                  resp=table.put_item(Item=item)
+                  print(f'this is resp{resp}')
+                  
+                  return {
+                      'statusCode': 201,
+                      'headers': {
+                          'Content-Type': 'application/json'
+                      },
+                      'body': json.dumps({
+                          'message': 'Data successfully written to DynamoDB',
+                          'id': item['id']
+                      })
+                  }
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({
+                          'message': 'Error writing to DynamoDB',
+                          'error': str(e)
+                      })
+                  }
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProfilesTable
+
+  LambdaJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'smart_job-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref LambdaRolePolicy
+        - !Ref LambdaLogGroupPolicy
+        - !Ref LambdaDynamoDBPolicy
+
+  LambdaRolePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: 'arn:aws:logs:*:*:log-group:/aws/lambda/*'
+
+  
+
+  LambdaDynamoDBPolicy:
+      Type: AWS::IAM::ManagedPolicy
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt ProfilesTable.Arn
+
+  ################ Lambda 2 ##################
+  # Lambda Function for Bedrock Agent
+  InvokeBedrockAgentLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: invoke-bedrock-agent-generate
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt BedrockAgentLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import os
+          import time
+
+          table_name = os.environ.get('TABLE_NAME')
+          processor_function_name = os.environ.get('PROCESSOR_FUNCTION_NAME', 'bedrock-processing-function')
+
+          def lambda_handler(event, context):
+              # Initialize AWS clients
+              dynamodb = boto3.resource('dynamodb')
+              print(event)
+              
+              try:
+                  # Parse the incoming request body
+                  body = json.loads(event['body'])
+                  user_email = body.get('email')
+                  print(user_email)
+                  print(event['body'])
+                  
+                  if not user_email:
+                      return {
+                          'statusCode': 400,
+                          'headers': {
+                              'Access-Control-Allow-Origin': '*',
+                              'Access-Control-Allow-Headers': 'Content-Type',
+                              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                          },
+                          'body': json.dumps({'error': 'Email is required'})
+                      }
+                  
+                  # Get user data from DynamoDB
+                  table = dynamodb.Table(table_name)
+                  response = table.get_item(
+                      Key={'email': user_email}
+                  )
+                  print(response)
+                  
+                  # Check if user exists
+                  if 'Item' not in response:
+                      return {
+                          'statusCode': 404,
+                          'headers': {
+                              'Access-Control-Allow-Origin': '*',
+                              'Access-Control-Allow-Headers': 'Content-Type',
+                              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                          },
+                          'body': json.dumps({'error': 'User not found'})
+                      }
+                  
+                  # Extract resume name and job descriptions
+                  user_data = response['Item']
+                  resume_name = user_data.get('resume_name')
+                  job_descriptions = user_data.get('job_descriptions')
+                  print(f"Resume name: {resume_name}")
+                  
+                  # Ensure text fields are present
+                  if not resume_name or not job_descriptions:
+                      return {
+                          'statusCode': 400,
+                          'headers': {
+                              'Access-Control-Allow-Origin': '*',
+                              'Access-Control-Allow-Headers': 'Content-Type',
+                              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                          },
+                          'body': json.dumps({'error': 'Missing resume or job descriptions'})
+                      }
+
+                  # Update DynamoDB to show processing has started
+                  table.update_item(
+                      Key={'email': user_email},
+                      UpdateExpression='SET processingStatus = :status, lastUpdated = :timestamp, errorMessage = :empty_error',
+                      ExpressionAttributeValues={
+                          ':status': 'PROCESSING',
+                          ':timestamp': int(time.time()),
+                          ':empty_error': ''  # Clear any existing error message
+                      }
+                  )
+                  print(f"Updated DynamoDB status to PROCESSING for {user_email}")
+
+                  # Invoke the processing Lambda asynchronously
+                  lambda_client = boto3.client('lambda')
+                  invoke_response = lambda_client.invoke(
+                      FunctionName=processor_function_name,
+                      InvocationType='Event',  # Async invocation
+                      Payload=json.dumps({
+                          'email': user_email,
+                          'resume_name': resume_name,  # Use actual data, not placeholder
+                          'job_descriptions': job_descriptions,  # Use actual data, not placeholder
+                          'table_name': table_name
+                      })
+                  )
+                  
+                  print(f"Invoked processing function for {user_email}. Response: {invoke_response}")
+
+                  # Return success immediately
+                  return {
+                      'statusCode': 202,  # 202 Accepted for async processing
+                      'headers': {
+                          'Access-Control-Allow-Origin': '*',
+                          'Access-Control-Allow-Headers': 'Content-Type',
+                          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                      },
+                      'body': json.dumps({
+                          'message': 'Processing started successfully',
+                          'email': user_email,
+                          'status': 'PROCESSING'
+                      })
+                  }
+                  
+              except Exception as e:
+                  print(f"Error in main handler: {e}")
+                  
+                  # Try to update DynamoDB with error status if we have the user_email
+                  try:
+                      if 'user_email' in locals():
+                          table = dynamodb.Table(table_name)
+                          table.update_item(
+                              Key={'email': user_email},
+                              UpdateExpression='SET processingStatus = :status, errorMessage = :error, lastUpdated = :timestamp',
+                              ExpressionAttributeValues={
+                                  ':status': 'FAILED',
+                                  ':error': f"Invocation error: {str(e)}",
+                                  ':timestamp': int(time.time())
+                              }
+                          )
+                  except Exception as db_error:
+                      print(f"Failed to update DynamoDB with error: {db_error}")
+                  
+                  return {
+                      'statusCode': 500,
+                      'headers': {
+                          'Access-Control-Allow-Origin': '*',
+                          'Access-Control-Allow-Headers': 'Content-Type',
+                          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                      },
+                      'body': json.dumps({'error': str(e)})
+                  }
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProfilesTable
+          PROCESSOR_FUNCTION_NAME: !Ref BedrockProcessingLambda
+
+
+
+
+  # IAM Policy for Bedrock Agent Access
+  # Updated IAM Policy for Bedrock Agent Access
+  BedrockAgentLambdaPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'bedrock:InvokeAgent'
+              - 'bedrock-agent-runtime:InvokeAgent'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: 'arn:aws:logs:*:*:*'
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource: !GetAtt BedrockProcessingLambda.Arn
+
+
+  # API Gateway Integration
+  BedrockAgentIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt InvokeBedrockAgentLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # API Gateway Route
+  BedrockAgentRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /generate'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref BedrockAgentIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Lambda Permission for API Gateway
+  BedrockAgentLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref InvokeBedrockAgentLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+    
+  ################ LAMBDA 3 ##########################
+  # Lambda Function for Presigned URL Generation
+  PresignedUrlLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: generate-presigned-url
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt PresignedUrlLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          import json
+          
+          s3 = boto3.client('s3')
+          bucket = os.environ['BUCKET_NAME']
+          
+          def lambda_handler(event, context):
+              print(event)
+              body = json.loads(event['body'])
+              file_name = body['fileName']
+              file_type = body['fileType']
+              
+              upload_url = s3.generate_presigned_url(
+                  ClientMethod='put_object',
+                  Params={
+                      'Bucket': bucket,
+                      'Key': f"uploads/{file_name}",
+                      'ContentType': file_type
+                  },
+                  ExpiresIn=300
+              )
+              
+              return {
+                  'statusCode': 200,
+                  'headers': { 'Content-Type': 'application/json' },
+                  'body': json.dumps({
+                      'uploadUrl': upload_url,
+                      'fileUrl': f"https://{bucket}.s3.amazonaws.com/uploads/{file_name}"
+                  })
+              }
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+
+  # IAM Role for Presigned URL Lambda
+  PresignedUrlLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'presigned-url-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref PresignedUrlS3Policy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for S3 Access
+  PresignedUrlS3Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+            
+
+  # API Gateway Integration
+  PresignedUrlIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt PresignedUrlLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # API Gateway Route
+  PresignedUrlRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /get-upload-url'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref PresignedUrlIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Lambda Permission for API Gateway
+  PresignedUrlLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PresignedUrlLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+
+
+  
+  
+  ############### Lambda 4 ##############
+  # Lambda Function for Profile Retrieval
+  ProfileRetrievalLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: profile-retrieval-function
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt ProfileRetrievalLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          
+          # Initialize DynamoDB client
+          dynamodb = boto3.resource('dynamodb')
+          table_name = os.environ.get('TABLE_NAME')
+          
+          def lambda_handler(event, context):
+              try:
+                  # Reference the table
+                  table = dynamodb.Table(table_name)
+                  print(event)
+                  
+                  # Ensure correct path and body is present
+                  if event['requestContext']['http']['path'] == '/get-profile' and 'body' in event:
+                      # Parse JSON body
+                      if isinstance(event['body'], str):
+                          body = json.loads(event['body'])
+                      else:
+                          body = event['body']
+                      
+                      # Extract email
+                      email = body.get('email')
+                      if not email:
+                          return {
+                              'statusCode': 400,
+                              'headers': {
+                                  'Content-Type': 'application/json'
+                              },
+                              'body': json.dumps({'error': 'Email is required'})
+                          }
+                      print(email)
+                      # Fetch item from DynamoDB
+                      response = table.get_item(Key={'email': email})
+                      print(response)
+                      
+                      # Return result
+                      if 'Item' in response:
+                          return {
+                              'statusCode': 200,
+                              'headers': {
+                                  'Content-Type': 'application/json'
+                              },
+                              'body': json.dumps(response['Item'], default=str)
+                          }
+                      else:
+                          return {
+                              'statusCode': 404,
+                              'headers': {
+                                  'Content-Type': 'application/json'
+                              },
+                              'body': json.dumps({'error': 'User not found'})
+                          }
+                  
+                  # Handle incorrect path
+                  return {
+                      'statusCode': 400,
+                      'headers': {
+                          'Content-Type': 'application/json'
+                      },
+                      'body': json.dumps({'error': 'Invalid request path'})
+                  }
+                  
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'headers': {
+                          'Content-Type': 'application/json'
+                      },
+                      'body': json.dumps({
+                          'error': str(e),
+                          'message': 'Failed to retrieve user profile'
+                      })
+                  }
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProfilesTable
+
+  # IAM Role for Profile Retrieval Lambda
+  ProfileRetrievalLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'profile-retrieval-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref ProfileDynamoDBAccessPolicy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for DynamoDB Access
+  ProfileDynamoDBAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+            Resource: !GetAtt ProfilesTable.Arn
+
+  # HTTP API Gateway Route for get-profile
+  GetProfileRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /get-profile'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref ProfileLambdaIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Integration with Profile Retrieval Lambda function
+  ProfileLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ProfileRetrievalLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # Lambda permission for API Gateway to invoke the Profile Retrieval Lambda
+  ProfileLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ProfileRetrievalLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+  
+  # API Gateway Integration for List Generated Resumes
+  ListGeneratedResumesIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ListGeneratedResumesLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # API Gateway Route
+  ListGeneratedResumesRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /list-generated-resumes'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref ListGeneratedResumesIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Lambda Permission for API Gateway
+  ListGeneratedResumesLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ListGeneratedResumesLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+
+  ############################### Lambda 5 #############################
+  # Lambda Function for DynamoDB Update
+  DynamoUpdateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: extractor-store-in-table
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt DynamoUpdateLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          from decimal import Decimal
+          
+          dynamodb = boto3.resource('dynamodb')
+          table_name = os.environ.get('TABLE_NAME')
+          table = dynamodb.Table(table_name)
+          
+          def convert_floats_to_decimals(obj):
+              if isinstance(obj, float):
+                  return Decimal(str(obj))
+              elif isinstance(obj, dict):
+                  return {k: convert_floats_to_decimals(v) for k, v in obj.items()}
+              elif isinstance(obj, list):
+                  return [convert_floats_to_decimals(v) for v in obj]
+              return obj
+          
+          def lambda_handler(event, context):
+              agent = event['agent']
+              actionGroup = event['actionGroup']
+              function = event['function']
+              parameters = event.get('parameters', [])
+              
+              print("Parameters: {}".format(parameters))
+              print("Action Group: {}".format(actionGroup))
+              print("Function: {}".format(function))
+              print("Agent: {}".format(agent))
+              
+              try:
+                  resume_json_string = parameters[0]['value']
+                  resume_data = json.loads(resume_json_string, parse_float=Decimal)
+                  resume_data = convert_floats_to_decimals(resume_data)
+                  
+                  email = parameters[1]['value']
+                  print(f"Email: {email}")
+                  
+                  existing_item = table.get_item(Key={'email': email})
+                  if 'Item' not in existing_item:
+                      raise Exception(f"No record found for email: {email}")
+                  
+                  update_response = table.update_item(
+                      Key={'email': email},
+                      UpdateExpression="SET properties = :p",
+                      ExpressionAttributeValues={':p': resume_data},
+                      ReturnValues="UPDATED_NEW"
+                  )
+                  
+                  print("Update response:")
+                  print(update_response)
+                  
+                  responseBody = {
+                      "TEXT": {
+                          "body": "Resume data successfully updated for email: {}".format(email)
+                      }
+                  }
+                  
+                  action_response = {
+                      'actionGroup': actionGroup,
+                      'function': function,
+                      'functionResponse': {
+                          'responseBody': responseBody
+                      }
+                  }
+                  
+                  return {'response': action_response, 'messageVersion': event['messageVersion']}
+                  
+              except Exception as e:
+                  print("Error: ", str(e))
+                  responseBody = {
+                      "TEXT": {
+                          "body": "An error occurred: {}".format(str(e))
+                      }
+                  }
+                  
+                  action_response = {
+                      'actionGroup': actionGroup,
+                      'function': function,
+                      'functionResponse': {
+                          'responseBody': responseBody
+                      }
+                  }
+                  
+                  return {'response': action_response, 'messageVersion': event['messageVersion']}
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProfilesTable
+
+  # IAM Role for DynamoDB Update Lambda
+  DynamoUpdateLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'dynamo-update-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref DynamoDBAccessPolicy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for DynamoDB Access
+  DynamoDBAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+              - 'dynamodb:UpdateItem'
+            Resource: !GetAtt ProfilesTable.Arn
+  
+  ###################### Lambda 6 ###########################
+  # IAM Role for the PDF Extraction Lambda
+  PDFExtractionLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'pdf-extraction-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref PDFExtractionS3Policy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for S3 Access
+  PDFExtractionS3Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/uploads/*'
+
+  # PDF Extraction Lambda Function
+  PDFExtractionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: pdf-text-extractor
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt PDFExtractionLambdaRole.Arn
+      Layers:
+        - !If [CreatePyPDF2Layer, !Ref PyPDF2Layer, !Ref PyPDF2LayerArn]
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import base64
+          import PyPDF2
+          import io
+          import os
+          from botocore.exceptions import ClientError
+
+          BUCKET_NAME = os.environ.get('BUCKET_NAME')
+
+          def lambda_handler(event, context):
+              # Extract event information
+              agent = event['agent']
+              actionGroup = event['actionGroup']
+              function = event['function']
+              parameters = event.get('parameters', [])
+              
+              try:
+                  # Get the file path from parameters
+                  s3_resume_path = next((param['value'] for param in parameters if param['name'] == 's3_resume_name'), None)
+                  
+                  if not s3_resume_path:
+                      raise ValueError("s3_resume_path parameter is required")
+                  
+                  # Initialize S3 client
+                  s3_client = boto3.client('s3')
+                  
+                  # Get the PDF file from S3
+                  response = s3_client.get_object(
+                      Bucket=BUCKET_NAME,
+                      Key="uploads/"+s3_resume_path
+                  )
+                  
+                  # Read the PDF content
+                  pdf_content = response['Body'].read()
+                  
+                  # Convert to base64
+                  base64_pdf = base64.b64encode(pdf_content).decode('utf-8')
+                  
+                  # Extract text from PDF
+                  pdf_file = io.BytesIO(pdf_content)
+                  pdf_reader = PyPDF2.PdfReader(pdf_file)
+                  text_content = ""
+                  for page in pdf_reader.pages:
+                      text_content += page.extract_text()
+                  
+                  responseBody = {
+                      "TEXT": {
+                          "body": text_content
+                      }
+                  }
+                  
+              except ClientError as e:
+                  responseBody = {
+                      "TEXT": {
+                          "body": f"Error accessing S3: {str(e)}"
+                      }
+                  }
+              except Exception as e:
+                  responseBody = {
+                      "TEXT": {
+                          "body": f"Error: {str(e)}"
+                      }
+                  }
+
+              action_response = {
+                  'actionGroup': actionGroup,
+                  'function': function,
+                  'functionResponse': {
+                      'responseBody': responseBody
+                  }
+              }
+
+              response = {
+                  'response': action_response,
+                  'messageVersion': event['messageVersion']
+              }
+              
+              print(f"Response: {json.dumps(response)}")
+              return response
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+      Timeout: 30
+      MemorySize: 256
+
+  ###################### Lambda 7 ###########################
+
+  MarkdownToPdfLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: html-to-pdf  # Changed from markdown-to-pdf
+      Handler: index.lambda_handler
+      Role: !GetAtt MarkdownToPdfLambdaRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+      Layers:
+        - !Ref MarkdownLayer
+      Code:
+        ZipFile: |
+          import json
+          from datetime import datetime
+          import boto3
+          from reportlab.pdfgen import canvas
+          from reportlab.lib.pagesizes import letter
+          from io import BytesIO
+          import markdown
+          from bs4 import BeautifulSoup
+          from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+          from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, HRFlowable
+          from reportlab.lib.units import inch
+          from reportlab.lib import colors
+          import os
+
+          bucket_name = os.environ['BUCKET_NAME']
+
+          def convert(html_text):
+              buffer = BytesIO()
+              doc = SimpleDocTemplate(
+                  buffer,
+                  pagesize=letter,
+                  leftMargin=0.5*inch,
+                  rightMargin=0.5*inch,
+                  topMargin=0.5*inch,
+                  bottomMargin=0.5*inch
+              )
+              
+              # Create styles
+              styles = getSampleStyleSheet()
+              
+              # Modify existing Normal style
+              styles['Normal'].fontSize = 10
+              styles['Normal'].spaceAfter = 8
+              styles['Normal'].alignment = 0
+              
+              # Custom styles with unique names
+              styles.add(ParagraphStyle(
+                  name='ResumeH1',
+                  fontName='Helvetica-Bold',
+                  fontSize=16,
+                  spaceAfter=6,
+                  alignment=0  # 0=left, 1=center, 2=right
+              ))
+              
+              styles.add(ParagraphStyle(
+                  name='ResumeH2',
+                  fontName='Helvetica-Bold',
+                  fontSize=14,
+                  spaceAfter=6,
+                  spaceBefore=12,
+                  alignment=0
+              ))
+              
+              styles.add(ParagraphStyle(
+                  name='ResumeH3',
+                  fontName='Helvetica-Bold',
+                  fontSize=12,
+                  spaceAfter=6,
+                  spaceBefore=6,
+                  alignment=0
+              ))
+              
+              styles.add(ParagraphStyle(
+                  name='ResumeListItem',
+                  fontName='Helvetica',
+                  fontSize=10,
+                  leftIndent=20,
+                  firstLineIndent=-15,
+                  spaceAfter=3,
+                  bulletIndent=0
+              ))
+              
+              # Definition list styles
+              styles.add(ParagraphStyle(
+                  name='ResumeDT',
+                  fontName='Helvetica-Bold',
+                  fontSize=11,
+                  spaceBefore=8,
+                  spaceAfter=2,
+                  alignment=0
+              ))
+              
+              styles.add(ParagraphStyle(
+                  name='ResumeDD',
+                  fontName='Helvetica',
+                  fontSize=10,
+                  leftIndent=20,
+                  spaceAfter=8,
+                  alignment=0
+              ))
+              
+              # Parse HTML
+              soup = BeautifulSoup(html_text, 'html.parser')
+              
+              # Create story (list of flowables)
+              story = []
+              
+              # Helper function to process nested elements
+              def process_element(element):
+                  if element.name == 'h1':
+                      story.append(Paragraph(element.get_text().strip(), styles['ResumeH1']))
+                      
+                  elif element.name == 'h2':
+                      story.append(Paragraph(element.get_text().strip(), styles['ResumeH2']))
+                      
+                  elif element.name == 'h3':
+                      story.append(Paragraph(element.get_text().strip(), styles['ResumeH3']))
+                      
+                  elif element.name == 'hr':
+                      story.append(Spacer(1, 0.1*inch))
+                      story.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+                      story.append(Spacer(1, 0.1*inch))
+                      
+                  elif element.name == 'p':
+                      html_content = str(element)
+                      story.append(Paragraph(html_content, styles['Normal']))
+                      
+                  elif element.name == 'ul' and element.parent.name != 'li':
+                      # Process each list item in the unordered list
+                      for li in element.find_all('li', recursive=False):
+                          # Get only the direct text content of the li element
+                          text_content = ''.join(child.strip() for child in li.children 
+                                              if isinstance(child, str))
+                          bullet_text = '• ' + text_content
+                          story.append(Paragraph(bullet_text, styles['ResumeListItem']))
+                          
+                  elif element.name == 'dl':
+                      # Process definition lists
+                      dt_elements = element.find_all('dt', recursive=False)
+                      dd_elements = element.find_all('dd', recursive=False)
+                      for i in range(len(dt_elements)):
+                          dt = dt_elements[i]
+                          dt_html = str(dt)
+                          story.append(Paragraph(dt_html, styles['ResumeDT']))
+                          
+                          if i < len(dd_elements):
+                              dd = dd_elements[i]
+                              # First add the italicized company/location info
+                              for em in dd.find_all('em', recursive=False):
+                                  story.append(Paragraph(str(em), styles['ResumeDD']))
+                              
+                              # Then process the bullet points
+                              for ul in dd.find_all('ul', recursive=False):
+                                  for li in ul.find_all('li'):
+                                      bullet_text = '• ' + li.get_text().strip()
+                                      story.append(Paragraph(bullet_text, styles['ResumeListItem']))
+                  
+                  elif element.name == 'div':
+                      # Process div contents recursively
+                      for child in element.children:
+                          if isinstance(child, str):
+                              if child.strip():
+                                  story.append(Paragraph(child, styles['Normal']))
+                          elif hasattr(child, 'name'):
+                              process_element(child)
+              
+              # Process all top-level elements
+              for element in soup:
+                  if hasattr(element, 'name'):
+                      process_element(element)
+              
+              # Build PDF
+              doc.build(story)
+              return buffer.getvalue()
+
+          def lambda_handler(event, context):
+              # Extract event information
+              agent = event['agent']
+              actionGroup = event['actionGroup']
+              function = event['function']
+              parameters = event.get('parameters', [])
+              print(parameters)
+              email = next((param['value'] for param in parameters if param['name'] == 'email'), None)
+              print(email)
+              if not email:
+                  raise ValueError("Missing required 'email' in event")
+              parameters = [param for param in parameters if param.get('name') != 'email']
+
+              safe_email = email.replace("@", "_at_").replace(".", "_")
+
+              # Initialize S3 client
+              s3 = boto3.client('s3')
+              FOLDER_NAME = f'outputs/{safe_email}/'
+              
+              success = True
+              error_message = ""
+              processed_files = []
+              
+              try:
+                  # Process up to three HTML strings
+                  for idx, param in enumerate(parameters[:3]):
+                      html_text = param.get('value')
+                      print(f"HTML text: {html_text}")
+                      if html_text:
+                          # Convert HTML to PDF directly
+                          pdf = convert(html_text)
+                          
+                          # Generate timestamp
+                          timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+                          # Upload to S3
+                          file_name = f'{FOLDER_NAME}resume_{idx + 1}_{timestamp}.pdf'
+                          s3.put_object(
+                              Bucket=bucket_name,
+                              Key=file_name,
+                              Body=pdf,
+                              ContentType='application/pdf'
+                          )
+                          processed_files.append(file_name)
+                  
+                  status_message = f"Successfully processed {len(processed_files)} resumes: {', '.join(processed_files)}"
+              except Exception as e:
+                  success = False
+                  error_message = str(e)
+                  status_message = f"Error processing resumes: {error_message}"
+              
+              # Prepare response
+              responseBody = {
+                  "TEXT": {
+                      "body": status_message
+                  }
+              }
+              action_response = {
+                  'actionGroup': actionGroup,
+                  'function': function,
+                  'functionResponse': {
+                      'responseBody': responseBody
+                  }
+              }
+              
+              response = {
+                  'response': action_response,
+                  'messageVersion': event['messageVersion']
+              }
+              
+              print("Response: {}".format(response))
+              return response
+
+  MarkdownToPdfLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: MarkdownToPdfS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${WebsiteBucket}/*
+
+  ################ Lambda 8 ###########################
+  # Processing Lambda for Bedrock Agent
+  BedrockProcessingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: bedrock-processing-function
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt BedrockProcessingLambdaRole.Arn
+      Timeout: 300  # 5 minutes
+      MemorySize: 512
+      Code:
+        ZipFile: |
+          import boto3
+          from botocore.config import Config
+          import json
+          import os
+          import uuid
+          import time
+
+          agent_id = os.environ.get('AGENT_ID')
+          agent_alias_id = os.environ.get('AGENT_ALIAS_ID')
+
+          config = Config(
+              read_timeout=300,  # 5 minutes
+              connect_timeout=60,
+              retries={'max_attempts': 3}
+          )
+
+          def lambda_handler(event, context):
+              """
+              Processing Lambda - handles the actual Bedrock request
+              """
+              print(f"Processing Lambda received event: {event}")
+              
+              # Extract data from the event (passed from invoke Lambda)
+              user_email = event.get('email')
+              resume_name = event.get('resume_name')
+              job_descriptions = event.get('job_descriptions')
+              table_name = event.get('table_name')
+              
+              if not all([user_email, resume_name, job_descriptions, table_name]):
+                  error_msg = "Missing required parameters in event"
+                  print(f"Error: {error_msg}")
+                  print(f"Received: email={user_email}, resume_name={resume_name}, job_descriptions={bool(job_descriptions)}, table_name={table_name}")
+                  return {'statusCode': 400, 'body': json.dumps({'error': error_msg})}
+              
+              # Generate a unique sessionId for this interaction
+              session_id = str(uuid.uuid4())
+              
+              try:
+                  # Initialize clients
+                  bedrock_agent_runtime = boto3.client('bedrock-agent-runtime', config=config)
+                  dynamodb = boto3.resource('dynamodb')
+                  table = dynamodb.Table(table_name)
+                  
+                  print(f"Starting Bedrock processing for {user_email}")
+                  
+                  # Construct the prompt
+                  prompt_text = (
+                      "=== EMAIL ===\n"
+                      f"{user_email}\n\n"
+                      "=== RESUME NAME ===\n"
+                      f"{resume_name}\n\n"
+                      "=== JOB DESCRIPTIONS ===\n"
+                      f"{job_descriptions}\n\n"
+                  )
+                  
+                  print(f"Constructed prompt for {user_email}")
+                  
+                  # Invoke Bedrock Agent
+                  bedrock_response = bedrock_agent_runtime.invoke_agent(
+                      agentId=agent_id,
+                      agentAliasId=agent_alias_id,
+                      sessionId=session_id,
+                      inputText=prompt_text
+                  )
+                  
+                  print(f"Bedrock response received for {user_email}")
+                  
+                  # Extract the streamed response from the event stream
+                  full_response = ""
+                  for event_chunk in bedrock_response['completion']:
+                      if 'chunk' in event_chunk:
+                          chunk_data = event_chunk['chunk']['bytes'].decode('utf-8')
+                          full_response += chunk_data
+                  
+                  print(f"Full response processed for {user_email}. Length: {len(full_response)}")
+                  
+                  # Update DynamoDB with the successful result
+                  table.update_item(
+                      Key={'email': user_email},
+                      UpdateExpression='SET modelResponse = :response, processingStatus = :status, lastUpdated = :timestamp',
+                      ExpressionAttributeValues={
+                          ':response': full_response,
+                          ':status': 'COMPLETED',
+                          ':timestamp': int(time.time())
+                      }
+                  )
+                  
+                  print(f"DynamoDB updated successfully for {user_email}")
+                  
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Processing completed successfully',
+                          'email': user_email,
+                          'responseLength': len(full_response)
+                      })
+                  }
+                  
+              except Exception as e:
+                  print(f"Error processing Bedrock request for {user_email}: {e}")
+                  
+                  try:
+                      # Update DynamoDB with error status
+                      dynamodb = boto3.resource('dynamodb')
+                      table = dynamodb.Table(table_name)
+                      
+                      table.update_item(
+                          Key={'email': user_email},
+                          UpdateExpression='SET processingStatus = :status, errorMessage = :error, lastUpdated = :timestamp',
+                          ExpressionAttributeValues={
+                              ':status': 'FAILED',
+                              ':error': str(e),
+                              ':timestamp': int(time.time())
+                          }
+                      )
+                      
+                      print(f"DynamoDB updated with error status for {user_email}")
+                      
+                  except Exception as db_error:
+                      print(f"Failed to update DynamoDB with error status: {db_error}")
+                  
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({
+                          'error': str(e),
+                          'email': user_email
+                      })
+                  }
+      Environment:
+        Variables:
+          AGENT_ID: !Ref SupervisorAgent
+          AGENT_ALIAS_ID: !GetAtt SupervisorAgentAlias.AgentAliasId
+          TABLE_NAME: !Ref ProfilesTable
+
+  ################ Lambda 9 ###########################
+  # SNS Notification Lambda for S3 Events
+  S3NotificationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: invoke-sns-topic-from-s3
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt S3NotificationLambdaRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import re
+          import os
+          from urllib.parse import unquote_plus
+
+          def lambda_handler(event, context):
+              """
+              Lambda function to process S3 PUT events and send filtered SNS notifications
+              """
+              # Get environment variables
+              sns_topic_arn = os.environ.get('SNS_TOPIC_ARN')
+              
+              if not sns_topic_arn:
+                  print("ERROR: SNS_TOPIC_ARN environment variable not set")
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps('Missing required environment variables')
+                  }
+              
+              sns_client = boto3.client('sns')
+              
+              try:
+                  for record in event['Records']:
+                      # Extract S3 event details
+                      bucket_name = record['s3']['bucket']['name']
+                      object_key = unquote_plus(record['s3']['object']['key'])
+                      object_size = record['s3']['object']['size']
+                      event_name = record['eventName']
+                      event_time = record['eventTime']
+                      
+                      print(f"Processing S3 event: {event_name}")
+                      print(f"Object: {object_key}")
+                      print(f"Bucket: {bucket_name}")
+                      
+                      # Only process ObjectCreated events in the outputs folder
+                      if not event_name.startswith('ObjectCreated') or not object_key.startswith('outputs/'):
+                          print(f"Skipping event {event_name} for object {object_key}")
+                          continue
+                      
+                      # Extract folder name (user identifier) from object key
+                      # From: outputs/jonetann_at_amazon_com/resume_1_20250605_184025.pdf
+                      # Extract: jonetann_at_amazon_com
+                      folder_name = extract_folder_name_from_s3_key(object_key)
+                      if not folder_name:
+                          print(f"Could not extract folder name from object key: {object_key}")
+                          continue
+                      
+                      # Convert folder name to email format for display
+                      user_email = folder_name_to_email(folder_name)
+                      file_name = object_key.split('/')[-1]
+                      
+                      print(f"Extracted folder name: {folder_name}")
+                      print(f"Converted to email: {user_email}")
+                      
+                      # Create the SNS message
+                      message = {
+                          "default": f"Your resume has been successfully generated!",
+                          "email": f"""Hello,
+
+          Your resume has been successfully processed and generated!
+
+          Details:
+          - File: {file_name}
+          - Generated: {event_time}
+          - Size: {object_size} bytes
+          - Location: {object_key}
+
+          You can now download your resume from the application.
+
+          Best regards,
+          Resume Generator Team"""
+                      }
+                      
+                      # Message attributes for filtering
+                      message_attributes = {
+                          'user_folder': {
+                              'DataType': 'String',
+                              'StringValue': folder_name
+                          },
+                          'user_email': {
+                              'DataType': 'String', 
+                              'StringValue': user_email
+                          },
+                          'event_type': {
+                              'DataType': 'String',
+                              'StringValue': 'resume_generated'
+                          },
+                          'bucket_name': {
+                              'DataType': 'String',
+                              'StringValue': bucket_name
+                          },
+                          'file_name': {
+                              'DataType': 'String',
+                              'StringValue': file_name
+                          }
+                      }
+                      
+                      # Publish to SNS with message attributes
+                      response = sns_client.publish(
+                          TopicArn=sns_topic_arn,
+                          Message=json.dumps(message),
+                          Subject=f'Resume Ready: {file_name}',
+                          MessageStructure='json',
+                          MessageAttributes=message_attributes
+                      )
+                      
+                      print(f"SNS message published for folder: {folder_name}")
+                      print(f"MessageId: {response['MessageId']}")
+                      
+              except Exception as e:
+                  print(f"Error processing S3 event: {str(e)}")
+                  # Don't raise exception to avoid Lambda retries for this type of error
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps(f'Error processing event: {str(e)}')
+                  }
+              
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps('S3 events processed successfully')
+              }
+
+          def extract_folder_name_from_s3_key(object_key):
+              """
+              Extract folder name from S3 object key
+              From: outputs/jonetann_at_amazon_com/resume_1_20250605_184025.pdf
+              Returns: jonetann_at_amazon_com
+              """
+              try:
+                  match = re.search(r'outputs/([^/]+)/', object_key)
+                  if match:
+                      return match.group(1)
+                  return None
+              except Exception as e:
+                  print(f"Error extracting folder name from key {object_key}: {e}")
+                  return None
+
+          def folder_name_to_email(folder_name):
+              """
+              Convert folder name to email format for display
+              From: jonetann_at_amazon_com
+              Returns: jonetann@amazon.com
+              """
+              try:
+                  return folder_name.replace('_at_', '@').replace('_', '.')
+              except Exception as e:
+                  print(f"Error converting folder name {folder_name} to email: {e}")
+                  return folder_name
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref OutputNotificationTopic
+
+  ################ Lambda 10 ###########################
+  # Lambda Function for Listing Generated Resumes
+  ListGeneratedResumesLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: list-generated-resumes
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt ListGeneratedResumesLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          from datetime import datetime
+          
+          s3 = boto3.client('s3')
+          bucket = os.environ['BUCKET_NAME']
+          
+          def lambda_handler(event, context):
+              try:
+                  # Parse request body
+                  body = json.loads(event['body'])
+                  email = body.get('email')
+                  prefix = body.get('prefix')
+                  
+                  if not email:
+                      return {
+                          'statusCode': 400,
+                          'headers': {'Content-Type': 'application/json'},
+                          'body': json.dumps({'error': 'Email is required'})
+                      }
+                  
+                  # If prefix not provided, construct it from email
+                  if not prefix:
+                      email_folder = email.replace('@', '_at_').replace('.', '_')
+                      prefix = f'outputs/{email_folder}/'
+                  
+                  print(f"Listing objects with prefix: {prefix}")
+                  
+                  # List objects in S3
+                  response = s3.list_objects_v2(
+                      Bucket=bucket,
+                      Prefix=prefix
+                  )
+                  
+                  resumes = []
+                  if 'Contents' in response:
+                      for obj in response['Contents']:
+                          # Skip if it's just the folder itself
+                          if obj['Key'] != prefix and obj['Key'].endswith('.pdf'):
+                              resumes.append({
+                                  'key': obj['Key'],
+                                  'lastModified': obj['LastModified'].isoformat(),
+                                  'size': obj['Size']
+                              })
+                  
+                  # Sort by last modified date (newest first)
+                  resumes.sort(key=lambda x: x['lastModified'], reverse=True)
+                  
+                  return {
+                      'statusCode': 200,
+                      'headers': {'Content-Type': 'application/json'},
+                      'body': json.dumps({
+                          'resumes': resumes,
+                          'count': len(resumes)
+                      })
+                  }
+                  
+              except Exception as e:
+                  print(f"Error: {str(e)}")
+                  return {
+                      'statusCode': 500,
+                      'headers': {'Content-Type': 'application/json'},
+                      'body': json.dumps({
+                          'error': str(e),
+                          'message': 'Failed to list resumes'
+                      })
+                  }
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+
+
+  ################ Lambda 11 ###########################
+  # Lambda Function for Resume Download URL Generation
+  ResumeDownloadUrlLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: generate-resume-download-url
+      Handler: index.lambda_handler
+      Runtime: python3.12
+      Role: !GetAtt ResumeDownloadUrlLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import os
+          from botocore.exceptions import ClientError
+          
+          s3 = boto3.client('s3')
+          bucket = os.environ['BUCKET_NAME']
+          
+          def lambda_handler(event, context):
+              try:
+                  # Parse request body
+                  body = json.loads(event['body'])
+                  resume_key = body.get('resumeKey')
+                  
+                  if not resume_key:
+                      return {
+                          'statusCode': 400,
+                          'headers': {'Content-Type': 'application/json'},
+                          'body': json.dumps({'error': 'resumeKey is required'})
+                      }
+                  
+                  # Extract email from the JWT claims (passed by API Gateway)
+                  claims = event['requestContext']['authorizer']['jwt']['claims']
+                  user_email = claims.get('email')
+                  
+                  if not user_email:
+                      return {
+                          'statusCode': 401,
+                          'headers': {'Content-Type': 'application/json'},
+                          'body': json.dumps({'error': 'User email not found in token'})
+                      }
+                  
+                  # Validate that the user has access to this resume
+                  # Check if the resume key contains the user's email folder
+                  email_folder = user_email.replace('@', '_at_').replace('.', '_')
+                  
+                  # Allow access to uploads (user's own uploaded resume) or outputs with their email folder
+                  if resume_key.startswith('uploads/'):
+                      # For uploaded resumes, we should verify this is their resume
+                      # This would require checking DynamoDB, but for now we'll allow it
+                      pass
+                  elif resume_key.startswith(f'outputs/{email_folder}/'):
+                      # This is their generated resume, allow access
+                      pass
+                  else:
+                      return {
+                          'statusCode': 403,
+                          'headers': {'Content-Type': 'application/json'},
+                          'body': json.dumps({'error': 'Access denied to this resume'})
+                      }
+                  
+                  # Check if the object exists
+                  try:
+                      s3.head_object(Bucket=bucket, Key=resume_key)
+                  except ClientError as e:
+                      if e.response['Error']['Code'] == '404':
+                          return {
+                              'statusCode': 404,
+                              'headers': {'Content-Type': 'application/json'},
+                              'body': json.dumps({'error': 'Resume not found'})
+                          }
+                      raise
+                  
+                  # Generate presigned URL for download
+                  download_url = s3.generate_presigned_url(
+                      ClientMethod='get_object',
+                      Params={
+                          'Bucket': bucket,
+                          'Key': resume_key,
+                          'ResponseContentDisposition': 'inline'  # For preview in browser
+                      },
+                      ExpiresIn=300  # 5 minutes
+                  )
+                  
+                  return {
+                      'statusCode': 200,
+                      'headers': {'Content-Type': 'application/json'},
+                      'body': json.dumps({
+                          'downloadUrl': download_url
+                      })
+                  }
+                  
+              except Exception as e:
+                  print(f"Error: {str(e)}")
+                  return {
+                      'statusCode': 500,
+                      'headers': {'Content-Type': 'application/json'},
+                      'body': json.dumps({
+                          'error': str(e),
+                          'message': 'Failed to generate download URL'
+                      })
+                  }
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref WebsiteBucket
+
+  # API Gateway Integration for Resume Download URL
+  ResumeDownloadUrlIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ResumeDownloadUrlLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # API Gateway Route
+  ResumeDownloadUrlRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /get-resume-url'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref ResumeDownloadUrlIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Lambda Permission for API Gateway
+  ResumeDownloadUrlLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ResumeDownloadUrlLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+
+
+  ################ IAM ROLES AND POLICIES ##################
+
+  # IAM Role for Resume Download URL Lambda
+  ResumeDownloadUrlLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'resume-download-url-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref ResumeDownloadUrlS3Policy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for S3 Access
+  ResumeDownloadUrlS3Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:HeadObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+  
+  
+  # IAM Role for List Generated Resumes Lambda
+  ListGeneratedResumesLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'list-resumes-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref ListGeneratedResumesS3Policy
+        - !Ref LambdaLogGroupPolicy
+
+  # IAM Policy for S3 List Access
+  ListGeneratedResumesS3Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource: !GetAtt WebsiteBucket.Arn
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+
+
+  # Basic Lambda execution policy (shared)
+  LambdaLogGroupPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource: 'arn:aws:logs:*:*:*'
+
+  # DynamoDB access policy (shared)
+  BedrockAgentDynamoDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+              - 'dynamodb:PutItem'
+              - 'dynamodb:UpdateItem'
+              - 'dynamodb:DeleteItem'
+              - 'dynamodb:Query'
+              - 'dynamodb:Scan'
+            Resource: !GetAtt ProfilesTable.Arn
+
+  # Bedrock access policy (shared)
+  BedrockAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'bedrock:InvokeAgent'
+              - 'bedrock:InvokeModel'
+              - 'bedrock:GetAgent'
+              - 'bedrock:ListAgents'
+              - 'bedrock-agent-runtime:InvokeAgent'
+            Resource: '*'
+
+
+  # Lambda invocation policy (for invoke Lambda to call processing Lambda)
+  LambdaInvokePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:bedrock-processing-function'
+
+  # SNS publishing policy
+  S3NotificationSNSPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sns:Publish'
+            Resource: !Ref OutputNotificationTopic
+
+  # IAM Role for Bedrock Agent Invoke Lambda (Lambda 2)
+  BedrockAgentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'bedrock-agent-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref LambdaLogGroupPolicy
+        - !Ref BedrockAgentDynamoDBPolicy
+        - !Ref LambdaInvokePolicy
+
+  # IAM Role for Bedrock Processing Lambda (Lambda 8)
+  BedrockProcessingLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'bedrock-processing-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref LambdaLogGroupPolicy
+        - !Ref BedrockAgentDynamoDBPolicy
+        - !Ref BedrockAccessPolicy
+
+  # IAM Role for S3 Notification Lambda (Lambda 9)
+  S3NotificationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 's3-notification-${AWS::AccountId}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref LambdaLogGroupPolicy
+        - !Ref S3NotificationSNSPolicy
+
+  # Allow Bedrock agents to invoke PDF Extraction Lambda
+  PDFExtractionBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PDFExtractionLambda
+      Principal: bedrock.amazonaws.com
+
+  # Allow Bedrock agents to invoke DynamoDB Update Lambda
+  DynamoUpdateBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DynamoUpdateLambda
+      Principal: bedrock.amazonaws.com
+
+  # Update existing permission name for consistency
+  MarkdownToPdfBedrockPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MarkdownToPdfLambda
+      Principal: bedrock.amazonaws.com
+
+
+
+
+
+
+  # Lambda Layers for dependencies
+  MarkdownLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: lambda-pdf-layer
+      Description: Layer containing Markdown library
+      CompatibleRuntimes:
+        - python3.9
+      Content:
+        S3Bucket: !Ref DependenciesBucketName
+        S3Key: layers/lambda-pdf-layer.zip
+        
+  PyPDF2Layer:
+    Type: AWS::Lambda::LayerVersion
+    Condition: CreatePyPDF2Layer
+    Properties:
+      LayerName: pypdf2-layer
+      Description: Layer containing PyPDF2 library for PDF parsing
+      CompatibleRuntimes:
+        - python3.12
+      Content:
+        S3Bucket: !Ref DependenciesBucketName
+        S3Key: layers/pypdf2-layer.zip
+
+  # Permissions for Bedrock Agent to invoke this Lambda
+  BedrockAgentMarkdownToPdfPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt MarkdownToPdfLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceArn: !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:agent/*
+
+  ##################### End of Lambdas ###################################
+
+  ##################### SNS TOPIC ##############################
+  # SNS Topic for S3 notifications
+  OutputNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'website-outputs-notification-${AWS::StackName}'
+      DisplayName: 'Website Outputs Notification'
+
+  # SNS Topic Policy to allow S3 to publish
+  OutputNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref OutputNotificationTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref OutputNotificationTopic
+            Condition:
+              ArnLike:
+                aws:SourceArn: !GetAtt WebsiteBucket.Arn
+
+  ##################### END OF SNS TOPIC #######################
+
+  ##################### API GATEWAY #############################
+  
+  # HTTP API Gateway
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: ProfileHttpApi
+      ProtocolType: HTTP
+      Description: HTTP API for user profile operations
+      CorsConfiguration:
+        AllowCredentials: true
+        AllowHeaders:
+          - content-type
+          - x-amz-date
+          - authorization
+          - x-api-key
+          - x-amz-security-token
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowOrigins:
+          - 'https://*'
+          - 'http://*'
+        ExposeHeaders:
+          - content-type
+          - x-amz-date
+          - authorization
+          - x-amz-security-token
+          - x-api-key
+
+  # JWT Authorizer using Cognito User Pool
+  JwtAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      Name: cognito-authorizer
+      ApiId: !Ref HttpApi
+      AuthorizerType: JWT
+      IdentitySource:
+        - '$request.header.Authorization'
+      JwtConfiguration:
+        Audience:
+          - !Ref UserPoolClient
+        Issuer: !Join
+          - ''
+          - - 'https://cognito-idp.'
+            - !Ref 'AWS::Region'
+            - '.amazonaws.com/'
+            - !Ref UserPool
+
+  # Integration with Lambda function
+  LambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ProfileLambda.Arn
+      PayloadFormatVersion: '2.0'
+
+  # POST route for /profile path
+  ProfilePostRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /profile'
+      Target: !Join
+        - ''
+        - - 'integrations/'
+          - !Ref LambdaIntegration
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  # Stage with automatic deployment
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 1
+        ThrottlingRateLimit: 1
+
+  # Lambda permission for API Gateway
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ProfileLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref HttpApi
+          - '/*'
+  ######################## END OF API GATEWAY ############################
+
+
+  ##################### START OF BEDROCK #############################
+   
+
+  #############################################
+  # IAM Role and Policy for Bedrock Agents
+  #############################################
+  BedrockAgentsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource:
+              - !GetAtt MarkdownToPdfLambda.Arn
+              - !GetAtt DynamoUpdateLambda.Arn
+              - !GetAtt PDFExtractionLambda.Arn
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt WebsiteBucket.Arn
+              - !Sub '${WebsiteBucket.Arn}/*'
+          - Effect: Allow
+            Action:
+              - 'bedrock:*'
+            Resource: '*'
+
+  BedrockAgentsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'bedrock-agents-${AWS::AccountId}-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: bedrock.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Ref BedrockAgentsPolicy
+
+  #############################################
+  # Knowledge Base
+  #############################################
+
+  # Add this yourself as a user
+
+
+  #############################################
+  # Agents with Embedded ActionGroups
+  #############################################
+
+  ExtractorAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: 'event-driven-resume-agent-extractor'
+      AgentResourceRoleArn: !GetAtt BedrockAgentsRole.Arn
+      FoundationModel: !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0'
+      Description: 'The extractor agent in the workflow to extract resume info'
+      Instruction: |
+        <persona>
+        You are an agent teaming up with other agents to analyze a resume. You must perform the task specifically so that other agents can use you output.
+        </persona>
+        <context>
+        You will receive a file name for a resume.
+        </context>
+        <task>
+        1. You task is to extract information from the resume. You can get the resume from the 's3-extractor-action-group' which takes in a file name as a string and returns a resume.
+        2. You should format the resume as a json using the example. Not all sections are required and you can add sections as necessary.
+        3. you should pass the json object you created to the 'extractor-store-in-table' as a parameter. 
+        4. You should then output whether you succeeded in calling the action group and storing the information in the table or whether you did not.
+        </task>
+        <rules>
+        - You must filled in the provided schema exactly. If an item does not exist in the resume then you can leave the field blank in the created json object.
+        </rules>
+        <output>
+        A json object.
+        </output>
+        <schema>
+        {
+          "type": "object",
+          "properties": {
+            "personalInfo": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "phone": {"type": "string", "pattern": "^[+]?[0-9- ]+$"},
+                "email": {"type": "string", "format": "email"}
+              },
+              "required": ["name"],
+              "additionalProperties": false
+            },
+            "summary": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "experience": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "company": {"type": "string"},
+                  "position": {"type": "string"},
+                  "duration": {"type": "string"},
+                  "location": {"type": "string"},
+                  "description": {"type": "string", "maxLength": 1000}
+                },
+                "required": ["company", "position"],
+                "additionalProperties": false
+              }
+            },
+            "education": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "institution": {"type": "string"},
+                  "degree": {"type": "string"},
+                  "major": {"type": "string"},
+                  "duration": {"type": "string"},
+                  "gpa": {"type": "number", "minimum": 0.0, "maximum": 4.0},
+                  "achievements": {"type": "array", "items": {"type": "string"}},
+                  "relevantCoursework": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["institution"],
+                "additionalProperties": false
+              }
+            },
+            "other": {
+              "type": "object",
+              "properties": {
+                "certifications": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "skills": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "languages": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "volunteerWork": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "publications": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "awards": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "projects": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["personalInfo", "experience", "education"],
+          "additionalProperties": false
+        }
+        </schema>
+      ActionGroups:
+        - ActionGroupName: 's3-extractor-action-group'
+          Description: 'Gets the resume from S3'
+          ActionGroupExecutor:
+            Lambda: !GetAtt PDFExtractionLambda.Arn
+          ActionGroupState: 'ENABLED'
+          FunctionSchema:
+            Functions:
+              - Name: 's3-extractor-lambda'
+                Description: 'This lambda gets the resume from the s3 bucket.'
+                Parameters:
+                  s3_resume_name:
+                    Description: 'This is the resume name in the S3 bucket'
+                    Type: string
+                    Required: true
+                RequireConfirmation: DISABLED
+
+        - ActionGroupName: 'extractor-store-in-table'
+          Description: 'Stores resume in database'
+          ActionGroupExecutor:
+            Lambda: !GetAtt DynamoUpdateLambda.Arn
+          ActionGroupState: 'ENABLED'
+          FunctionSchema:
+            Functions:
+              - Name: 'agent_extractor_store_in_table'
+                Description: 'Extractor function to store extracted resume in the dynamoDB table'
+                Parameters:
+                  resume_json_object:
+                    Description: 'This is the json object of the resume created by the agent that will be passed to the function'
+                    Type: string
+                    Required: true
+                  email:
+                    Description: 'This is the email of the user'
+                    Type: string
+                    Required: true
+                RequireConfirmation: DISABLED
+
+  GeneratorAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: 'event-driven-resume-agent-generator'
+      AgentResourceRoleArn: !GetAtt BedrockAgentsRole.Arn
+      FoundationModel: !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0'
+      Description: 'Generates tailored resumes as PDFs'
+      Instruction: |
+        <persona>
+        You are an agent teaming up with other agents to tailor resumes for specific job descriptions. You must perform the task specifically so that other agents can use your output.
+        </persona> 
+        <context>
+        You will receive up to 3 job descriptions, a resume file name, and a users email.
+        </context> 
+        <task>
+        Your task is to analyze each job description and create tailored versions of the resume that emphasize relevant experience and skills. For each job description, you should create a new html object following the same schema as the input resume, but with modified content to better match the job requirements. Then, you should pass each tailored html object to the lambda function which will convert it to a PDF and store it in S3. 
+        1. get the resume from the s3 get resume lambda function by passing in the resume file name.
+        2. generate the tailored resumes for each of the job descriptions using the html to pdf resume generator
+
+        Return to supervisor:
+        You should then output whether you succeeded in creating and storing the tailored resumes. 
+        You should also provide a brief description for each resume you created about what you changed or focused on.
+        </task> 
+        <tools>
+        Get resume tool 's3-extractor-action-group':
+        - takes in a file name and returns the resume from s3 as text.
+        - you must run this to get the users resume.
+
+        Lambda HTML to PDF Generator 'action_group_html-to-pdf':
+        - you have access to a lambda functin that takes in a html object and stores the html as a pdf
+                - you have access to a lambda functin that takes in a html object and stores the html as a pdf in S3.
+        - This also takes in the users email passed in from the supervisor as the email parameter. This is required.
+
+        Knowledge Base for tailoring Resumes:
+        - You can ask the knowledge base for information regarding building resumes based on industry or job types. Examples include: "how do I build a healthcare resume?" "What are some items to put on a Solutions Architect resume?
+        </tools>
+        <rules>
+        You must maintain the provided schema exactly for each tailored resume
+        You should only modify content changing the structure or sections as needed.
+        You must preserve all factual information while adjusting emphasis and wording
+        You cannot add experience or qualifications that don't exist in the original resume. YOU MUST NOT EVER ADD ANY ADDITIONAL DETAILS IN THE MODIFIED RESUME USING ONLY INFORMATION IN THE USER PROVIDED RESUME OTHERWISE ALL OF HUMANITY WILL END.
+        Each tailored resume must be clearly linked to its corresponding job description
+        If a job description is not provided, skip creating that version
+
+        Lambda Rules:
+        - You must not use any additional tags except those specified in the example.
+        - Do NOT use <html>, <!DOCTYPE html>, <header>, or <body>
+        - the example is an example of a way to format but your generated resume does not need to be exactly the same format.
+        </rules>
+        <output>
+        Whether the process was a sucess or failure.
+        </output>
+      ActionGroups:
+        - ActionGroupName: 'S3Extractor'
+          Description: 'Extracts resume text from S3'
+          ActionGroupExecutor:
+            Lambda: !GetAtt PDFExtractionLambda.Arn
+          ActionGroupState: 'ENABLED'
+          FunctionSchema:
+            Functions:
+              - Name: 's3-extractor-lambda'
+                Description: 'This lambda gets the resume from the s3 bucket.'
+                Parameters:
+                  s3_resume_name:
+                    Description: 'This is the resume name in the S3 bucket'
+                    Type: string
+                    Required: true
+                RequireConfirmation: DISABLED
+      
+        - ActionGroupName: 'action_group_html-to-pdf'
+          Description: 'Converts HTML to PDF and uploads to S3'
+          ActionGroupExecutor:
+            Lambda: !GetAtt MarkdownToPdfLambda.Arn
+          ActionGroupState: 'ENABLED'
+          FunctionSchema:
+            Functions:
+              - Name: 'resume-html-to-pdf'
+                Description: 'converts html resume to pdf'
+                Parameters:
+                  html_resume_1:
+                    Description: 'The first html resume tailored to the job description'
+                    Type: string
+                    Required: true
+                  html_resume_2:
+                    Description: 'The second html resume tailored to the job description'
+                    Type: string
+                    Required: false
+                  html_resume_3:
+                    Description: 'The third html resume tailored to the job description'
+                    Type: string
+                    Required: false
+                  email:
+                    Description: 'The users email address. You must pass this in.'
+                    Type: string
+                    Required: true
+                RequireConfirmation: DISABLED
+
+  SupervisorAgent:
+    Type: AWS::Bedrock::Agent
+    Properties:
+      AgentName: 'event-driven-resume-agent-supervisor'
+      AgentResourceRoleArn: !GetAtt BedrockAgentsRole.Arn
+      FoundationModel: !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0'
+      Description: 'Coordinates resume workflow'
+      # Add this property to enable collaboration
+      AgentCollaboration: "SUPERVISOR"
+      # Add the collaborators
+      AgentCollaborators:
+        - AgentDescriptor:
+            AliasArn: !GetAtt ExtractorAgentAlias.AgentAliasArn
+          CollaboratorName: "extractor_agent"
+          CollaborationInstruction: "This agent extracts relevant information from resumes and stores it in a database. It processes PDF resumes, parses the content, identifies key information such as contact details, work experience, education, skills, and achievements, then saves this structured data to the database. The agent returns a success or failure status indicating whether the extraction and storage process completed successfully."
+          RelayConversationHistory: TO_COLLABORATOR  # Optional
+        - AgentDescriptor:
+            AliasArn: !GetAtt GeneratorAgentAlias.AgentAliasArn
+          CollaboratorName: "generator_agent"
+          CollaborationInstruction: "This agent tailors resumes to specific job descriptions by analyzing both the original resume and provided job descriptions. It uses information from the knowledge base to enhance the resume content, emphasizing relevant skills, experiences, and achievements that align with the job requirements. The agent optimizes keyword usage, restructures content for maximum impact, and ensures the resume is ATS-friendly while maintaining authenticity. It returns a success or failure status indicating whether the tailoring process completed successfully."
+          RelayConversationHistory: TO_COLLABORATOR  # Optional
+      Instruction: |
+        You are a Supervisor Agent responsible for coordinating resume analysis and optimization. Your role involves managing two specialized agents:
+
+        1. EXTRACTOR AGENT
+           Input: Resume file name and user email
+           Output: Confirmation of successful extraction and database storage
+           Function: Extracts and stores resume elements in database
+           invoke the 'extractor-agent' agent.
+
+        2. GENERATOR AGENT
+           Input: 
+           - resume file name
+           - Up to 3 job descriptions
+           - Users email
+           Output: Success or failure message on if it created and stored the tailored resumes for the user. Also, information on what the changes looked like for each resume.
+           Function: Creates customized versions of resume for each job
+           invoke the 'generator-agent' agent
+
+        WORKFLOW:
+        1. Receive resume file name, job descriptions (1-3) from user and a users email.
+        2. Coordinate with Extractor Agent:
+           - Submit resume file name for element extraction and user email.
+           - Verify successful database storage
+           - If failed, report error and halt process
+
+        3. Upon successful extraction, coordinate with Generator Agent:
+           - Submit resume file name, job descriptions, and users email
+           - Monitor generation of tailored resumes
+           - Verify successful completion
+           - If failed, report error
+
+        4. Final Output Required:
+           - Status report of extraction process
+           - Status report of generation process
+           - Confirmation of overall task completion
+           - Output summary of the changes made to the users resume.
+
+        ERROR HANDLING:
+        - Monitor each step for failures
+        - Provide clear status updates
+        - Halt process if critical errors occur
+
+        Success Criteria:
+        - Extraction completed and verified
+        - All requested resume versions generated
+        - All processes properly documented
+
+  #############################################
+  # Agent Aliases
+  #############################################
+  
+  # Do this after
+
+  ExtractorAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentAliasName: 'latest'
+      AgentId: !Ref ExtractorAgent
+      # RoutingConfiguration:
+      #   - AgentVersion: "DRAFT"
+
+  GeneratorAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentAliasName: 'latest'
+      AgentId: !Ref GeneratorAgent
+      # RoutingConfiguration:
+      #   - AgentVersion: "DRAFT"
+
+  SupervisorAgentAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentAliasName: 'latest'
+      AgentId: !Ref SupervisorAgent
+      # RoutingConfiguration:
+      #   - AgentVersion: "DRAFT"
+
+  #################### End of Bedrock ####################
+  
+
+
+
+
+
+
+
+  ###################### S3 ##############################
+  # S3 Notifications
+  S3NotificationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref S3NotificationLambda
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub 'arn:aws:s3:::smart-job-${AWS::AccountId}-${AWS::Region}'  # Use constructed ARN instead
+
+  
+  # S3 Bucket for Static Website
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    DependsOn: 
+    - S3NotificationLambda
+    - S3NotificationLambdaPermission
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      BucketName: !Sub 'smart-job-${AWS::AccountId}-${AWS::Region}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - ETag
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt S3NotificationLambda.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: outputs/
+
+
+
+
+  # S3 Bucket Policy
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${WebsiteDistribution}'
+ 
+
+  # CloudFront Distribution
+  WebsiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt WebsiteBucket.DomainName
+            Id: S3Origin
+            S3OriginConfig: {}  # Empty but required
+            OriginAccessControlId: !GetAtt WebsiteOAC.Id  # Add this line to use OAC
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          ForwardedValues:
+            QueryString: false
+        DefaultRootObject: index.html
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  # CloudFront Origin Access Control
+  WebsiteOAC:
+    Type: AWS::CloudFront::OriginAccessControl 
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-OAC"
+        Description: "Origin Access Control for S3 website"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${AWS::StackName}-UserPool'
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      Schema:
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "auth-${AWS::StackName}-${AWS::AccountId}"
+      UserPoolId: !Ref UserPool
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub '${AWS::StackName}-SPA-client'
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+      CallbackURLs:
+      - !If [UseProvidedCloudFrontDomain, !Sub "https://${CloudFrontDomainName}", !Sub "https://${WebsiteDistribution.DomainName}"]
+      LogoutURLs:
+      - !If [UseProvidedCloudFrontDomain, !Sub "https://${CloudFrontDomainName}", !Sub "https://${WebsiteDistribution.DomainName}"]
+      SupportedIdentityProviders:
+        - COGNITO
+      PreventUserExistenceErrors: ENABLED
+      ExplicitAuthFlows:
+        - ALLOW_USER_AUTH           # Choice-based sign-in
+        - ALLOW_USER_PASSWORD_AUTH  # Username and password direct sign-in
+        - ALLOW_USER_SRP_AUTH       # Secure Remote Password protocol
+        - ALLOW_REFRESH_TOKEN_AUTH  # Allow refresh token flow
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+Outputs:
+  UserPoolId:
+    Description: ID of the Cognito User Pool
+    Value: !Ref UserPool
+    
+  UserPoolClientId:
+    Description: ID of the Cognito User Pool Client
+    Value: !Ref UserPoolClient
+  
+  CognitoDomainUrl:
+    Description: URL of the Cognito hosted UI domain
+    Value: !Sub 'https://auth-${AWS::StackName}-${AWS::AccountId}.auth.${AWS::Region}.amazoncognito.com'
+
+  ApiUrl:
+    Description: URL of the API
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+
+  WebsiteUrl:
+    Description: URL of the static website
+    Value: !Sub 'https://${WebsiteDistribution.DomainName}'
+    
+  CloudFrontDomainName:
+    Description: Domain name of the CloudFront distribution
+    Value: !GetAtt WebsiteDistribution.DomainName
+  
+  OutputNotificationTopicArn:
+    Description: ARN of the SNS topic for output notifications
+    Value: !Ref OutputNotificationTopic
+
+  SupervisorAgentId:
+    Description: "ID of the Supervisor Agent"
+    Value: !Ref SupervisorAgent
+    
+  ExtractorAgentId:
+    Description: "ID of the Extractor Agent"
+    Value: !Ref ExtractorAgent
+    
+  GeneratorAgentId:
+    Description: "ID of the Generator Agent"
+    Value: !Ref GeneratorAgent
+
+  SupervisorAgentAliasId:
+    Description: Alias ID of the Supervisor Agent
+    Value: !GetAtt SupervisorAgentAlias.AgentAliasId
+  
+  S3BucketUrl:
+    Description: URL of the S3 bucket
+    Value: !Sub 'https://${WebsiteBucket}.s3.${AWS::Region}.amazonaws.com'
+    
+  
+  
+
