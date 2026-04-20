@@ -1,0 +1,5 @@
+arize-phoenix-otel 
+boto3==1.34.162
+anthropic 
+openinference-instrumentation-bedrock
+arize-phoenix==8.27.0
