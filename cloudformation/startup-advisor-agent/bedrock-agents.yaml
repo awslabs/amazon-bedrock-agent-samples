@@ -1,0 +1,692 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Bedrock Multi-Agent System for Startup Advisory"
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Description: Bedrock Foundation Model ID
+  WebSearchLambdaArn:
+    Type: String
+    Description: "ARN of WebSearch Lambda function"
+  WorkingMemoryLambdaArn:
+    Type: String
+    Description: "ARN of WorkingMemory Lambda function"
+
+Resources:
+  BedrockAgentBaseRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "startup-advisor-bedrock-agent-base-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - bedrock.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "BedrockAgentBasePolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AmazonBedrockAgentInferencProfilePolicy1
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel*
+                  - bedrock:CreateInferenceProfile
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - "arn:aws:bedrock:*:*:inference-profile/*"
+                  - "arn:aws:bedrock:*:*:application-inference-profile/*"
+
+              - Sid: AmazonBedrockAgentInferencProfilePolicy2
+                Effect: Allow
+                Action:
+                  - bedrock:GetInferenceProfile
+                  - bedrock:ListInferenceProfiles
+                  - bedrock:DeleteInferenceProfile
+                  - bedrock:TagResource
+                  - bedrock:UntagResource
+                  - bedrock:ListTagsForResource
+                Resource:
+                  - "arn:aws:bedrock:*:*:inference-profile/*"
+                  - "arn:aws:bedrock:*:*:application-inference-profile/*"
+
+              - Sid: AmazonBedrockAgentBedrockFoundationModelPolicy
+                Effect: Allow
+                Action:
+                  - bedrock:GetAgentAlias
+                  - bedrock:InvokeAgent
+                Resource:
+                  - "arn:aws:bedrock:*:*:agent/*"
+                  - "arn:aws:bedrock:*:*:agent-alias/*"
+
+              - Sid: AmazonBedrockAgentBedrockInvokeGuardrailModelPolicy
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:GetGuardrail
+                  - bedrock:ApplyGuardrail
+                Resource: "arn:aws:bedrock:*:*:guardrail/*"
+
+              - Sid: QueryKB
+                Effect: Allow
+                Action:
+                  - bedrock:Retrieve
+                  - bedrock:RetrieveAndGenerate
+                Resource: "arn:aws:bedrock:*:*:knowledge-base/*"
+
+  # Startup Advisor (Supervisor)
+  StartupAdvisor:
+    Type: "AWS::Bedrock::Agent"
+    DependsOn:
+      - CreativeDirector
+      - LeadMarketAnalyst
+      - ChiefStrategist
+      - ContentWriter
+      - FormattedReportWriter
+      - LeadMarketAnalystAlias
+      - ChiefStrategistAlias
+      - ContentWriterAlias
+      - CreativeDirectorAlias
+      - FormattedReportWriterAlias
+    Properties:
+      AgentName: startup_advisor
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Supervisor Agent for coordinating marketing strategy development
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Startup Advisor
+
+        Goal: Create a marketing strategy with a set of campaigns and content to support that strategy for a proposed new startup.
+
+        Instructions: As a Startup Advisor, you are given a brief description of a new product for a startup.
+        You take advantage of your collaborators to analyze the market for the new product,
+        generate campaign ideas that will create awareness of and demand for the product. 
+        You get feedback from your Creative Director to refine the campaigns and content 
+        to best support the new product.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      AgentCollaboration: "SUPERVISOR"
+      AgentCollaborators:
+        - AgentDescriptor:
+            AliasArn: !GetAtt LeadMarketAnalystAlias.AgentAliasArn
+          CollaborationInstruction: "Use lead_market_analyst for analysis of the products and competitors, providing in-depth insights to guide marketing strategies."
+          CollaboratorName: "lead_market_analyst"
+          RelayConversationHistory: "DISABLED"
+        - AgentDescriptor:
+            AliasArn: !GetAtt ChiefStrategistAlias.AgentAliasArn
+          CollaborationInstruction: "Use chief_strategist for coming up with a comprehensive overall marketing strategy given available research about the product and competitors."
+          CollaboratorName: "chief_strategist"
+          RelayConversationHistory: "DISABLED"
+        - AgentDescriptor:
+            AliasArn: !GetAtt ContentWriterAlias.AgentAliasArn
+          CollaborationInstruction: "Use content_creator for creating content for the marketing campaigns."
+          CollaboratorName: "content_writer"
+          RelayConversationHistory: "DISABLED"
+        - AgentDescriptor:
+            AliasArn: !GetAtt CreativeDirectorAlias.AgentAliasArn
+          CollaborationInstruction: "Use creative_director for reviewing and approving the content created by content_creator."
+          CollaboratorName: "creative_director"
+          RelayConversationHistory: "DISABLED"
+        - AgentDescriptor:
+            AliasArn: !GetAtt FormattedReportWriterAlias.AgentAliasArn
+          CollaborationInstruction: "Use formatted_report_writer for creating and saving the final report in Markdown format in the agent store."
+          CollaboratorName: "formatted_report_writer"
+          RelayConversationHistory: "DISABLED"
+      ActionGroups:
+        - ActionGroupName: "SupervisorTools"
+          Description: "Tools for supervisor operations"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+        - ActionGroupName: "WorkingMemoryTools"
+          Description: "Tools for storing and retrieving data"
+          ActionGroupExecutor:
+            Lambda: !Ref WorkingMemoryLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: set_value_for_key
+                Description: "Stores a key-value pair in DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to store the value under"
+                    Required: true
+                  value:
+                    Type: "string"
+                    Description: "The value to store for that key name"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+              - Name: get_key_value
+                Description: "Retrieves a value for a given key name from DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to retrieve the value for"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+
+  # Creative Director
+  CreativeDirector:
+    Type: "AWS::Bedrock::Agent"
+    Properties:
+      AgentName: creative_director
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Creative Director for overseeing and refining marketing content
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Creative Director
+
+        Goal: Oversee the work done by your team to make sure it is the best possible and 
+        aligned with the product goals, review, approve, ask clarifying questions or 
+        delegate follow-up work if necessary.
+
+        Instructions: You are the Creative Director at a leading digital marketing agency 
+        specializing in product branding. You ensure your team crafts the best 
+        possible content for the customer. You provide detailed feedback on any 
+        draft content, considering the following feedback topics: target audience resonance, quality and creativity,
+        and report completeness. 
+        You use an agent key value store for sharing state with the Content Writer.
+        Regarding completeness, you ensure the report covers the Campaign Report mandatory content  
+        below, and that each subsection provide adequate details.
+
+        Final Campaign Report content MUST have ALL of the following subsections:
+
+        A/ CAMPAIGN DESCRIPTION - explain the concept, the audience, the channels, and the assets.
+        B/ CAMPAIGN VALUE PROPOSITION - explain the product value propisition that is delivered to the audience.
+        C/ CAMPAIGN CALL TO ACTION - explain what the audience is supposed to do in response to this campaign.
+        D/ CAMPAIGN METRICS - explain how the effectiveness of the campaign will be measured.
+        E/ CAMPAIGN IMPLEMENTATION TIMELINE - explain the rough timeline of activities needed to implement the campaign.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      ActionGroups:
+        - ActionGroupName: "CreativeTools"
+          Description: "Tools for creative direction"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+        - ActionGroupName: "WorkingMemoryTools"
+          Description: "Tools for storing and retrieving data"
+          ActionGroupExecutor:
+            Lambda: !Ref WorkingMemoryLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: set_value_for_key
+                Description: "Stores a key-value pair in DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to store the value under"
+                    Required: true
+                  value:
+                    Type: "string"
+                    Description: "The value to store for that key name"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+              - Name: get_key_value
+                Description: "Retrieves a value for a given key name from DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to retrieve the value for"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+
+  # Lead Market Analyst
+  LeadMarketAnalyst:
+    Type: "AWS::Bedrock::Agent"
+    Properties:
+      AgentName: lead_market_analyst
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Lead Market Analyst for conducting thorough market analysis
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Lead Market Analyst
+
+        Goal: Conduct thorough analysis of the products and competitors, providing detailed 
+        insights to guide marketing strategies.
+
+        Instructions: As the Lead Market Analyst at a digital marketing firm, you specialize 
+        in understanding markets for new products and services.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      ActionGroups:
+        - ActionGroupName: "MarketAnalystTools"
+          Description: "Tools for market analysis"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+
+  # Chief Strategist
+  ChiefStrategist:
+    Type: "AWS::Bedrock::Agent"
+    Properties:
+      AgentName: chief_strategist
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Chief Strategist for marketing strategy
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Chief Strategist
+
+        Goal: Synthesize insights from market analysis to formulate marketing strategies.
+
+        Instructions: You are the Chief Strategist at a digital marketing agency,
+        known for crafting custom marketing strategies that drive success of 
+        new products and services.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      ActionGroups:
+        - ActionGroupName: "StrategyTools"
+          Description: "Tools for strategy development"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+        - ActionGroupName: "WorkingMemoryTools"
+          Description: "Tools for storing and retrieving data"
+          ActionGroupExecutor:
+            Lambda: !Ref WorkingMemoryLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: set_value_for_key
+                Description: "Stores a key-value pair in DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to store the value under"
+                    Required: true
+                  value:
+                    Type: "string"
+                    Description: "The value to store for that key name"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+              - Name: get_key_value
+                Description: "Retrieves a value for a given key name from DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to retrieve the value for"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+
+  # Content Writer
+  ContentWriter:
+    Type: "AWS::Bedrock::Agent"
+    Properties:
+      AgentName: content_writer
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Content Writer for creating compelling content
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Content Writer
+
+        Goal: Develop and revise compelling and innovative content, including campaign ideas,
+        campaing copy, and even detailed campaign reports.
+
+        Instructions: As a Content Writer at a digital marketing agency, you 
+        excel in creating narratives that resonate with target audiences. 
+        Your expertise is in turning marketing strategies into engaging stories and visual 
+        content that captures attention and inspires action. You are excellent 
+        at taking feedback from the Creative Director and refining content 
+        accordingly. You pay close attention to details about report structure 
+        to make campaign assessments and evaluation easier across all campaigns.
+        When you provide updated content responding to feedback, you NEVER leave out 
+        a report section, even if it is UNCHANGED from the prior draft. That way, 
+        the Creative Director or the final reviewer can see the FULL context.
+        You use an agent key value store for sharing state with the Creative Director,
+        and other collaborators. You ALWAYS remember to save your content in the agent store,
+        especially when told to do so, and when told what key name to use.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      ActionGroups:
+        - ActionGroupName: "ContentTools"
+          Description: "Tools for content creation"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+        - ActionGroupName: "WorkingMemoryTools"
+          Description: "Tools for storing and retrieving data"
+          ActionGroupExecutor:
+            Lambda: !Ref WorkingMemoryLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: set_value_for_key
+                Description: "Stores a key-value pair in DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to store the value under"
+                    Required: true
+                  value:
+                    Type: "string"
+                    Description: "The value to store for that key name"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+              - Name: get_key_value
+                Description: "Retrieves a value for a given key name from DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to retrieve the value for"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+
+  # FormattedReportWriter
+  FormattedReportWriter:
+    Type: "AWS::Bedrock::Agent"
+    Properties:
+      AgentName: formatted_report_writer
+      AgentResourceRoleArn: !GetAtt BedrockAgentBaseRole.Arn
+      Description: Formatted Report Writer for producing final, well-structured reports
+      FoundationModel: !Ref BedrockModelId
+      Instruction: !Sub |
+        Role: Formatted Report Writer
+
+        Goal: Produce and save a markdown-formatted report based on all of the outputs
+        of your team's work.
+
+        Instructions: As a Report Writer you are excellent at taking everyone else's great work and 
+        producing a cleanly formatted and easily readable report, saved in Markdown format 
+        in the agent store. Your supervisor hands you the set of relevant agent store keys to help you get the details you'll be 
+        formatting. Within the following report structure, you display in the best way possible 
+        all the underlying detail your team has already prepared for you:
+        1/ Executive Summary - one paragraph summary of the whole report.
+        2/ Marketing Strategy Summary - half page section providing key elements of the strategy.
+        3/ Highest Priority Campaign - full details of the fully fleshed out campaign.
+        4/ Additional Campaign Ideas - summary of the other ideas to be fleshed out later.
+        APPENDIX A/ Market Research - details of the market research results.
+        APPENDIX B/ Creative Director Feedback - summary of the main improvements incorporated after the first draft of the detailed campaign report.
+        To simplify the task, break it into small sub-tasks, each requiring only specific 
+        input and only generating a nicely formatted version of each specific section. 
+        Save each section to its own key in the agent store. Once all sub-sections have been formatted
+        and saved, retrieve each section from the agent store one last time, concatenate, and save
+        the final report to the agent store with the entire text, not just placeholders.
+      IdleSessionTTLInSeconds: 1800
+      AutoPrepare: true
+      ActionGroups:
+        - ActionGroupName: "ReportTools"
+          Description: "Tools for report writing"
+          ActionGroupExecutor:
+            Lambda: !Ref WebSearchLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: web_search
+                Description: "Searches the web for information"
+                Parameters:
+                  search_query:
+                    Type: "string"
+                    Description: "The query to search the web with"
+                    Required: true
+                  target_website:
+                    Type: "string"
+                    Description: "The specific website to search including its domain name"
+                    Required: false
+        - ActionGroupName: "WorkingMemoryTools"
+          Description: "Tools for storing and retrieving data"
+          ActionGroupExecutor:
+            Lambda: !Ref WorkingMemoryLambdaArn
+          FunctionSchema:
+            Functions:
+              - Name: set_value_for_key
+                Description: "Stores a key-value pair in DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to store the value under"
+                    Required: true
+                  value:
+                    Type: "string"
+                    Description: "The value to store for that key name"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+              - Name: get_key_value
+                Description: "Retrieves a value for a given key name from DynamoDB"
+                Parameters:
+                  key:
+                    Type: "string"
+                    Description: "The name of the key to retrieve the value for"
+                    Required: true
+                  table_name:
+                    Type: "string"
+                    Description: "The name of the DynamoDB table to use for storage"
+                    Required: true
+
+  # Create aliases for each agent
+  LeadMarketAnalystAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref LeadMarketAnalyst
+      AgentAliasName: "LeadMarketAnalystAlias"
+
+  ChiefStrategistAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref ChiefStrategist
+      AgentAliasName: "ChiefStrategistAlias"
+
+  ContentWriterAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref ContentWriter
+      AgentAliasName: "ContentWriterAlias"
+
+  CreativeDirectorAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref CreativeDirector
+      AgentAliasName: "CreativeDirectorAlias"
+
+  FormattedReportWriterAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref FormattedReportWriter
+      AgentAliasName: "FormattedReportWriterAlias"
+
+  StartupAdvisorAlias:
+    Type: AWS::Bedrock::AgentAlias
+    Properties:
+      AgentId: !Ref StartupAdvisor
+      AgentAliasName: "StartupAdvisorAlias"
+
+  # BedrockAgentDetailedPolicy:
+  #   Type: "AWS::IAM::Policy"
+  #   DependsOn:
+  #     - CreativeDirector
+  #     - LeadMarketAnalyst
+  #     - ChiefStrategist
+  #     - ContentWriter
+  #     - FormattedReportWriter
+  #     - LeadMarketAnalystAlias
+  #     - ChiefStrategistAlias
+  #     - ContentWriterAlias
+  #     - CreativeDirectorAlias
+  #     - FormattedReportWriterAlias
+  #   Properties:
+  #     PolicyName: "BedrockAgentDetailedPolicy"
+  #     PolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - "bedrock:*"
+  #             - "bedrock-agent:*"
+  #             - "bedrock-agent-runtime:*"
+  #           Resource: "*"
+  #     Roles:
+  #       - !Ref BedrockAgentBaseRole
+
+  # BedrockAgentDetailedPolicy:
+  #   Type: "AWS::IAM::Policy"
+  #   DependsOn:
+  #     - CreativeDirector
+  #     - LeadMarketAnalyst
+  #     - ChiefStrategist
+  #     - ContentWriter
+  #     - FormattedReportWriter
+  #     - LeadMarketAnalystAlias
+  #     - ChiefStrategistAlias
+  #     - ContentWriterAlias
+  #     - CreativeDirectorAlias
+  #     - FormattedReportWriterAlias
+  #   Properties:
+  #     PolicyName: "BedrockAgentDetailedPolicy"
+  #     PolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - "bedrock:InvokeModel"
+  #             - "bedrock:InvokeAgent"
+  #           Resource:
+  #             - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/${BedrockModelId}"
+  #         - Effect: Allow
+  #           Action:
+  #             - "bedrock-agent:Invoke"
+  #             - "bedrock-agent:GetAgent"
+  #             - "bedrock-agent:ListAgentAliases"
+  #             - "bedrock-agent:ListAgentActionGroups"
+  #             - "bedrock-agent-runtime:InvokeAgent"
+  #             - "bedrock-agent:AssociateAgentCollaborator"
+  #             - "bedrock-agent:DisassociateAgentCollaborator"
+  #             - "bedrock-agent:ListAgentCollaborators"
+  #           Resource:
+  #             # Agent resources
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/startup_advisor"
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/${CreativeDirector}"
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/${LeadMarketAnalyst}"
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/${ChiefStrategist}"
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/${ContentWriter}"
+  #             - !Sub "arn:aws:bedrock-agent:${AWS::Region}:${AWS::AccountId}:agent/${FormattedReportWriter}"
+  #             # Agent alias resources
+  #             - !Sub "${LeadMarketAnalystAlias.AgentAliasArn}"
+  #             - !Sub "${ChiefStrategistAlias.AgentAliasArn}"
+  #             - !Sub "${ContentWriterAlias.AgentAliasArn}"
+  #             - !Sub "${CreativeDirectorAlias.AgentAliasArn}"
+  #             - !Sub "${FormattedReportWriterAlias.AgentAliasArn}"
+  #             - !Sub "${StartupAdvisorAlias.AgentAliasArn}"
+  #         - Effect: Allow
+  #           Action:
+  #             - "lambda:InvokeFunction"
+  #           Resource:
+  #             - !Ref WebSearchLambdaArn
+  #             - !Ref WorkingMemoryLambdaArn
+  #         - Effect: Allow
+  #           Action:
+  #             - "dynamodb:GetItem"
+  #             - "dynamodb:PutItem"
+  #           Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/startup-advisor-*"
+  #     Roles:
+  #       - !Ref BedrockAgentBaseRole
+
+Outputs:
+  StartupAdvisorId:
+    Description: Startup Advisor ID
+    Value: !Ref StartupAdvisor
+
+  CreativeDirectorId:
+    Description: Creative Director ID
+    Value: !Ref CreativeDirector
+
+  LeadMarketAnalystId:
+    Description: Lead Market Analyst ID
+    Value: !Ref LeadMarketAnalyst
+
+  ChiefStrategistId:
+    Description: Chief Strategist ID
+    Value: !Ref ChiefStrategist
+
+  ContentWriterId:
+    Description: Content Writer ID
+    Value: !Ref ContentWriter
+
+  ReportWriterId:
+    Description: Report Writer ID
+    Value: !Ref FormattedReportWriter

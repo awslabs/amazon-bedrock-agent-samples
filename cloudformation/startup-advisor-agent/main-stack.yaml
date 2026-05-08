@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Parent stack that creates S3 bucket using nested stack
+
+Parameters:
+  TemplateBucketName:
+    Type: String
+    Description: Name of the bucket containing nested templates
+
+  TavilyApiKey:
+    Type: String
+    NoEcho: true
+    Description: Provide TavilyApiKey API Key to utilize /web_search path
+    MinLength: 1
+
+  BedrockModelId:
+    Type: String
+    Default: amazon.nova-pro-v1:0
+    Description: Bedrock Foundation Model ID
+
+Resources:
+  WebSearchStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/1031afa5-be84-4a6a-9886-4e19ce67b9c2/tools/web_search_stack.yaml"
+      Parameters:
+        TavilyApiKey: !Ref TavilyApiKey
+
+  WorkingMemoryStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/1031afa5-be84-4a6a-9886-4e19ce67b9c2/tools/working_memory_stack.yaml"
+
+  BedrockAgentsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - WebSearchStack
+      - WorkingMemoryStack
+    Properties:
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/bedrock-agents.yaml"
+      Parameters:
+        WebSearchLambdaArn: !GetAtt WebSearchStack.Outputs.WebScrapeLambdaFunctionArn
+        WorkingMemoryLambdaArn: !GetAtt WorkingMemoryStack.Outputs.FileStoreLambdaFunction
+        BedrockModelId: !Ref BedrockModelId
+
+Outputs:
+  StartupAdvisorId:
+    Description: Startup Advisor ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.StartupAdvisorId
+
+  CreativeDirectorId:
+    Description: Creative Director ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.CreativeDirectorId
+
+  LeadMarketAnalystId:
+    Description: Lead Market Analyst ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.LeadMarketAnalystId
+
+  ChiefStrategistId:
+    Description: Chief Strategist ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.ChiefStrategistId
+
+  ContentWriterId:
+    Description: Content Writer ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.ContentWriterId
+
+  ReportWriterId:
+    Description: Report Writer ID
+    Value: !GetAtt BedrockAgentsStack.Outputs.ReportWriterId
