@@ -12,7 +12,7 @@
 ## Prerequisites
 
 - AWS Account with Bedrock access
-- Python 3.8 or later
+- Python 3.8 or later (on Python 3.8-3.10 the `typing_extensions` package listed in [`requirements.txt`](/src/requirements.txt) backports `typing.Self`, which is only built in on Python 3.11+)
 - Required Python packages (specified in [`requirements.txt`](/src/requirements.txt))
 
 Make sure to run the following commands:
