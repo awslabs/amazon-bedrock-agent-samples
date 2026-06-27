@@ -23,6 +23,10 @@ associating them with Guardrails, Knowledge Bases, and Tools.
 The SupervisorAgent class enables creating Agents that can collaborate with other sub-agents, with options
 for specifying collaboration types, routing classifiers, and instructions.
 """
+# Defer annotation evaluation so the `-> Self` return annotation below is never resolved at
+# runtime. This keeps the module importable on the documented Python 3.8+ floor.
+from __future__ import annotations
+
 import boto3
 from botocore.exceptions import ClientError
 import uuid
@@ -30,7 +34,11 @@ from textwrap import dedent
 from typing import List, Dict, Optional
 import time
 from dataclasses import dataclass
-from typing import Self, Callable, Union
+from typing import Callable, Union
+
+# `typing.Self` only exists on Python 3.11+. Import it from `typing_extensions` (a backport)
+# so the documented Python 3.8-3.10 environments (e.g. CloudShell 3.9, SageMaker 3.10) work.
+from typing_extensions import Self
 from enum import Enum
 import yaml
 from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
